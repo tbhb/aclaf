@@ -1,0 +1,17 @@
+name = "aclaf-docs"
+compatibility_date = "2025-04-01"
+preview_urls = true
+
+[env.dev]
+name = "aclaf-docs-dev"
+
+[env.pr]
+name = "aclaf-docs-pr"
+
+[env.latest]
+name = "aclaf-docs-latest"
+route = { pattern = "aclaf.sh", custom_domain = true }
+
+[assets]
+directory = "./site"
+not_found_handling = "404-page"
