@@ -1,0 +1,42 @@
+set unstable
+
+# List available recipes
+default:
+  @just --list
+
+# Build the site
+build: clean
+  ACLAF_DOCS_ENV=latest uv run mkdocs build
+
+# Build the site for PR preview
+[script]
+build-pr number: clean
+  rm -f mkdocs.pr.yml
+  cat << EOF >> mkdocs.pr.yml
+  INHERIT: ./mkdocs.yml
+  site_name: Aclaf Documentation (PR-{{number}})
+  site_url: https://{{number}}-aclaf-docs-pr.tbhb.workers.dev/
+  EOF
+  uv run mkdocs build
+  echo "User-Agent: *\nDisallow: /" > site/robots.txt
+  just freeze-pip-requirements
+
+# Deploy to production
+deploy: build
+  pnpm exec wrangler deploy --env latest
+
+# Deploy to PR preview
+deploy-pr number: (build-pr number)
+  pnpm exec wrangler versions upload --env pr --preview-alias pr-{{number}}
+
+# Develop the site locally
+dev:
+  uv run mkdocs serve
+
+# Clean build artifacts
+clean:
+  rm -rf site/
+
+# Freeze pip requirements
+freeze-pip-requirements:
+  uv pip freeze > requirements.txt

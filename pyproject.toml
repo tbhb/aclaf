@@ -1,0 +1,167 @@
+[build-system]
+requires = ["uv_build>=0.9.6,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "aclaf-monorepo"
+version = "0.1.0"
+authors = [{ name = "Tony Burns", email = "tony@tonyburns.net" }]
+description = "A command line application framework."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = ["Private :: Do Not Upload"]
+dependencies = ["aclaf", "aclaf-contrib", "aclaf-core", "aclaf-dev"]
+
+[dependency-groups]
+dev = [
+  "basedpyright>=1.32.1",
+  "codespell>=2.4.1",
+  "commitizen>=4.9.1",
+  "djlint>=1.36.4",
+  "prek>=0.2.12",
+  "pytest-asyncio>=1.2.0",
+  "pytest-cov>=7.0.0",
+  "pytest-mock>=3.15.1",
+  "pytest>=8.4.2",
+  "ruff>=0.14.3",
+  "yamllint>=1.37.1",
+]
+
+[tool.basedpyright]
+include = [
+  "packages/aclaf/src",
+  "packages/aclaf/tests",
+  "packages/aclaf-contrib/src",
+  "packages/aclaf-contrib/tests",
+  "packages/aclaf-core/src",
+  "packages/aclaf-core/tests",
+  "packages/aclaf-dev/src",
+  "packages/aclaf-dev/tests",
+]
+
+[tool.codespell]
+skip = "pnpm-lock.yaml,uv.lock"
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"
+tag_format = "v$version"
+major_version_zero = true
+update_changelog_on_bump = true
+version_files = [
+  "packages/aclaf/pyproject.toml:^version",
+  "packages/aclaf/pyproject.toml:aclaf-core==",
+  "packages/aclaf/pyproject.toml:aclaf-dev==",
+
+  "packages/aclaf-contrib/pyproject.toml:^version",
+  "packages/aclaf-contrib/pyproject.toml:aclaf-core==",
+  "packages/aclaf-contrib/pyproject.toml:aclaf-dev==",
+
+  "packages/aclaf-core/pyproject.toml:^version",
+
+  "packages/aclaf-dev/pyproject.toml:^version",
+  "packages/aclaf-dev/pyproject.toml:aclaf-core==",
+]
+
+[tool.pytest.ini_options]
+addopts = [
+  "--tb",
+  "short",
+  "--cov",
+  "src",
+  "--cov-report",
+  "term-missing",
+  "--cov-branch",
+]
+asyncio_mode = "auto"
+filterwarnings = ["error"]
+testpaths = ["tests"]
+xfail_strict = true
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+  "A",     # flake8-builtins
+  "ARG",   # flake8-unused-arguments
+  "ASYNC", # flake8-async
+  "B",     # bugbear
+  "BLE",   # flake8-blind-except
+  "C4",    # flake8-comprehensions
+  "D",     # pydocstyle
+  "DTZ",   # flake8-datetimez
+  "E",     # pycodestyle (error)
+  "EM",    # flake8-errmsg
+  "EXE",   # flake8-executable
+  "F",     # pyflakes
+  "FBT",   # flake8-boolean-trap
+  "FURB",  # refurb
+  "G",     # flake8-logging-format
+  "I",     # isort
+  "ICN",   # flake8-import-conventions
+  "ISC",   # flake8-implicit-str-concat
+  "LOG",   # flake8-logging
+  "N",     # pep8-naming
+  "PERF",  # Perflint
+  "PGH",   # pygrep-hooks
+  "PIE",   # flake8-pie
+  "PL",    # pylint
+  "PT",    # flake8-pytest-style
+  "PTH",   # flake8-use-pathlib
+  "PYI",   # flake8-pyi
+  "RET",   # flake8-return
+  "RUF",   # Ruff-specific rules
+  "S",     # flake8-bandit
+  "SIM",   # flake8-simplify
+  "SLF",   # flake8-self
+  "SLOT",  # flake8-slots
+  "TC",    # flake8-type-checking
+  "TD",    # flake8-todos
+  "TID",   # flake8-tidy-imports
+  "T10",   # flake8-debugger
+  "T20",   # flake8-print
+  "TRY",   # tryceratops
+  "UP",    # pyupgrade
+]
+ignore = [
+  "D100", # Missing docstring in public module
+  "D101", # Missing docstring in public class
+  "D102", # Missing docstring in public method
+  "D103", # Missing docstring in public function
+  "D104", # Missing docstring in public package
+  "D105", # Missing docstring in magic method
+  "D107", # Missing docstring in __init__
+]
+pydocstyle = { convention = "google" }
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+extra-standard-library = ["typing_extensions"]
+forced-separate = ["tests"]
+
+[tool.ruff.lint.flake8-type-checking]
+quote-annotations = true
+
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[tool.ruff.lint.per-file-ignores]
+"**/__main__.py" = ["D100"]
+"**/tests/**" = ["D", "PLR2004", "S101"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+aclaf = { workspace = true }
+aclaf-contrib = { workspace = true }
+aclaf-core = { workspace = true }
+aclaf-dev = { workspace = true }
+aclaf-docs = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/*"]

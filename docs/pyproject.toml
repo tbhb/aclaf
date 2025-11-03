@@ -1,0 +1,22 @@
+[build-system]
+requires = ["uv_build>=0.9.6,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "aclaf-docs"
+version = "0.1.0"
+authors = [{ name = "Tony Burns", email = "tony@tonyburns.net" }]
+description = "Aclaf documentation site."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+  "mkdocs-git-authors-plugin>=0.10.0",
+  "mkdocs-git-revision-date-localized-plugin>=1.5.0",
+  "mkdocs-glightbox>=0.5.2",
+  "mkdocs-material[imaging]>=9.6.23",
+  "mkdocs-rss-plugin>=1.17.4",
+]
+
+[tool.uv]
+package = false

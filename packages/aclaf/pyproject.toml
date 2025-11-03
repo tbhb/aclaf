@@ -1,0 +1,71 @@
+[build-system]
+requires = ["uv_build>=0.9.6,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "aclaf"
+version = "0.1.0"
+authors = [{ name = "Tony Burns", email = "tony@tonyburns.net" }]
+description = "A static site generator."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: Free Threading",
+  "Programming Language :: Python :: Free Threading :: 3 - Stable",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Terminals",
+  "Topic :: Utilities",
+  "Typing :: Typed",
+]
+dependencies = [
+  "aclaf-core==0.1.0", # aclaf-core dependency
+]
+
+[dependency-groups]
+dev = [
+  "aclaf-dev==0.1.0",
+  "codespell>=2.4.1",
+  "prek>=0.2.12",
+  "pytest-asyncio>=1.2.0",
+  "pytest-cov>=7.0.0",
+  "pytest-mock>=3.15.1",
+  "pytest>=8.4.2",
+  "ruff>=0.14.3",
+  "yamllint>=1.37.1",
+]
+
+[tool.basedpyright]
+include = ["src", "tests"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "--tb",
+  "short",
+  "--cov",
+  "src",
+  "--cov-report",
+  "term-missing",
+  "--cov-branch",
+]
+asyncio_mode = "auto"
+filterwarnings = ["error"]
+testpaths = ["tests"]
+xfail_strict = true
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.uv.sources]
+aclaf-core = { workspace = true }
+aclaf-dev = { workspace = true }
