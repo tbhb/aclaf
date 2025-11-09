@@ -10,6 +10,10 @@ edit_uri: https://github.com/aclaf/aclaf/edit/main/docs/content/
 
 copyright: "&copy; 2025 Tony Burns."
 
+watch:
+  - docs
+  - src/aclaf
+
 theme:
   name: material
   custom_dir: docs/.overrides
@@ -52,6 +56,10 @@ theme:
       toggle:
         icon: material/toggle-switch-off
         name: Switch to system preference
+
+extra_css:
+  - stylesheets/mkdocstrings.css
+
 extra:
   env: !ENV [ACLAF_DOCS_ENV, "dev"]
   social:
@@ -65,16 +73,38 @@ extra:
 plugins:
   - blog
   - git-authors:
+      enabled: !ENV [CI, false]
       exclude:
         - blog/**/*.md
         - index.md
   - git-revision-date-localized:
+      enabled: !ENV [CI, false]
       enable_creation_date: true
       fallback_to_build_date: true
   - glightbox
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_options:
+              ignore_init_summary: true
+            line_length: 88
+            members_order: source
+            separate_signature: true
+            signature_crossrefs: true
+            show_root_heading: false
+            show_root_members_full_path: true
+            show_root_toc_entry: false
+            show_signature_annotations: true
+            inherited_members: true
+            summary: true
+          inventories:
+            - https://docs.python.org/3/objects.inv
   - privacy:
       enabled: !ENV [CI, false]
-  - rss
+  - rss:
+      enabled: !ENV [CI, false]
   - search:
       lang: en
   - tags
@@ -98,6 +128,7 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - pymdownx.highlight:
       anchor_linenums: true
+      default_lang: python
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.inlinehilite
@@ -105,8 +136,8 @@ markdown_extensions:
   - pymdownx.magiclink:
       normalize_issue_symbols: true
       repo_url_shorthand: true
-      user: corvinvale
-      repo: evedata-guides
+      user: aclaf
+      repo: aclaf
   - pymdownx.smartsymbols
   - pymdownx.snippets:
       auto_append:
@@ -145,5 +176,9 @@ nav:
       - explanation/index.md
   - Reference:
       - reference/index.md
+      - Parser:
+          - reference/api/parser/index.md
+          - Specifications: reference/api/parser/specifications.md
+          - Exceptions: reference/api/parser/exceptions.md
   - Blog:
       - blog/index.md

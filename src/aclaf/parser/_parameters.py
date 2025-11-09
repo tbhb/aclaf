@@ -36,12 +36,12 @@ def _validate_arity(value: int | Arity | tuple[int, int] | None) -> Arity:
 class OptionSpec:
     """Specification for a command-line option.
 
-    An option is a named parameter that typically appears with '--' (long form)
-    or '-' (short form) prefixes. Options can accept zero or more values and
+    An option is a named parameter that typically appears with `--` (long form)
+    or `-` (short form) prefixes. Options can accept zero or more values and
     can be configured with various behaviors for accumulation, negation, and
     flag value coercion.
 
-    The OptionSpec is immutable after construction and defines all the metadata
+    The `OptionSpec` is immutable after construction and defines all the metadata
     needed for the parser to recognize and process an option.
     """
 
@@ -79,31 +79,34 @@ class OptionSpec:
         Args:
             name: The canonical option name (without dashes). Must be alphanumeric
                 with optional dashes/underscores (not at start/end).
-            long: Long form option name(s). If None and name has >1 character,
+            long: Long form option name(s). If `None` and name has `>1` character,
                 uses name as the long form. Can be a single string or sequence.
-            short: Short form option name(s). If None and name has 1 character,
+            short: Short form option name(s). If `None` and name has `1` character,
                 uses name as the short form. Must be single alphanumeric characters.
-            arity: Number of values the option accepts. Can be an int, Arity tuple,
-                or (min, max) tuple. Default is Arity(1, 1). Flags typically use
-                Arity(0, 0).
+            arity: Number of values the option accepts. Can be an int,
+                [`Arity`][aclaf.parser.Arity] tuple, or `(min, max)` tuple.
+                Default is `Arity(1, 1)`. Flags typically use `Arity(0, 0)`.
             accumulation_mode: How to handle repeated option occurrences.
-                Default is LAST_WINS.
+                Default is [`LAST_WINS`][aclaf.parser.AccumulationMode.LAST_WINS].
             is_flag: Whether this is a boolean flag option. Flags have special
-                behavior for value coercion and default arity of 0.
-            falsey_flag_values: Values that set the flag to False when using
-                '--flag=value' syntax (requires allow_equals_for_flags).
-            truthy_flag_values: Values that set the flag to True when using
-                '--flag=value' syntax (requires allow_equals_for_flags).
-            negation_words: Prefix words for negation (e.g., 'no' allows
-                '--no-verbose'). Only applies to flags.
+                behavior for value coercion and default arity of `0`.
+            falsey_flag_values: Values that set the flag to `False` when using
+                `--flag=value` syntax (requires `allow_equals_for_flags`).
+            truthy_flag_values: Values that set the flag to `True` when using
+                `--flag=value` syntax (requires `allow_equals_for_flags`).
+            negation_words: Prefix words for negation (e.g., `no` allows
+                `--no-verbose`). Only applies to flags.
             const_value: Constant value to use when the option is specified
                 without an explicit value.
-            flatten_values: When True and accumulation_mode is COLLECT, flatten
+            flatten_values: When `True` and `accumulation_mode` is
+                [`COLLECT`][aclaf.parser.AccumulationMode.COLLECT], flatten
                 nested tuples from multiple occurrences into a single flat tuple.
                 Only applies when arity allows multiple values per occurrence
-                (arity.max > 1 or arity.max is None). If None, inherits from
-                CommandSpec.flatten_option_values or BaseParser.flatten_option_values.
-                Default: None.
+                (`arity.max > 1` or `arity.max is None`). If `None`, inherits from
+                [`CommandSpec.flatten_option_values`][aclaf.parser.CommandSpec.flatten_option_values]
+                or
+                [`BaseParser.flatten_option_values`][aclaf.parser.BaseParser.flatten_option_values].
+                Default: `None`.
 
         Raises:
             ValueError: If the option configuration is invalid (e.g., invalid
@@ -142,12 +145,12 @@ class OptionSpec:
 
     @property
     def long(self) -> frozenset[str]:
-        """Frozenset of long-form option names (without '--' prefix)."""
+        """Frozenset of long-form option names (without `--` prefix)."""
         return self._long
 
     @property
     def short(self) -> frozenset[str]:
-        """Frozenset of short-form option names (without '-' prefix)."""
+        """Frozenset of short-form option names (without `-` prefix)."""
         return self._short
 
     @property
@@ -157,7 +160,7 @@ class OptionSpec:
 
     @property
     def negation_words(self) -> frozenset[str] | None:
-        """Frozenset of negation prefix words (e.g., 'no' for '--no-flag')."""
+        """Frozenset of negation prefix words (e.g., `no` for `--no-flag`)."""
         return self._negation_words
 
     @property
@@ -172,12 +175,18 @@ class OptionSpec:
 
     @property
     def truthy_flag_values(self) -> frozenset[str] | None:
-        """Frozenset of values that set this flag to True (for --flag=value syntax)."""
+        """Frozenset of values that set this flag to `True`.
+
+        For `--flag=value` syntax.
+        """
         return self._truthy_flag_values
 
     @property
     def falsey_flag_values(self) -> frozenset[str] | None:
-        """Frozenset of values that set this flag to False (for --flag=value syntax)."""
+        """Frozenset of values that set this flag to `False`.
+
+        For `--flag=value` syntax.
+        """
         return self._falsey_flag_values
 
     @property
@@ -189,10 +198,13 @@ class OptionSpec:
     def flatten_values(self) -> bool | None:
         """Whether to flatten nested tuples in COLLECT mode.
 
-        When True and accumulation_mode is COLLECT, values from multiple
-        occurrences are flattened into a single tuple instead of nested tuples.
-        Only applies when arity allows multiple values (arity.max > 1 or None).
-        If None, inherits from CommandSpec or BaseParser setting.
+        When `True` and `accumulation_mode` is
+        [`COLLECT`][aclaf.parser.AccumulationMode.COLLECT], values from
+        multiple occurrences are flattened into a single tuple instead of
+        nested tuples. Only applies when arity allows multiple values
+        (`arity.max > 1` or `None`). If `None`, inherits from
+        [`CommandSpec`][aclaf.parser.CommandSpec] or
+        [`BaseParser`][aclaf.parser.BaseParser] setting.
         """
         return self._flatten_values
 
@@ -319,7 +331,7 @@ class PositionalSpec:
     position rather than by a name/flag. Positionals are matched to their
     specifications in order after all options have been consumed.
 
-    The PositionalSpec is immutable after construction and defines the
+    The `PositionalSpec` is immutable after construction and defines the
     name and arity for a positional parameter.
     """
 
@@ -334,7 +346,8 @@ class PositionalSpec:
             name: The parameter name for this positional. Used to identify
                 the positional in the parse result.
             arity: Number of values this positional accepts. Can be an int,
-                Arity tuple, or (min, max) tuple. Default is Arity(1, 1).
+                [`Arity`][aclaf.parser.Arity] tuple, or `(min, max)` tuple.
+                Default is `Arity(1, 1)`.
 
         Raises:
             ValueError: If the arity is invalid (e.g., negative values).

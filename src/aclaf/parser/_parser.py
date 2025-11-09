@@ -43,9 +43,9 @@ class _ShortOptionSpecParser:
     """State machine for parsing combined short options.
 
     This extracts the structure of a combined short option string like:
-    - -abc (three flags)
-    - -xvalue (option x with inline value)
-    - -o=val (option o with equals-delimited value)
+    - `-abc` (three flags)
+    - `-xvalue` (option `x` with inline value)
+    - `-o=val` (option `o` with equals-delimited value)
 
     The parser maintains parsing state and provides clean methods for each
     state transition, making the complex character-by-character parsing logic
@@ -77,7 +77,7 @@ class _ShortOptionSpecParser:
         """Parse the short option string.
 
         Returns:
-            Tuple of (option specs list, inline value if any, whether from =)
+            Tuple of `(option specs list, inline value if any, whether from =)`
         """
         while self.position < len(self.arg) and self.inline_value is None:
             self._parse_next_character()
@@ -549,17 +549,18 @@ class Parser(BaseParser):
     """Concrete implementation of the command-line argument parser.
 
     The Parser class implements the complete parsing algorithm, processing
-    command-line arguments according to a CommandSpec and parser configuration.
-    It performs single-pass, left-to-right parsing with support for:
+    command-line arguments according to a [`CommandSpec`][aclaf.parser.CommandSpec]
+    and parser configuration. It performs single-pass, left-to-right parsing
+    with support for:
 
-    - Long options (--option) and short options (-o)
-    - Combined short options (-abc)
+    - Long options (`--option`) and short options (`-o`)
+    - Combined short options (`-abc`)
     - Option values with various arities
     - Positional arguments with flexible grouping
     - Nested subcommands
-    - Inline values (--option=value)
-    - Negation words (--no-flag)
-    - Trailing arguments after '--'
+    - Inline values (`--option=value`)
+    - Negation words (`--no-flag`)
+    - Trailing arguments after `--`
 
     The parser is immutable and thread-safe. All configuration is provided
     during initialization through the BaseParser constructor.
@@ -854,14 +855,16 @@ class Parser(BaseParser):
         """Parse a list of extracted short option specs into ParsedOptions.
 
         Args:
-            option_specs: List of (option_name, option_spec) tuples
-            inline_value: Inline value from combined option (e.g., 'value' from -xvalue)
-            inline_value_from_equals: Whether inline value came from = syntax
+            option_specs: List of `(option_name, option_spec)` tuples
+            inline_value: Inline value from combined option (e.g., `value`
+                from `-xvalue`)
+            inline_value_from_equals: Whether inline value came from `=`
+                syntax
             next_args: Remaining arguments
             current_spec: Current command specification
 
         Returns:
-            Tuple of (parsed options list, next_args consumed count)
+            Tuple of `(parsed options list, next_args consumed count)`
         """
         parsed_options: list[ParsedOption] = []
         next_args_consumed = 0
