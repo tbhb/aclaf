@@ -283,9 +283,7 @@ class Parser(BaseParser):
                 )
 
             # Zero arity with inline value
-            case (False, arity, str() as val, _) if (
-                arity and arity.min == 0 and arity.max == 0
-            ):
+            case (False, arity, str() as val, _) if _is_zero_arity(arity):
                 # Zero-arity non-flag options with values
                 # If allow_equals_for_flags is enabled, treat as flag value
                 if self.allow_equals_for_flags and val:
@@ -300,7 +298,7 @@ class Parser(BaseParser):
                     raise FlagWithValueError(option_name, option_spec)
 
             # Zero arity without value
-            case (False, arity, None, _) if arity and arity.min == 0 and arity.max == 0:
+            case (False, arity, None, _) if _is_zero_arity(arity):
                 # Check for const value first
                 if option_spec.const_value is not None:
                     parsed_option, consumed = (
@@ -397,10 +395,7 @@ class Parser(BaseParser):
 
                 # Inner option: zero arity (non-flag) with const_value
                 case (False, False, arity, _, _) if (
-                    arity
-                    and arity.min == 0
-                    and arity.max == 0
-                    and option_spec.const_value is not None
+                    _is_zero_arity(arity) and option_spec.const_value is not None
                 ):
                     parsed_options.append(
                         ParsedOption(
@@ -411,9 +406,7 @@ class Parser(BaseParser):
                     )
 
                 # Inner option: zero arity (non-flag) without const_value
-                case (False, False, arity, _, _) if (
-                    arity and arity.min == 0 and arity.max == 0
-                ):
+                case (False, False, arity, _, _) if _is_zero_arity(arity):
                     parsed_options.append(
                         ParsedOption(
                             name=option_spec.name, alias=option_name, value=True
@@ -538,17 +531,12 @@ class Parser(BaseParser):
                     next_args_consumed += extra_consumed
 
                 # Last option: zero arity with inline value when flag values not allowed
-                case (True, False, arity, str(), _) if (
-                    arity and arity.min == 0 and arity.max == 0
-                ):
+                case (True, False, arity, str(), _) if _is_zero_arity(arity):
                     raise OptionDoesNotAcceptValueError(option_spec.name, option_spec)
 
                 # Last option: zero arity without value and const value defined
                 case (True, False, arity, None, _) if (
-                    arity
-                    and arity.min == 0
-                    and arity.max == 0
-                    and option_spec.const_value is not None
+                    _is_zero_arity(arity) and option_spec.const_value is not None
                 ):
                     parsed_options.append(
                         ParsedOption(
@@ -559,9 +547,7 @@ class Parser(BaseParser):
                     )
 
                 # Last option: zero arity without value and no const value
-                case (True, False, arity, None, _) if (
-                    arity and arity.min == 0 and arity.max == 0
-                ):
+                case (True, False, arity, None, _) if _is_zero_arity(arity):
                     parsed_options.append(
                         ParsedOption(
                             name=option_spec.name, alias=option_name, value=True
@@ -1006,7 +992,7 @@ class Parser(BaseParser):
                         alias=new.alias,
                         value=(new.value,),  # pyright: ignore[reportArgumentType]
                     )
-                elif arity.max is None or arity.max > 1:
+                elif _is_multi_value_arity(arity):
                     # Multi-value option (unbounded or max > 1):
                     # wrap tuple in outer tuple
                     # to preserve grouping across multiple occurrences
@@ -1029,7 +1015,7 @@ class Parser(BaseParser):
                 if not isinstance(new.value, tuple):
                     # Scalar value: append directly
                     value = (*old.value, new.value)  # pyright: ignore[reportGeneralTypeIssues,reportUnknownVariableType]
-                elif arity.max is None or arity.max > 1:
+                elif _is_multi_value_arity(arity):
                     # Multi-value option: append the tuple as a single element
                     value = (*old.value, new.value)  # pyright: ignore[reportGeneralTypeIssues,reportUnknownVariableType]
                 else:
@@ -1100,3 +1086,30 @@ class Parser(BaseParser):
         """
         # Spec allows positionals (either already started or can start now)
         return bool(current_spec.positionals)
+
+
+# Helper functions for arity checking
+
+
+def _is_zero_arity(arity: "Arity | None") -> bool:
+    """Check if arity represents zero arguments (0, 0).
+
+    Args:
+        arity: The arity specification to check, or None.
+
+    Returns:
+        True if arity is exactly (0, 0), False otherwise.
+    """
+    return arity is not None and arity.min == 0 and arity.max == 0
+
+
+def _is_multi_value_arity(arity: "Arity | None") -> bool:
+    """Check if arity allows multiple values (max > 1 or unbounded).
+
+    Args:
+        arity: The arity specification to check, or None.
+
+    Returns:
+        True if arity allows multiple values, False otherwise.
+    """
+    return arity is not None and (arity.max is None or arity.max > 1)
