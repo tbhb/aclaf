@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, override
@@ -128,11 +129,13 @@ class BaseParser(ABC):
         allow_abbreviated_options: bool = False,
         allow_equals_for_flags: bool = False,
         allow_aliases: bool = True,
+        allow_negative_numbers: bool = False,
         case_insensitive_flags: bool = False,
         case_insensitive_options: bool = False,
         case_insensitive_subcommands: bool = False,
         convert_underscores_to_dashes: bool = False,
         minimum_abbreviation_length: int = 3,
+        negative_number_pattern: str | None = None,
         strict_options_before_positionals: bool = False,
         truthy_flag_values: tuple[str, ...] | None = None,
         falsey_flag_values: tuple[str, ...] | None = None,
@@ -149,6 +152,11 @@ class BaseParser(ABC):
             allow_equals_for_flags: Allow '--flag=value' syntax for flag options
                 that accept explicit true/false values. Default: False.
             allow_aliases: Enable command and option aliases. Default: True.
+            allow_negative_numbers: Enable parsing of negative numbers (e.g., -1,
+                -3.14, -1e5). When enabled, arguments starting with '-' followed by
+                a digit are treated as negative numbers if no matching short option
+                exists. Options take precedence over negative number interpretation.
+                Default: False.
             case_insensitive_flags: Ignore case when matching boolean flags.
                 Default: False.
             case_insensitive_options: Ignore case when matching option names.
@@ -160,6 +168,10 @@ class BaseParser(ABC):
                 Default: False.
             minimum_abbreviation_length: Minimum characters required for
                 abbreviation matching. Default: 3.
+            negative_number_pattern: Custom regex pattern for negative number
+                detection. If None, uses DEFAULT_NEGATIVE_NUMBER_PATTERN. Only
+                used when allow_negative_numbers is True. The pattern is validated
+                for safety (no ReDoS vulnerabilities). Default: None.
             strict_options_before_positionals: POSIX-style mode where options
                 must appear before positionals. After the first positional,
                 all remaining arguments are treated as positionals. Default: False
@@ -175,6 +187,7 @@ class BaseParser(ABC):
         self._allow_abbreviated_options: bool = allow_abbreviated_options
         self._allow_aliases: bool = allow_aliases
         self._allow_equals_for_flags: bool = allow_equals_for_flags
+        self._allow_negative_numbers: bool = allow_negative_numbers
         self._case_insensitive_flags: bool = case_insensitive_flags
         self._case_insensitive_options: bool = case_insensitive_options
         self._case_insensitive_subcommands: bool = case_insensitive_subcommands
@@ -185,6 +198,11 @@ class BaseParser(ABC):
         )
         self._truthy_flag_values: tuple[str, ...] | None = truthy_flag_values
         self._falsey_flag_values: tuple[str, ...] | None = falsey_flag_values
+
+        # Validate and store negative number pattern
+        if negative_number_pattern is not None:
+            self._validate_negative_number_pattern(negative_number_pattern)
+        self._negative_number_pattern: str | None = negative_number_pattern
 
     @property
     def spec(self) -> "CommandSpec":
@@ -250,6 +268,50 @@ class BaseParser(ABC):
     def falsey_flag_values(self) -> tuple[str, ...] | None:
         """Custom values treated as False for flag options."""
         return self._falsey_flag_values
+
+    @property
+    def allow_negative_numbers(self) -> bool:
+        """Whether negative number parsing is enabled."""
+        return self._allow_negative_numbers
+
+    @property
+    def negative_number_pattern(self) -> str | None:
+        """Custom regex pattern for negative number detection."""
+        return self._negative_number_pattern
+
+    @staticmethod
+    def _validate_negative_number_pattern(pattern: str) -> None:
+        """Validate negative number pattern for safety.
+
+        Checks:
+            - Pattern compiles successfully
+            - Pattern doesn't match empty string
+            - No catastrophic backtracking patterns (basic ReDoS check)
+
+        Args:
+            pattern: The regex pattern to validate.
+
+        Raises:
+            ValueError: If pattern is unsafe or invalid.
+        """
+        # Compile check
+        try:
+            compiled = re.compile(pattern)
+        except re.error as e:
+            msg = f"Invalid regex pattern: {e}"
+            raise ValueError(msg) from e
+
+        # Empty string check
+        if compiled.match(""):
+            msg = "Pattern must not match empty string"
+            raise ValueError(msg)
+
+        # Basic ReDoS check (not exhaustive, but catches common cases)
+        # Flag nested quantifiers like (a+)+ or (a*)*
+        nested_quantifiers = re.compile(r"\([^)]*[+*][^)]*\)[+*]")
+        if nested_quantifiers.search(pattern):
+            msg = "Pattern contains nested quantifiers which may cause ReDoS"
+            raise ValueError(msg)
 
     @abstractmethod
     def parse(self, args: "Sequence[str]") -> "ParseResult":
