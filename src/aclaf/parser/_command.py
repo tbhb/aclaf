@@ -291,6 +291,7 @@ class CommandSpec:
         "_aliases",
         "_case_insensitive_aliases",
         "_case_insensitive_options",
+        "_flatten_option_values",
         "_name",
         "_options",
         "_positionals",
@@ -307,6 +308,7 @@ class CommandSpec:
         subcommands: SubcommandsInput = None,
         case_insensitive_aliases: bool = False,
         case_insensitive_options: bool = False,
+        flatten_option_values: bool | None = None,
     ):
         """Initialize a command specification.
 
@@ -329,6 +331,10 @@ class CommandSpec:
                 matching should be case-insensitive.
             case_insensitive_options: Whether option name matching should be
                 case-insensitive.
+            flatten_option_values: Default flatten_values setting for all options
+                in this command. Options can override with their own flatten_values.
+                If None, inherits from BaseParser.flatten_option_values.
+                Default: None.
 
         Raises:
             ValueError: If the specification is invalid (e.g., duplicate names,
@@ -345,6 +351,7 @@ class CommandSpec:
         )
         self._case_insensitive_aliases: bool = case_insensitive_aliases
         self._case_insensitive_options: bool = case_insensitive_options
+        self._flatten_option_values: bool | None = flatten_option_values
 
     @property
     def name(self) -> str:
@@ -370,6 +377,15 @@ class CommandSpec:
     def subcommands(self) -> dict[str, "CommandSpec"]:
         """Dictionary mapping subcommand names to their specifications."""
         return self._subcommands
+
+    @property
+    def flatten_option_values(self) -> bool | None:
+        """Default flatten_values setting for options in this command.
+
+        When not None, serves as the default for all options that don't
+        explicitly set flatten_values. If None, inherits from BaseParser.
+        """
+        return self._flatten_option_values
 
     def resolve_option(
         self,

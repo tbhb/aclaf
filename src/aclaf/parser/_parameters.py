@@ -1,4 +1,5 @@
 import re
+import warnings
 from typing import TYPE_CHECKING, override
 
 from ._utils import normalize_frozen_str_set
@@ -49,6 +50,7 @@ class OptionSpec:
         "_arity",
         "_const_value",
         "_falsey_flag_values",
+        "_flatten_values",
         "_is_flag",
         "_long",
         "_name",
@@ -70,6 +72,7 @@ class OptionSpec:
         truthy_flag_values: "str | Sequence[str] | None" = None,
         negation_words: "str | Sequence[str] | None" = None,
         const_value: str | None = None,
+        flatten_values: bool | None = None,
     ) -> None:
         """Initialize an option specification.
 
@@ -95,6 +98,12 @@ class OptionSpec:
                 '--no-verbose'). Only applies to flags.
             const_value: Constant value to use when the option is specified
                 without an explicit value.
+            flatten_values: When True and accumulation_mode is COLLECT, flatten
+                nested tuples from multiple occurrences into a single flat tuple.
+                Only applies when arity allows multiple values per occurrence
+                (arity.max > 1 or arity.max is None). If None, inherits from
+                CommandSpec.flatten_option_values or BaseParser.flatten_option_values.
+                Default: None.
 
         Raises:
             ValueError: If the option configuration is invalid (e.g., invalid
@@ -115,6 +124,16 @@ class OptionSpec:
             negation_words
         )
         self._const_value: str | None = const_value
+        self._flatten_values: bool | None = flatten_values
+
+        # Validate flatten_values is only explicitly set with COLLECT mode
+        if flatten_values is True and accumulation_mode != AccumulationMode.COLLECT:
+            msg = (
+                f"Option '{name}': flatten_values=True has no effect with "
+                f"accumulation_mode={accumulation_mode}. Flattening only applies "
+                f"to COLLECT mode."
+            )
+            warnings.warn(msg, stacklevel=2)
 
     @property
     def name(self) -> str:
@@ -165,6 +184,17 @@ class OptionSpec:
     def const_value(self) -> str | None:
         """Constant value to use when the option is specified without a value."""
         return self._const_value
+
+    @property
+    def flatten_values(self) -> bool | None:
+        """Whether to flatten nested tuples in COLLECT mode.
+
+        When True and accumulation_mode is COLLECT, values from multiple
+        occurrences are flattened into a single tuple instead of nested tuples.
+        Only applies when arity allows multiple values (arity.max > 1 or None).
+        If None, inherits from CommandSpec or BaseParser setting.
+        """
+        return self._flatten_values
 
     @override
     def __repr__(self) -> str:

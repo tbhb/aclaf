@@ -1,7 +1,8 @@
 import re
 from dataclasses import replace
+from itertools import chain
 from types import MappingProxyType
-from typing import TYPE_CHECKING, final, override
+from typing import TYPE_CHECKING, cast, final, override
 
 from ._base import BaseParser, ParsedOption, ParsedPositional, ParseResult
 from ._parameters import PositionalSpec
@@ -524,9 +525,18 @@ class _ParsingContext:
 
     def _build_result(self) -> "ParseResult":
         """Build final parse result."""
+        # Apply value flattening to options that need it
+        flattened_options: dict[str, ParsedOption] = {}
+        for option_name, parsed_option in self.options.items():
+            option_spec = self.current_spec.options[option_name]
+            if _should_flatten_option(option_spec, self.current_spec, self.parser):
+                flattened_options[option_name] = _flatten_option_value(parsed_option)
+            else:
+                flattened_options[option_name] = parsed_option
+
         return ParseResult(
             command=self.current_spec.name,
-            options=self.options,
+            options=flattened_options,
             positionals=self.parser._group_positionals(  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
                 self.positionals, self.current_spec
             ),
@@ -1601,3 +1611,102 @@ def _is_multi_value_arity(arity: "Arity | None") -> bool:
         True if arity allows multiple values, False otherwise.
     """
     return arity is not None and (arity.max is None or arity.max > 1)
+
+
+def _resolve_flatten_setting(
+    option_spec: "OptionSpec",
+    command_spec: "CommandSpec",
+    parser: BaseParser,
+) -> bool:
+    """Resolve the effective flatten_values setting for an option.
+
+    Applies precedence: OptionSpec > CommandSpec > BaseParser.
+
+    Args:
+        option_spec: The option specification.
+        command_spec: The command specification containing the option.
+        parser: The parser instance with global settings.
+
+    Returns:
+        The effective flatten_values setting (True or False).
+    """
+    # Option-level setting takes precedence
+    if option_spec.flatten_values is not None:
+        return option_spec.flatten_values
+
+    # Command-level setting is next
+    if command_spec.flatten_option_values is not None:
+        return command_spec.flatten_option_values
+
+    # Fall back to parser-level default
+    return parser.flatten_option_values
+
+
+def _should_flatten_option(
+    option_spec: "OptionSpec",
+    command_spec: "CommandSpec",
+    parser: BaseParser,
+) -> bool:
+    """Determine if an option's values should be flattened.
+
+    Flattening applies only when ALL conditions are met:
+    1. Option has COLLECT accumulation mode
+    2. Option allows multiple values per occurrence (arity.max > 1 or None)
+    3. Effective flatten_values setting is True
+
+    Args:
+        option_spec: The option specification.
+        command_spec: The command specification containing the option.
+        parser: The parser instance with global settings.
+
+    Returns:
+        True if the option's values should be flattened, False otherwise.
+    """
+    # Only COLLECT mode produces nested structures
+    if option_spec.accumulation_mode != AccumulationMode.COLLECT:
+        return False
+
+    # Only multi-value options can produce nested tuples
+    arity = option_spec.arity or ZERO_OR_MORE_ARITY
+    if not _is_multi_value_arity(arity):
+        return False
+
+    # Check if flattening is enabled
+    return _resolve_flatten_setting(option_spec, command_spec, parser)
+
+
+def _flatten_option_value(
+    parsed_option: ParsedOption,
+) -> ParsedOption:
+    """Flatten a ParsedOption's nested tuple value into a single flat tuple.
+
+    Uses itertools.chain.from_iterable for O(n) performance.
+
+    Args:
+        parsed_option: The option with potentially nested tuple values.
+
+    Returns:
+        A new ParsedOption with flattened values, or the original if value
+        is not a nested tuple structure.
+    """
+    # Only process tuple of tuples (nested structure from COLLECT mode)
+    if not isinstance(parsed_option.value, tuple):
+        return parsed_option
+
+    # Check if this is a nested tuple structure
+    # In COLLECT mode with multi-value options, we get tuple[tuple[str, ...], ...]
+    if not parsed_option.value or not isinstance(parsed_option.value[0], tuple):
+        return parsed_option
+
+    # At this point, we know value is tuple[tuple[...], ...]
+    # Cast to help type checker understand the structure after runtime checks
+    nested_value = cast("tuple[tuple[str, ...], ...]", parsed_option.value)
+
+    # Flatten using chain.from_iterable for O(n) performance
+    flattened = tuple(chain.from_iterable(nested_value))
+
+    return ParsedOption(
+        name=parsed_option.name,
+        value=flattened,
+        alias=parsed_option.alias,
+    )

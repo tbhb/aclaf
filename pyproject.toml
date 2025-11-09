@@ -59,6 +59,7 @@ include = ["src", "tests"]
 
 [tool.codespell]
 skip = "pnpm-lock.yaml,uv.lock,htmlcov,site"
+ignore-words-list = "nd,ue"
 
 [tool.commitizen]
 name = "cz_conventional_commits"

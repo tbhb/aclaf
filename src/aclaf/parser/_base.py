@@ -134,6 +134,7 @@ class BaseParser(ABC):
         case_insensitive_options: bool = False,
         case_insensitive_subcommands: bool = False,
         convert_underscores_to_dashes: bool = True,
+        flatten_option_values: bool = False,
         minimum_abbreviation_length: int = 3,
         negative_number_pattern: str | None = None,
         strict_options_before_positionals: bool = False,
@@ -166,6 +167,11 @@ class BaseParser(ABC):
             convert_underscores_to_dashes: Convert underscores to dashes in
                 option names during matching ('--foo_bar' matches '--foo-bar').
                 Default: True.
+            flatten_option_values: Global default for value flattening in COLLECT
+                mode. When True, values from multiple option occurrences are
+                flattened into a single tuple instead of nested tuples. Can be
+                overridden by CommandSpec.flatten_option_values or
+                OptionSpec.flatten_values. Default: False.
             minimum_abbreviation_length: Minimum characters required for
                 abbreviation matching. Default: 3.
             negative_number_pattern: Custom regex pattern for negative number
@@ -192,6 +198,7 @@ class BaseParser(ABC):
         self._case_insensitive_options: bool = case_insensitive_options
         self._case_insensitive_subcommands: bool = case_insensitive_subcommands
         self._convert_underscores_to_dashes: bool = convert_underscores_to_dashes
+        self._flatten_option_values: bool = flatten_option_values
         self._minimum_abbreviation_length: int = minimum_abbreviation_length
         self._strict_options_before_positionals: bool = (
             strict_options_before_positionals
@@ -248,6 +255,16 @@ class BaseParser(ABC):
     def convert_underscores_to_dashes(self) -> bool:
         """Whether underscores are converted to dashes during matching."""
         return self._convert_underscores_to_dashes
+
+    @property
+    def flatten_option_values(self) -> bool:
+        """Global default for value flattening in COLLECT mode.
+
+        When True, values from multiple option occurrences are flattened into
+        a single tuple instead of nested tuples. Can be overridden per-command
+        or per-option.
+        """
+        return self._flatten_option_values
 
     @property
     def minimum_abbreviation_length(self) -> int:
