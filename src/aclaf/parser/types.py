@@ -39,11 +39,13 @@ class Arity(NamedTuple):
         max: The maximum number of values allowed, or None for unbounded.
 
     Examples:
-        Arity(1, 1): Exactly one value (the most common case)
-        Arity(0, 0): No values (flag options)
-        Arity(0, None): Zero or more values (optional variadic)
-        Arity(1, None): One or more values (required variadic)
-        Arity(2, 5): Between 2 and 5 values (specific range)
+        Common arity patterns:
+
+            Arity(1, 1)     # Exactly one value (the most common case)
+            Arity(0, 0)     # No values (flag options)
+            Arity(0, None)  # Zero or more values (optional variadic)
+            Arity(1, None)  # One or more values (required variadic)
+            Arity(2, 5)     # Between 2 and 5 values (specific range)
     """
 
     min: int

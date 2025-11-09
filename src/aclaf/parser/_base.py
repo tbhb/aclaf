@@ -21,13 +21,13 @@ class ParsedOption:
         name: The canonical option name (without leading dashes).
         value: The parsed value(s) for this option. The type depends on the
             option's arity and accumulation mode:
-            - bool: Flag option (arity 0)
-            - int: Count accumulation mode
-            - str: Single value (arity 1)
-            - tuple[str, ...]: Multiple values or COLLECT mode
-            - tuple[bool, ...]: Multiple flags with COLLECT mode
-            - tuple[tuple[str, ...], ...]: Nested collection (rare)
-        alias: The option alias/abbreviation used by the user, or None if
+            - `bool`: Flag option (arity 0)
+            - `int`: Count accumulation mode
+            - `str`: Single value (arity 1)
+            - `tuple[str, ...]`: Multiple values or COLLECT mode
+            - `tuple[bool, ...]`: Multiple flags with COLLECT mode
+            - `tuple[tuple[str, ...], ...]`: Nested collection (rare)
+        alias: The option alias/abbreviation used by the user, or `None` if
             the canonical name was used directly.
     """
 
@@ -59,8 +59,8 @@ class ParsedPositional:
 
     Attributes:
         name: The positional parameter name from the specification.
-        value: The parsed value(s). Either a single string (for arity 1) or
-            a tuple of strings (for any other arity including 0 or unbounded).
+        value: The parsed value(s). Either a single string (for `arity=1`) or
+            a tuple of strings (for any other arity including `0` or unbounded).
     """
 
     name: str
@@ -81,16 +81,16 @@ class ParseResult:
 
     Attributes:
         command: The canonical command name that was invoked.
-        alias: The command alias used by the user, or None if the canonical
+        alias: The command alias used by the user, or `None` if the canonical
             name was used directly.
         options: Dictionary mapping option names to their parsed values.
             Keys are canonical option names (without leading dashes).
         positionals: Dictionary mapping positional parameter names to their
             parsed values. Keys are the names from the positional specifications.
-        extra_args: Tuple of arguments that appeared after a standalone '--'
+        extra_args: Tuple of arguments that appeared after a standalone `--`
             delimiter. These are preserved as-is for custom handling.
-        subcommand: Nested ParseResult for a subcommand invocation, or None
-            if no subcommand was specified.
+        subcommand: Nested [`ParseResult`][aclaf.parser.ParseResult] for a
+            subcommand invocation, or `None` if no subcommand was specified.
     """
 
     command: str
@@ -144,48 +144,51 @@ class BaseParser(ABC):
         """Initialize a parser with a command specification and configuration.
 
         Args:
-            spec: The CommandSpec defining the command structure, options,
-                positionals, and subcommands.
+            spec: The [`CommandSpec`][aclaf.parser.CommandSpec] defining the
+                command structure, options, positionals, and subcommands.
             allow_abbreviated_subcommands: Enable prefix matching for subcommand
-                names (e.g., 'sta' matches 'start'). Default: False.
+                names (e.g., `sta` matches `start`). Default: `False`.
             allow_abbreviated_options: Enable prefix matching for option names
-                (e.g., '--verb' matches '--verbose'). Default: False.
-            allow_equals_for_flags: Allow '--flag=value' syntax for flag options
-                that accept explicit true/false values. Default: False.
-            allow_aliases: Enable command and option aliases. Default: True.
-            allow_negative_numbers: Enable parsing of negative numbers (e.g., -1,
-                -3.14, -1e5). When enabled, arguments starting with '-' followed by
+                (e.g., `--verb` matches `--verbose`). Default: `False`.
+            allow_equals_for_flags: Allow `--flag=value` syntax for flag options
+                that accept explicit true/false values. Default: `False`.
+            allow_aliases: Enable command and option aliases. Default: `True`.
+            allow_negative_numbers: Enable parsing of negative numbers (e.g., `-1`,
+                `-3.14`, `-1e5`). When enabled, arguments starting with `-` followed by
                 a digit are treated as negative numbers if no matching short option
                 exists. Options take precedence over negative number interpretation.
-                Default: False.
+                Default: `False`.
             case_insensitive_flags: Ignore case when matching boolean flags.
-                Default: False.
+                Default: `False`.
             case_insensitive_options: Ignore case when matching option names.
-                Default: False.
+                Default: `False`.
             case_insensitive_subcommands: Ignore case when matching subcommand
-                names. Default: False.
+                names. Default: `False`.
             convert_underscores_to_dashes: Convert underscores to dashes in
-                option names during matching ('--foo_bar' matches '--foo-bar').
-                Default: True.
-            flatten_option_values: Global default for value flattening in COLLECT
-                mode. When True, values from multiple option occurrences are
-                flattened into a single tuple instead of nested tuples. Can be
-                overridden by CommandSpec.flatten_option_values or
-                OptionSpec.flatten_values. Default: False.
+                option names during matching (`--foo_bar` matches `--foo-bar`).
+                Default: `True`.
+            flatten_option_values: Global default for value flattening in
+                [`COLLECT`][aclaf.parser.AccumulationMode.COLLECT] mode. When
+                `True`, values from multiple option occurrences are flattened
+                into a single tuple instead of nested tuples. Can be overridden by
+                [`CommandSpec.flatten_option_values`][aclaf.parser.CommandSpec.flatten_option_values]
+                or
+                [`OptionSpec.flatten_values`][aclaf.parser.OptionSpec.flatten_values].
+                Default: `False`.
             minimum_abbreviation_length: Minimum characters required for
-                abbreviation matching. Default: 3.
+                abbreviation matching. Default: `3`.
             negative_number_pattern: Custom regex pattern for negative number
-                detection. If None, uses DEFAULT_NEGATIVE_NUMBER_PATTERN. Only
-                used when allow_negative_numbers is True. The pattern is validated
-                for safety (no ReDoS vulnerabilities). Default: None.
+                detection. If `None`, uses `DEFAULT_NEGATIVE_NUMBER_PATTERN`. Only
+                used when `allow_negative_numbers` is `True`. The pattern is validated
+                for safety (no ReDoS vulnerabilities). Default: `None`.
             strict_options_before_positionals: POSIX-style mode where options
                 must appear before positionals. After the first positional,
-                all remaining arguments are treated as positionals. Default: False
+                all remaining arguments are treated as positionals. Default: `False`
                 (GNU-style, options can appear anywhere).
-            truthy_flag_values: Custom values that set flags to True when using
-                '--flag=value' syntax. Default: None (uses builtin defaults).
-            falsey_flag_values: Custom values that set flags to False when using
-                '--flag=value' syntax. Default: None (uses builtin defaults).
+            truthy_flag_values: Custom values that set flags to `True` when using
+                `--flag=value` syntax. Default: `None` (uses builtin defaults).
+            falsey_flag_values: Custom values that set flags to `False` when using
+                `--flag=value` syntax. Default: `None` (uses builtin defaults).
         """
         self._spec: CommandSpec = spec
 
@@ -233,7 +236,7 @@ class BaseParser(ABC):
 
     @property
     def allow_equals_for_flags(self) -> bool:
-        """Whether '--flag=value' syntax is allowed for boolean flags."""
+        """Whether `--flag=value` syntax is allowed for boolean flags."""
         return self._allow_equals_for_flags
 
     @property
@@ -260,7 +263,7 @@ class BaseParser(ABC):
     def flatten_option_values(self) -> bool:
         """Global default for value flattening in COLLECT mode.
 
-        When True, values from multiple option occurrences are flattened into
+        When `True`, values from multiple option occurrences are flattened into
         a single tuple instead of nested tuples. Can be overridden per-command
         or per-option.
         """
@@ -278,12 +281,12 @@ class BaseParser(ABC):
 
     @property
     def truthy_flag_values(self) -> tuple[str, ...] | None:
-        """Custom values treated as True for flag options."""
+        """Custom values treated as `True` for flag options."""
         return self._truthy_flag_values
 
     @property
     def falsey_flag_values(self) -> tuple[str, ...] | None:
-        """Custom values treated as False for flag options."""
+        """Custom values treated as `False` for flag options."""
         return self._falsey_flag_values
 
     @property
@@ -335,14 +338,15 @@ class BaseParser(ABC):
         """Parse a sequence of command-line arguments.
 
         Args:
-            args: The arguments to parse, typically from sys.argv[1:].
+            args: The arguments to parse, typically from `sys.argv[1:]`.
 
         Returns:
-            A ParseResult containing the parsed command, options, positionals,
-            and any nested subcommand.
+            A [`ParseResult`][aclaf.parser.ParseResult] containing the parsed
+            command, options, positionals, and any nested subcommand.
 
         Raises:
-            ParseError: If the arguments cannot be parsed according to the
-                command specification and parser configuration.
+            [`ParseError`][aclaf.parser.ParseError]: If the arguments cannot
+            be parsed according to the command specification and parser
+            configuration.
         """
         ...

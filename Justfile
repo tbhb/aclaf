@@ -96,4 +96,4 @@ deploy-docs-pr number: (build-docs-pr number)
 
 # Develop the documentation site locally
 dev-docs:
-  uv run mkdocs serve
+  uv run mkdocs serve --livereload

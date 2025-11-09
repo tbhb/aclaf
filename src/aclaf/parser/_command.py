@@ -98,8 +98,8 @@ def _resolve_subcommand(  # noqa: PLR0913, PLR0911 - Configuration options, mult
     """Resolve a subcommand name to the matched name and specification.
 
     Returns:
-        A tuple of (matched_name, subcommand_spec) where matched_name is the
-        name that was actually used (could be an alias or abbreviation), or None
+        A tuple of `(matched_name, subcommand_spec)` where `matched_name` is the
+        name that was actually used (could be an alias or abbreviation), or `None`
         if no match found.
     """
     search_name = name.lower() if case_insensitive else name
@@ -165,7 +165,7 @@ def _all_option_names(
     case_insensitive: bool = False,
     convert_underscores: bool = False,
 ) -> dict[str, tuple[str, str]]:
-    """Build a mapping of option names to (canonical_name, option_spec_name).
+    """Build a mapping of option names to `(canonical_name, option_spec_name)`.
 
     Args:
         spec: The command specification
@@ -175,12 +175,12 @@ def _all_option_names(
             are normalized to use dashes for bidirectional equivalence.
 
     Returns:
-        A dictionary mapping search keys to tuples of (canonical_name,
-        option_spec_name). The search key is normalized according to the flags:
+        A dictionary mapping search keys to tuples of `(canonical_name,
+        option_spec_name)`. The search key is normalized according to the flags:
         first underscore-to-dash conversion (if enabled), then case normalization
-        (if enabled). The canonical_name is the original option name (e.g.,
-        "verbose", "no-verbose"). The option_spec_name is the name of the
-        OptionSpec (e.g., "verbose").
+        (if enabled). The `canonical_name` is the original option name (e.g.,
+        `verbose`, `no-verbose`). The `option_spec_name` is the name of the
+        [`OptionSpec`][aclaf.parser.OptionSpec] (e.g., `verbose`).
     """
     names: dict[str, tuple[str, str]] = {}
     for option in spec.options.values():
@@ -236,10 +236,10 @@ def _all_subcommand_names(
         case_insensitive: Whether to normalize names to lowercase for matching
 
     Returns:
-        A dictionary mapping search keys to tuples of (canonical_name,
-        subcommand_spec_name). The search key is lowercase if
-        case_insensitive=True, otherwise original case. Both canonical_name
-        and subcommand_spec_name are the same (the subcommand's name).
+        A dictionary mapping search keys to tuples of `(canonical_name,
+        subcommand_spec_name)`. The search key is lowercase if
+        `case_insensitive=True`, otherwise original case. Both `canonical_name`
+        and `subcommand_spec_name` are the same (the subcommand's name).
     """
     names: dict[str, tuple[str, str]] = {}
     for subcommand in spec.subcommands.values():
@@ -259,11 +259,12 @@ def _all_subcommand_names_and_aliases(
         case_insensitive: Whether to normalize names to lowercase for matching
 
     Returns:
-        A dictionary mapping search keys to tuples of (canonical_name,
-        subcommand_spec_name). The search key is lowercase if
-        case_insensitive=True, otherwise original case. The canonical_name
-        is the original name/alias used (e.g., "rm"). The subcommand_spec_name
-        is the name of the CommandSpec (e.g., "remove").
+        A dictionary mapping search keys to tuples of `(canonical_name,
+        subcommand_spec_name)`. The search key is lowercase if
+        `case_insensitive=True`, otherwise original case. The `canonical_name`
+        is the original name/alias used (e.g., `rm`). The `subcommand_spec_name`
+        is the name of the [`CommandSpec`][aclaf.parser.CommandSpec] (e.g.,
+        `remove`).
     """
     names: dict[str, tuple[str, str]] = {}
     for subcommand in spec.subcommands.values():
@@ -319,22 +320,23 @@ class CommandSpec:
             aliases: Alternative names for this command. Each alias must follow
                 the same naming rules as the command name.
             options: Option specifications for this command. Can be a single
-                OptionSpec, a dict mapping names to specs, a sequence of specs,
-                or None.
+                [`OptionSpec`][aclaf.parser.OptionSpec], a dict mapping names to
+                specs, a sequence of specs, or `None`.
             positionals: Positional argument specifications. Can be a single
-                PositionalSpec, a dict mapping names to specs, a sequence of
-                specs, or None.
+                [`PositionalSpec`][aclaf.parser.PositionalSpec], a dict mapping
+                names to specs, a sequence of specs, or `None`.
             subcommands: Nested subcommand specifications. Can be a single
-                CommandSpec, a dict mapping names to specs, a sequence of specs,
-                or None.
+                [`CommandSpec`][aclaf.parser.CommandSpec], a dict mapping names
+                to specs, a sequence of specs, or `None`.
             case_insensitive_aliases: Whether command and subcommand name
                 matching should be case-insensitive.
             case_insensitive_options: Whether option name matching should be
                 case-insensitive.
-            flatten_option_values: Default flatten_values setting for all options
-                in this command. Options can override with their own flatten_values.
-                If None, inherits from BaseParser.flatten_option_values.
-                Default: None.
+            flatten_option_values: Default `flatten_values` setting for all
+                options in this command. Options can override with their own
+                `flatten_values`. If `None`, inherits from
+                [`BaseParser.flatten_option_values`][aclaf.parser.BaseParser.flatten_option_values].
+                Default: `None`.
 
         Raises:
             ValueError: If the specification is invalid (e.g., duplicate names,
@@ -380,10 +382,11 @@ class CommandSpec:
 
     @property
     def flatten_option_values(self) -> bool | None:
-        """Default flatten_values setting for options in this command.
+        """Default `flatten_values` setting for options in this command.
 
-        When not None, serves as the default for all options that don't
-        explicitly set flatten_values. If None, inherits from BaseParser.
+        When not `None`, serves as the default for all options that don't
+        explicitly set `flatten_values`. If `None`, inherits from
+        [`BaseParser`][aclaf.parser.BaseParser].
         """
         return self._flatten_option_values
 
@@ -401,22 +404,24 @@ class CommandSpec:
         Args:
             name: The option name to resolve (without leading dashes).
             allow_abbreviations: Whether to allow prefix matching for option names.
-            case_insensitive: Whether to match case-insensitively. If None,
-                uses the spec's configured case_insensitive_options setting.
+            case_insensitive: Whether to match case-insensitively. If `None`,
+                uses the spec's configured `case_insensitive_options` setting.
             convert_underscores: Whether to convert underscores to dashes in the
                 input name before matching.
             minimum_abbreviation_length: Minimum length required for abbreviation
-                matching. Only enforced when allow_abbreviations is True.
+                matching. Only enforced when `allow_abbreviations` is `True`.
 
         Returns:
-            A tuple of (matched_name, option_spec) where matched_name is the
+            A tuple of `(matched_name, option_spec)` where `matched_name` is the
             exact option name that was matched (which may be an alias or
             abbreviation).
 
         Raises:
-            UnknownOptionError: If the option name doesn't match any option.
-            AmbiguousOptionError: If abbreviation matching is enabled and the
-                name matches multiple options.
+            [`UnknownOptionError`][aclaf.parser.UnknownOptionError]: If the
+                option name doesn't match any option.
+            [`AmbiguousOptionError`][aclaf.parser.AmbiguousOptionError]: If
+                abbreviation matching is enabled and the name matches multiple
+                options.
         """
         return _resolve_option(
             self,
@@ -446,19 +451,20 @@ class CommandSpec:
             name: The subcommand name to resolve.
             allow_aliases: Whether to match against subcommand aliases.
             allow_abbreviations: Whether to allow prefix matching for subcommand names.
-            case_insensitive: Whether to match case-insensitively. If None,
-                uses the spec's configured case_insensitive_aliases setting.
+            case_insensitive: Whether to match case-insensitively. If `None`,
+                uses the spec's configured `case_insensitive_aliases` setting.
             minimum_abbreviation_length: Minimum length required for abbreviation
-                matching. Only enforced when allow_abbreviations is True.
+                matching. Only enforced when `allow_abbreviations` is `True`.
 
         Returns:
-            A tuple of (matched_name, subcommand_spec) where matched_name is the
-            name that was actually used (could be an alias or abbreviation), or None
+            A tuple of `(matched_name, subcommand_spec)` where `matched_name` is the
+            name that was actually used (could be an alias or abbreviation), or `None`
             if no subcommand matches.
 
         Raises:
-            AmbiguousSubcommandError: If abbreviation matching is enabled and the
-                name matches multiple subcommands.
+            [`AmbiguousSubcommandError`][aclaf.parser.AmbiguousSubcommandError]:
+                If abbreviation matching is enabled and the name matches
+                multiple subcommands.
         """
         return _resolve_subcommand(
             self,

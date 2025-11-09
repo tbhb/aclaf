@@ -42,10 +42,13 @@ class SpecValidationError(AclafError):
     programming mistakes in the specification itself and should be caught
     during development and testing.
 
-    When Raised:
-        - During CommandSpec initialization with invalid parameters
-        - During OptionSpec initialization with conflicting configurations
-        - During PositionalSpec initialization with invalid arity settings
+    Info: When Raised
+        - During [`CommandSpec`][aclaf.parser.CommandSpec] initialization
+          with invalid parameters
+        - During [`OptionSpec`][aclaf.parser.OptionSpec] initialization with
+          conflicting configurations
+        - During [`PositionalSpec`][aclaf.parser.PositionalSpec]
+          initialization with invalid arity settings
         - When specification validation rules are violated
 
     Note:
@@ -53,7 +56,7 @@ class SpecValidationError(AclafError):
         specification validation errors are currently raised as ValueError
         by the specification classes for compatibility with Python conventions.
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec
         >>> try:
         ...     # Duplicate option names will raise validation error
@@ -77,7 +80,7 @@ class ParseError(AclafError):
     parsing errors uniformly while still providing specific exception
     types for detailed error handling.
 
-    When Raised:
+    Info: When Raised
         ParseError is never raised directly. Only its subclasses are raised
         during parsing, including:
         - Unknown option/subcommand errors
@@ -90,7 +93,7 @@ class ParseError(AclafError):
         during specification construction for invalid command configurations.
         ParseError is raised during runtime parsing of user-provided arguments.
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> from aclaf.parser.exceptions import ParseError, UnknownOptionError
         >>> spec = CommandSpec(name="myapp", options=[OptionSpec("verbose", short="v")])
@@ -113,14 +116,14 @@ class OptionError(ParseError):
 
     Attributes:
         name: The option name as provided by the user, without prefix
-            dashes (e.g., 'v' for -v, 'verbose' for --verbose).
+            dashes (e.g., `v` for `-v`, `verbose` for `--verbose`).
         option_spec: The option specification for reference.
 
     Note:
         OptionError is never raised directly. Only its subclasses are raised
         during option parsing.
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> from aclaf.parser.exceptions import OptionError
         >>> spec = CommandSpec(name="myapp", options=[OptionSpec("output", short="o")])
@@ -128,7 +131,7 @@ class OptionError(ParseError):
         >>> try:
         ...     result = parser.parse(["-o"])  # Missing value
         ... except OptionError as e:
-        ...     print(f"Option error for '{e.name}': {e}")
+        ...     print(f"Option error for {e.name!r}: {e}")
     """
 
     def __init__(self, name: str, option_spec: "OptionSpec") -> None:
@@ -146,16 +149,16 @@ class UnknownOptionError(ParseError):
 
     Attributes:
         name: The option name as provided by the user, without prefix dashes
-            (e.g., 'v' for -v, 'verbose' for --verbose).
+            (e.g., `v` for `-v`, `verbose` for `--verbose`).
         possible_names: Tuple of all valid option names for the command (useful
             for generating suggestions or implementing error recovery).
 
-    When Raised:
+    Info: When Raised
         - User provides an option not defined in the specification
         - Option name doesn't match when abbreviations are disabled
         - No valid abbreviation match when abbreviations are enabled
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> from aclaf.parser.exceptions import UnknownOptionError
         >>> spec = CommandSpec(
@@ -189,15 +192,18 @@ class OptionCannotBeSpecifiedMultipleTimesError(OptionError):
 
     Attributes:
         name: The option name as provided by the user, without prefix dashes
-            (e.g., 'o' for -o, 'output' for --output).
+            (e.g., `o` for `-o`, `output` for `--output`).
         option_spec: The option specification for reference.
 
-    When Raised:
-        - Option has AccumulationMode.ERROR (the default)
+    Info: When Raised
+        - Option has
+          [`AccumulationMode.ERROR`][aclaf.parser.AccumulationMode.ERROR]
+          (the default)
         - User specifies the same option multiple times
-        - Multiple specifications include aliases and different forms (short/long)
+        - Multiple specifications include aliases and different forms
+          (short/long)
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> from aclaf.parser.types import AccumulationMode
         >>> spec = CommandSpec(
@@ -215,7 +221,7 @@ class OptionCannotBeSpecifiedMultipleTimesError(OptionError):
         >>> try:
         ...     parser.parse(["--output", "file1.txt", "-o", "file2.txt"])
         ... except OptionCannotBeSpecifiedMultipleTimesError as e:
-        ...     print(f"Option {e.name} was already specified")
+        ...     print(f"Option {e.name!r} was already specified")
     """
 
     def __init__(self, name: str, option_spec: "OptionSpec") -> None:
@@ -237,15 +243,15 @@ class OptionDoesNotAcceptValueError(OptionError):
 
     Attributes:
         name: The option name as provided by the user, without prefix dashes
-            (e.g., 'enable' for --enable).
+            (e.g., `enable` for `--enable`).
         option_spec: The option specification for reference.
 
-    When Raised:
-        - Option has arity (0, 0) but is not a flag
-        - User provides a value using = syntax
+    Info: When Raised
+        - Option has arity `(0, 0)` but is not a flag
+        - User provides a value using `=` syntax
         - The option is designed to have no associated value
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> from aclaf.parser.types import Arity
         >>> spec = CommandSpec(
@@ -280,15 +286,15 @@ class FlagWithValueError(OptionError):
 
     Attributes:
         name: The flag option name as provided by the user, without prefix dashes
-            (e.g., 'v' for -v, 'verbose' for --verbose).
+            (e.g., `v` for `-v`, `verbose` for `--verbose`).
         option_spec: The option specification for the flag.
 
-    When Raised:
-        - Option is defined as a flag (is_flag=True)
-        - User provides value using --flag=value or -f value syntax
-        - Parser has allow_equals_for_flags=False (the default)
+    Info: When Raised
+        - Option is defined as a flag (`is_flag=True`)
+        - User provides value using `--flag=value` or `-f value` syntax
+        - Parser has `allow_equals_for_flags=False` (the default)
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> spec = CommandSpec(
         ...     name="myapp",
@@ -324,19 +330,19 @@ class InvalidFlagValueError(ParseError):
 
     Attributes:
         name: The flag option name as provided by the user, without prefix dashes
-            (e.g., 'v' for -v, 'verbose' for --verbose).
+            (e.g., `v` for `-v`, `verbose` for `--verbose`).
         value: The invalid value that was provided.
         option_spec: The option specification for the flag.
         true_values: Frozenset of valid truthy values.
         false_values: Frozenset of valid falsey values.
 
-    When Raised:
-        - Option is a flag and allow_equals_for_flags=True
-        - User provides a value using = syntax
-        - Value is not in truthy_flag_values or falsey_flag_values
+    Info: When Raised
+        - Option is a flag and `allow_equals_for_flags=True`
+        - User provides a value using `=` syntax
+        - Value is not in `truthy_flag_values` or `falsey_flag_values`
         - Empty string is provided as value
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> spec = CommandSpec(
         ...     name="myapp",
@@ -379,16 +385,16 @@ class InsufficientOptionValuesError(OptionError):
 
     Attributes:
         name: The option name as provided by the user, without prefix dashes
-            (e.g., 'dimensions' for --dimensions).
+            (e.g., `dimensions` for `--dimensions`).
         option_spec: The option specification for reference.
 
-    When Raised:
-        - Option has minimum arity > 0
+    Info: When Raised
+        - Option has minimum arity `> 0`
         - Not enough values are available after the option
         - Values are consumed by other options or subcommands
-        - Inline value provided but minimum arity > 1
+        - Inline value provided but minimum arity `> 1`
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> from aclaf.parser.types import Arity
         >>> spec = CommandSpec(
@@ -431,15 +437,15 @@ class AmbiguousOptionError(ParseError):
 
     Attributes:
         name: The ambiguous option name/prefix as provided by the user, without
-            prefix dashes (e.g., 'ver' for --ver).
+            prefix dashes (e.g., `ver` for `--ver`).
         candidates: Sorted tuple of all option names that match the prefix.
 
-    When Raised:
-        - Abbreviation matching is enabled (allow_abbreviated_options=True)
+    Info: When Raised
+        - Abbreviation matching is enabled (`allow_abbreviated_options=True`)
         - User provides a prefix that matches multiple option names
         - No single unique match can be determined
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> spec = CommandSpec(
         ...     name="myapp",
@@ -473,15 +479,15 @@ class AmbiguousSubcommandError(ParseError):
 
     Attributes:
         name: The ambiguous subcommand name/prefix as provided by the user
-            (e.g., 'in' for both 'install' and 'initialize').
+            (e.g., `in` for both `install` and `initialize`).
         candidates: Sorted tuple of all subcommand names that match the prefix.
 
-    When Raised:
-        - Abbreviation matching is enabled (allow_abbreviated_subcommands=True)
+    Info: When Raised
+        - Abbreviation matching is enabled (`allow_abbreviated_subcommands=True`)
         - User provides a prefix that matches multiple subcommand names
         - No single unique match can be determined
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, Parser
         >>> spec = CommandSpec(
         ...     name="myapp",
@@ -509,15 +515,15 @@ class UnknownSubcommandError(ParseError):
     """Exception raised when an unknown subcommand is encountered during parsing.
 
     Attributes:
-        name: The unknown subcommand name as provided by the user (e.g., 'merge').
+        name: The unknown subcommand name as provided by the user (e.g., `merge`).
         possible_names: Tuple of all valid subcommand names for the command.
 
-    When Raised:
+    Info: When Raised
         - User provides a subcommand not defined in the specification
         - Subcommand name doesn't match any defined subcommands or aliases
         - No valid abbreviation match when abbreviations are enabled
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, Parser
         >>> spec = CommandSpec(
         ...     name="git",
@@ -555,13 +561,13 @@ class InsufficientPositionalArgumentsError(ParseError):
         expected_min: The minimum number of values expected.
         received: The actual number of values received.
 
-    When Raised:
+    Info: When Raised
         - Positional argument has minimum arity > 0
         - Not enough arguments remain after parsing options
         - Arguments are consumed by other positional arguments
         - User provides fewer arguments than required
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, PositionalSpec, Parser
         >>> from aclaf.parser.types import Arity
         >>> spec = CommandSpec(
@@ -596,18 +602,18 @@ class UnexpectedPositionalArgumentError(ParseError):
         argument: The unexpected positional argument.
         command_name: The name of the command that doesn't accept positionals.
 
-    When Raised:
+    Info: When Raised
         - Command specification defines no positional arguments
         - User provides arguments that aren't options or subcommands
         - Arguments appear after all options have been parsed
 
     Note:
         When a command has no explicit positional argument specifications,
-        the parser creates an implicit positional spec named "args" with
-        unbounded arity (0, -1), so this exception is typically only raised
+        the parser creates an implicit positional spec named `args` with
+        unbounded arity `(0, -1)`, so this exception is typically only raised
         when the specification explicitly defines an empty positionals set.
 
-    Example:
+    Examples:
         >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
         >>> spec = CommandSpec(
         ...     name="status",
