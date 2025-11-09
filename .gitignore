@@ -367,3 +367,4 @@ site/
 *.dylib
 reviews/
 specs/
+temp/
