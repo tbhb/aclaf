@@ -68,7 +68,12 @@ update_changelog_on_bump = true
 pre_bump_hooks = ["uv sync --all-packages --all-groups --all-extras"]
 
 [tool.pytest.ini_options]
-addopts = ["--import-mode=importlib", "--tb", "short", "--ignore=tests/benchmarks"]
+addopts = [
+  "--import-mode=importlib",
+  "--tb",
+  "short",
+  "--ignore=tests/benchmarks",
+]
 pythonpath = ["src"]
 asyncio_mode = "auto"
 filterwarnings = ["error"]
@@ -157,13 +162,3 @@ ignore-variadic-names = true
 [tool.ruff.lint.per-file-ignores]
 "**/__main__.py" = ["D100"]
 "**/tests/**" = ["D", "PLR2004", "S101"]
-
-[tool.uv.sources]
-aclaf = { workspace = true }
-aclaf-contrib = { workspace = true }
-aclaf-core = { workspace = true }
-aclaf-dev = { workspace = true }
-aclaf-docs = { workspace = true }
-
-[tool.uv.workspace]
-members = ["packages/*"]
