@@ -58,3 +58,13 @@ repos:
     rev: e7d448ef7507c20fc4c88a95d0c448b848cd6127 # v1.7.8
     hooks:
       - id: actionlint
+
+  - repo: https://github.com/errata-ai/vale
+    rev: 27593b0e0e7eb8f0c2b7fae0d93fa1cfaabceb2f # v3.13.0
+    hooks:
+      - id: vale
+        name: vale sync
+        pass_filenames: false
+        args: [sync]
+      - id: vale
+        args: [--output=line, --minAlertLevel=warning]

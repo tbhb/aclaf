@@ -373,3 +373,11 @@ site/
 reviews/
 specs/
 temp/
+
+# Vale styles (downloaded packages, but keep our custom vocabularies)
+.vale/*
+!.vale/config/
+.vale/config/*
+!.vale/config/vocabularies/
+.vale/config/vocabularies/*
+!.vale/config/vocabularies/Aclaf/
