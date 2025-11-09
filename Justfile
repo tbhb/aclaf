@@ -48,12 +48,21 @@ lint: install
   uv run --frozen ruff check .
   uv run --frozen basedpyright
   pnpm exec biome check .
+
+# Lint documentation
+lint-docs: install
+  yamllint --strict mkdocs.yml
   pnpm exec markdownlint-cli2 "**/*.md"
   uv run --frozen djlint docs/.overrides
+  pnpm exec biome check docs/
 
 # Lint GitHub Actions workflows
 lint-actions: install
   actionlint
+
+vale:
+  vale sync
+  vale docs/
 
 # Run pre-commit hooks
 prek: install
