@@ -138,12 +138,8 @@ class Parser(BaseParser):
                             options[parsed_option.name] = parsed_option
                         position += 1 + consumed
                 case _:
-                    if subcommand_resolution := current_spec.resolve_subcommand(
-                        arg,
-                        allow_aliases=self.allow_aliases,
-                        allow_abbreviations=self.allow_abbreviated_subcommands,
-                        case_insensitive=self.case_insensitive_subcommands,
-                        minimum_abbreviation_length=self.minimum_abbreviation_length,
+                    if subcommand_resolution := self._resolve_subcommand(
+                        arg, current_spec
                     ):
                         matched_name, subcommand_spec = subcommand_resolution
                         subcommand_result = self._parse_argument_list(
@@ -196,6 +192,70 @@ class Parser(BaseParser):
             extra_args=tuple(trailing_args),
         )
 
+    def _resolve_subcommand(
+        self, arg: str, current_spec: "CommandSpec"
+    ) -> tuple[str, "CommandSpec"] | None:
+        """Resolve argument as a subcommand using parser configuration.
+
+        Args:
+            arg: The argument to resolve.
+            current_spec: Current command specification.
+
+        Returns:
+            Tuple of (matched_name, subcommand_spec) or None if no match.
+        """
+        return current_spec.resolve_subcommand(
+            arg,
+            allow_aliases=self.allow_aliases,
+            allow_abbreviations=self.allow_abbreviated_subcommands,
+            case_insensitive=self.case_insensitive_subcommands,
+            minimum_abbreviation_length=self.minimum_abbreviation_length,
+        )
+
+    def _resolve_long_option(
+        self, option_name: str, current_spec: "CommandSpec"
+    ) -> tuple[str, "OptionSpec"]:
+        """Resolve long option name using parser configuration.
+
+        Args:
+            option_name: The option name to resolve (without -- prefix).
+            current_spec: Current command specification.
+
+        Returns:
+            Tuple of (matched_name, option_spec).
+
+        Raises:
+            UnknownOptionError: If option cannot be resolved.
+        """
+        return current_spec.resolve_option(
+            option_name,
+            allow_abbreviations=self.allow_abbreviated_options,
+            case_insensitive=self.case_insensitive_options,
+            convert_underscores=self.convert_underscores_to_dashes,
+            minimum_abbreviation_length=self.minimum_abbreviation_length,
+        )
+
+    def _resolve_short_option(
+        self, option_char: str, current_spec: "CommandSpec"
+    ) -> tuple[str, "OptionSpec"]:
+        """Resolve short option character using parser configuration.
+
+        Args:
+            option_char: The single-character option to resolve.
+            current_spec: Current command specification.
+
+        Returns:
+            Tuple of (matched_name, option_spec).
+
+        Raises:
+            UnknownOptionError: If option cannot be resolved.
+        """
+        return current_spec.resolve_option(
+            option_char,
+            allow_abbreviations=self.allow_abbreviated_options,
+            case_insensitive=self.case_insensitive_flags,
+        )
+
     def _parse_long_option(  # noqa: PLR0912 - Complex long option parsing logic
         self,
         arg_without_dashes: str,
@@ -204,13 +264,7 @@ class Parser(BaseParser):
         options: MappingProxyType[str, ParsedOption],
     ) -> tuple[ParsedOption, int]:
         parts = arg_without_dashes.split("=", 1)
-        option_name, option_spec = current_spec.resolve_option(
-            parts[0],
-            allow_abbreviations=self.allow_abbreviated_options,
-            case_insensitive=self.case_insensitive_options,
-            convert_underscores=self.convert_underscores_to_dashes,
-            minimum_abbreviation_length=self.minimum_abbreviation_length,
-        )
+        option_name, option_spec = self._resolve_long_option(parts[0], current_spec)
         inline_value = parts[1] if len(parts) == 2 else None  # noqa: PLR2004
         parsed_option: ParsedOption
         consumed: int = 0
@@ -593,11 +647,7 @@ class Parser(BaseParser):
                 break
 
             try:
-                _, option_spec = current_spec.resolve_option(
-                    char,
-                    allow_abbreviations=self.allow_abbreviated_options,
-                    case_insensitive=self.case_insensitive_flags,
-                )
+                _, option_spec = self._resolve_short_option(char, current_spec)
             except UnknownOptionError:
                 if position == 0:
                     raise
@@ -675,11 +725,7 @@ class Parser(BaseParser):
                     else:
                         is_known_option = False
                         try:
-                            _ = current_spec.resolve_option(
-                                next_char,
-                                allow_abbreviations=self.allow_abbreviated_options,
-                                case_insensitive=self.case_insensitive_flags,
-                            )
+                            _ = self._resolve_short_option(next_char, current_spec)
                             is_known_option = True
                         except UnknownOptionError:
                             pass
@@ -823,13 +869,7 @@ class Parser(BaseParser):
                     # Stop consuming (potential option)
                     break
 
-            if current_spec.resolve_subcommand(
-                current_value,
-                allow_aliases=self.allow_aliases,
-                allow_abbreviations=self.allow_abbreviated_subcommands,
-                case_insensitive=self.case_insensitive_subcommands,
-                minimum_abbreviation_length=self.minimum_abbreviation_length,
-            ):
+            if self._resolve_subcommand(current_value, current_spec):
                 break
 
             # Check if consuming this value would violate positional requirements
@@ -845,13 +885,7 @@ class Parser(BaseParser):
                     )
                 ):
                     break
-                if current_spec.resolve_subcommand(
-                    arg,
-                    allow_aliases=self.allow_aliases,
-                    allow_abbreviations=self.allow_abbreviated_subcommands,
-                    case_insensitive=self.case_insensitive_subcommands,
-                    minimum_abbreviation_length=self.minimum_abbreviation_length,
-                ):
+                if self._resolve_subcommand(arg, current_spec):
                     break
                 remaining_after_consume += 1
 
