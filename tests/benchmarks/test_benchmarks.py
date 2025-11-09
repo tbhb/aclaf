@@ -74,6 +74,11 @@ See Also:
     - CI/CD integration: .github/workflows/benchmarks.yml (if exists)
 """
 
+# pyright: reportUnknownParameterType=false, reportUnknownVariableType=false
+# pyright: reportUnknownMemberType=false, reportUnknownArgumentType=false
+# pyright: reportMissingParameterType=false, reportUnusedCallResult=false
+# Note: Type checking disabled for benchmark fixtures which don't have type stubs
+
 import contextlib
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
