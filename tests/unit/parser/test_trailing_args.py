@@ -1,0 +1,401 @@
+"""Tests for trailing arguments (--) functionality.
+
+This module tests the parsing of trailing arguments that appear after the '--'
+separator, including interaction with options, positionals, and subcommands.
+"""
+
+from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
+from aclaf.parser.types import (
+    EXACTLY_ONE_ARITY,
+    ONE_OR_MORE_ARITY,
+    ZERO_ARITY,
+    ZERO_OR_MORE_ARITY,
+)
+
+
+class TestBasicTrailingArgs:
+    """Test basic trailing argument functionality."""
+
+    def test_double_dash_starts_trailing_args(self) -> None:
+        """Double dash starts trailing args section."""
+        args = ["--", "a", "b", "c"]
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+        result = parser.parse(args)
+        assert result.extra_args == ("a", "b", "c")
+
+    def test_empty_trailing_args(self):
+        """Double dash at end with no trailing args."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        result = parser.parse(["--"])
+        assert result.extra_args == ()
+
+    def test_no_trailing_args(self):
+        """No trailing args when no -- present."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        result = parser.parse([])
+        assert result.extra_args == ()
+
+    def test_single_trailing_arg(self):
+        """Single argument after --."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "arg"])
+        assert result.extra_args == ("arg",)
+
+    def test_many_trailing_args(self):
+        """Many arguments after --."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        args = ["--"] + [f"arg{i}" for i in range(100)]
+        result = parser.parse(args)
+        assert len(result.extra_args) == 100
+
+
+class TestTrailingArgsWithOptions:
+    """Test trailing args with options."""
+
+    def test_options_before_trailing_args(self):
+        """Options can appear before --."""
+        spec = CommandSpec(
+            "cmd",
+            options=[
+                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
+                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
+            ],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(
+            ["-v", "--output", "file.txt", "--", "trailing1", "trailing2"]
+        )
+        assert result.options["verbose"].value is True
+        assert result.options["output"].value == "file.txt"
+        assert result.extra_args == ("trailing1", "trailing2")
+
+    def test_option_like_args_after_double_dash(self):
+        """Option-like strings after -- are treated as trailing args."""
+        spec = CommandSpec(
+            "cmd",
+            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "-v", "--verbose", "--unknown"])
+        assert "verbose" not in result.options
+        assert result.extra_args == ("-v", "--verbose", "--unknown")
+
+    def test_options_after_double_dash_ignored(self):
+        """Options after -- are not parsed as options."""
+        spec = CommandSpec(
+            "cmd",
+            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "--verbose"])
+        assert "verbose" not in result.options
+        assert result.extra_args == ("--verbose",)
+
+    def test_short_options_after_double_dash(self):
+        """Short options after -- are treated as trailing args."""
+        spec = CommandSpec(
+            "cmd",
+            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "-v", "-abc"])
+        assert result.extra_args == ("-v", "-abc")
+
+
+class TestTrailingArgsWithPositionals:
+    """Test trailing args with positional arguments."""
+
+    def test_positionals_before_trailing_args(self):
+        """Positionals can appear before --."""
+        spec = CommandSpec(
+            "cmd",
+            positionals=[
+                PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
+                PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
+            ],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(["src.txt", "dst.txt", "--", "extra1", "extra2"])
+        assert result.positionals["source"].value == "src.txt"
+        assert result.positionals["dest"].value == "dst.txt"
+        assert result.extra_args == ("extra1", "extra2")
+
+    def test_optional_positionals_before_trailing_args(self):
+        """Optional positionals work with trailing args."""
+        spec = CommandSpec(
+            "cmd",
+            positionals=[PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)],
+        )
+        parser = Parser(spec)
+
+        result1 = parser.parse(["--", "trailing"])
+        assert result1.positionals["files"].value == ()
+        assert result1.extra_args == ("trailing",)
+
+        result2 = parser.parse(["file.txt", "--", "trailing"])
+        assert result2.positionals["files"].value == ("file.txt",)
+        assert result2.extra_args == ("trailing",)
+
+    def test_greedy_positionals_stop_at_double_dash(self):
+        """Unbounded positionals stop consuming at --."""
+        spec = CommandSpec(
+            "cmd",
+            positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(["file1.txt", "file2.txt", "--", "extra1", "extra2"])
+        assert result.positionals["files"].value == ("file1.txt", "file2.txt")
+        assert result.extra_args == ("extra1", "extra2")
+
+
+class TestTrailingArgsWithSubcommands:
+    """Test trailing args with subcommands."""
+
+    def test_trailing_args_in_parent_command(self):
+        """Trailing args work in parent command with subcommands."""
+        spec = CommandSpec(
+            "cmd",
+            subcommands=[CommandSpec("sub")],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "trailing"])
+        assert result.extra_args == ("trailing",)
+        assert result.subcommand is None
+
+    def test_trailing_args_in_subcommand(self):
+        """Trailing args work in subcommand context."""
+        spec = CommandSpec(
+            "cmd",
+            subcommands=[CommandSpec("sub")],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(["sub", "--", "trailing1", "trailing2"])
+        assert result.subcommand is not None
+        assert result.subcommand.command == "sub"
+        assert result.subcommand.extra_args == ("trailing1", "trailing2")
+
+    def test_subcommand_with_options_and_trailing_args(self):
+        """Subcommand can have options before trailing args."""
+        spec = CommandSpec(
+            "cmd",
+            subcommands=[
+                CommandSpec(
+                    "sub",
+                    options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+                ),
+            ],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(["sub", "-v", "--", "trailing"])
+        assert result.subcommand is not None
+        assert result.subcommand.options["verbose"].value is True
+        assert result.subcommand.extra_args == ("trailing",)
+
+    def test_parent_and_subcommand_trailing_args(self):
+        """Parent can't have trailing args if subcommand present."""
+        spec = CommandSpec(
+            "cmd",
+            subcommands=[CommandSpec("sub")],
+        )
+        parser = Parser(spec)
+
+        # The -- before subcommand name means subcommand won't be recognized
+        result = parser.parse(["--", "sub", "trailing"])
+        assert result.extra_args == ("sub", "trailing")
+        assert result.subcommand is None
+
+
+class TestTrailingArgsEdgeCases:
+    """Test edge cases with trailing args."""
+
+    def test_double_dash_as_first_argument(self):
+        """-- as first argument."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "arg"])
+        assert result.extra_args == ("arg",)
+
+    def test_multiple_double_dashes(self):
+        """Multiple -- in arguments (second is literal)."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "--", "arg"])
+        assert result.extra_args == ("--", "arg")
+
+    def test_double_dash_with_empty_strings(self):
+        """Empty strings in trailing args are preserved."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "", "arg", ""])
+        assert result.extra_args == ("", "arg", "")
+
+    def test_double_dash_with_special_characters(self):
+        """Special characters in trailing args are preserved."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        result = parser.parse(["--", "-", "--", "=", "*", "?", "$VAR"])
+        assert result.extra_args == ("-", "--", "=", "*", "?", "$VAR")
+
+    def test_trailing_args_with_spaces(self):
+        """Arguments with spaces are preserved (when properly quoted by shell)."""
+        spec = CommandSpec("cmd")
+        parser = Parser(spec)
+
+        # In real usage, the shell would handle quotes and pass separate args
+        # Here we simulate what the parser would see
+        result = parser.parse(["--", "arg with spaces"])
+        assert result.extra_args == ("arg with spaces",)
+
+
+class TestTrailingArgsWithMixedFeatures:
+    """Test trailing args with multiple features combined."""
+
+    def test_complex_command_with_everything(self):
+        """Options, positionals, subcommand, and trailing args together."""
+        spec = CommandSpec(
+            "cmd",
+            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            positionals=[PositionalSpec("input", arity=EXACTLY_ONE_ARITY)],
+            subcommands=[
+                CommandSpec(
+                    "process",
+                    options=[
+                        OptionSpec("threads", short=["t"], arity=EXACTLY_ONE_ARITY)
+                    ],
+                    positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+                ),
+            ],
+        )
+        parser = Parser(spec)
+
+        result = parser.parse(
+            [
+                "-v",
+                "config.yml",
+                "process",
+                "-t",
+                "4",
+                "file1.txt",
+                "file2.txt",
+                "--",
+                "extra1",
+                "extra2",
+            ]
+        )
+        assert result.options["verbose"].value is True
+        assert result.positionals["input"].value == "config.yml"
+        assert result.subcommand is not None
+        assert result.subcommand.command == "process"
+        assert result.subcommand.options["threads"].value == "4"
+        assert result.subcommand.positionals["files"].value == (
+            "file1.txt",
+            "file2.txt",
+        )
+        assert result.subcommand is not None
+        assert result.subcommand.extra_args == ("extra1", "extra2")
+
+    def test_posix_mode_with_trailing_args(self):
+        """POSIX strict mode works with trailing args."""
+        spec = CommandSpec(
+            "cmd",
+            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)],
+        )
+        parser = Parser(spec, strict_options_before_positionals=True)
+
+        result = parser.parse(["-v", "file.txt", "--", "-v"])
+        assert result.options["verbose"].value is True
+        assert result.positionals["file"].value == "file.txt"
+        assert result.extra_args == ("-v",)
+
+
+class TestTrailingArgsRealWorldExamples:
+    """Test real-world usage patterns with trailing args."""
+
+    def test_git_style_command(self):
+        """Git-style command with trailing args."""
+        spec = CommandSpec(
+            "git",
+            subcommands=[
+                CommandSpec(
+                    "grep",
+                    options=[OptionSpec("ignore-case", short=["i"], arity=ZERO_ARITY)],
+                    positionals=[PositionalSpec("pattern", arity=EXACTLY_ONE_ARITY)],
+                ),
+            ],
+        )
+        parser = Parser(spec)
+
+        # git grep -i pattern -- file1 file2
+        result = parser.parse(
+            ["grep", "-i", "TODO", "--", "src/file1.py", "src/file2.py"]
+        )
+        assert result.subcommand is not None
+        assert result.subcommand.command == "grep"
+        assert result.subcommand.options["ignore-case"].value is True
+        assert result.subcommand.positionals["pattern"].value == "TODO"
+        assert result.subcommand.extra_args == ("src/file1.py", "src/file2.py")
+
+    def test_docker_exec_style_command(self):
+        """Docker exec style with command after --."""
+        spec = CommandSpec(
+            "docker",
+            subcommands=[
+                CommandSpec(
+                    "exec",
+                    options=[
+                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
+                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
+                    ],
+                    positionals=[PositionalSpec("container", arity=EXACTLY_ONE_ARITY)],
+                ),
+            ],
+        )
+        parser = Parser(spec)
+
+        # docker exec -it container -- /bin/bash -c "echo hello"
+        result = parser.parse(
+            ["exec", "-it", "mycontainer", "--", "/bin/bash", "-c", "echo hello"]
+        )
+        assert result.subcommand is not None
+        assert result.subcommand.options["interactive"].value is True
+        assert result.subcommand.options["tty"].value is True
+        assert result.subcommand.positionals["container"].value == "mycontainer"
+        assert result.subcommand.extra_args == ("/bin/bash", "-c", "echo hello")
+
+    def test_find_exec_style_command(self):
+        """Find -exec style with command in trailing args."""
+        spec = CommandSpec(
+            "find",
+            positionals=[PositionalSpec("path", arity=EXACTLY_ONE_ARITY)],
+            options=[OptionSpec("name", arity=EXACTLY_ONE_ARITY)],
+        )
+        parser = Parser(spec)
+
+        # find . --name "*.txt" -- -exec rm {} \;
+        result = parser.parse([".", "--name", "*.txt", "--", "-exec", "rm", "{}", ";"])
+        assert result.positionals["path"].value == "."
+        assert result.options["name"].value == "*.txt"
+        assert result.extra_args == ("-exec", "rm", "{}", ";")
