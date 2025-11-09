@@ -133,7 +133,7 @@ class BaseParser(ABC):
         case_insensitive_flags: bool = False,
         case_insensitive_options: bool = False,
         case_insensitive_subcommands: bool = False,
-        convert_underscores_to_dashes: bool = False,
+        convert_underscores_to_dashes: bool = True,
         minimum_abbreviation_length: int = 3,
         negative_number_pattern: str | None = None,
         strict_options_before_positionals: bool = False,
@@ -165,7 +165,7 @@ class BaseParser(ABC):
                 names. Default: False.
             convert_underscores_to_dashes: Convert underscores to dashes in
                 option names during matching ('--foo_bar' matches '--foo-bar').
-                Default: False.
+                Default: True.
             minimum_abbreviation_length: Minimum characters required for
                 abbreviation matching. Default: 3.
             negative_number_pattern: Custom regex pattern for negative number

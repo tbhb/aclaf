@@ -33,7 +33,9 @@ def _resolve_option(  # noqa: PLR0913 - Configuration options for name resolutio
     convert_underscores: bool = False,
     minimum_abbreviation_length: int = 3,
 ) -> tuple[str, "OptionSpec"]:
-    names = _all_option_names(spec, case_insensitive=case_insensitive)
+    names = _all_option_names(
+        spec, case_insensitive=case_insensitive, convert_underscores=convert_underscores
+    )
     # Apply normalization: underscores to dashes, then case
     search_name = name.replace("_", "-") if convert_underscores else name
     search_name = search_name.lower() if case_insensitive else search_name
@@ -158,34 +160,54 @@ def _resolve_subcommand(  # noqa: PLR0913, PLR0911 - Configuration options, mult
 
 @cache
 def _all_option_names(
-    spec: "CommandSpec", *, case_insensitive: bool = False
+    spec: "CommandSpec",
+    *,
+    case_insensitive: bool = False,
+    convert_underscores: bool = False,
 ) -> dict[str, tuple[str, str]]:
     """Build a mapping of option names to (canonical_name, option_spec_name).
 
     Args:
         spec: The command specification
         case_insensitive: Whether to normalize names to lowercase for matching
+        convert_underscores: Whether to convert underscores to dashes in option
+            names during matching. When enabled, both spec names and user input
+            are normalized to use dashes for bidirectional equivalence.
 
     Returns:
         A dictionary mapping search keys to tuples of (canonical_name,
-        option_spec_name). The search key is lowercase if case_insensitive=True,
-        otherwise original case. The canonical_name is the original option name
-        (e.g., "verbose", "no-verbose"). The option_spec_name is the name of the
+        option_spec_name). The search key is normalized according to the flags:
+        first underscore-to-dash conversion (if enabled), then case normalization
+        (if enabled). The canonical_name is the original option name (e.g.,
+        "verbose", "no-verbose"). The option_spec_name is the name of the
         OptionSpec (e.g., "verbose").
     """
     names: dict[str, tuple[str, str]] = {}
     for option in spec.options.values():
         if option.long:
             if isinstance(option.long, str):
-                search_key = option.long.lower() if case_insensitive else option.long
+                # Apply normalization: underscores to dashes first, then case
+                normalized = (
+                    option.long.replace("_", "-")
+                    if convert_underscores
+                    else option.long
+                )
+                search_key = normalized.lower() if case_insensitive else normalized
                 names[search_key] = (option.long, option.name)
             else:
                 for long_name in option.long:
-                    search_key = long_name.lower() if case_insensitive else long_name
+                    # Apply normalization: underscores to dashes first, then case
+                    normalized = (
+                        long_name.replace("_", "-")
+                        if convert_underscores
+                        else long_name
+                    )
+                    search_key = normalized.lower() if case_insensitive else normalized
                     names[search_key] = (long_name, option.name)
                     if option.negation_words:
                         for negation_word in option.negation_words:
-                            negated_name = f"{negation_word}-{long_name}"
+                            # Build negated name from normalized base name
+                            negated_name = f"{negation_word}-{normalized}"
                             search_key = (
                                 negated_name.lower()
                                 if case_insensitive
