@@ -310,6 +310,230 @@ class _ShortOptionSpecParser:
         return is_known_option and has_previous_options and remaining_chars == 1
 
 
+class _SubcommandParsedError(Exception):
+    """Internal exception for early exit when subcommand is parsed.
+
+    This exception is used for control flow within the parser when a subcommand
+    is encountered. Since subcommand parsing is recursive and happens deep in
+    the call stack, this exception allows us to unwind and return the result
+    immediately without adding complex return value checking at each level.
+    """
+
+    result: "ParseResult"
+
+    def __init__(self, result: "ParseResult") -> None:
+        self.result = result
+        super().__init__()
+
+
+@final
+class _ParsingContext:
+    """Encapsulates state for parsing a single argument list.
+
+    This class manages all mutable state during argument parsing, providing
+    focused methods for each type of argument handling. By encapsulating the
+    state machine, we achieve:
+
+    - Clear separation of concerns (each method handles one argument type)
+    - Flat control flow (no deep nesting)
+    - Easier testing (can test classification logic independently)
+    - Better maintainability (adding new argument types is straightforward)
+
+    Note: This is an internal helper class that accesses Parser's protected
+    methods. This is intentional and safe since it's tightly coupled to Parser.
+    The reportPrivateUsage warnings are suppressed on individual method calls.
+    """
+
+    def __init__(
+        self,
+        args: "Sequence[str]",
+        root_spec: "CommandSpec",
+        command_path: "Sequence[str]",
+        parser: "Parser",
+    ) -> None:
+        self.args = args
+        self.root_spec = root_spec
+        self.command_path = command_path
+        self.parser = parser
+
+        # Mutable parsing state
+        self.current_spec = root_spec
+        self.position = 0
+        self.options: dict[str, ParsedOption] = {}
+        self.positionals: tuple[str, ...] = ()
+        self.positionals_started = False
+        self.trailing_mode = False
+        self.trailing_args: list[str] = []
+
+    def parse(self) -> "ParseResult":
+        """Parse all arguments and return result."""
+        while self.position < len(self.args):
+            self._parse_next_argument()
+
+        return self._build_result()
+
+    def _parse_next_argument(self) -> None:
+        """Parse the next argument based on current state."""
+        arg = self.args[self.position]
+
+        if self.trailing_mode:
+            self._handle_trailing_arg(arg)
+        elif arg == "--":
+            self._handle_double_dash()
+        elif arg.startswith("--"):
+            self._handle_long_option(arg)
+        elif arg.startswith("-") and arg != "-":
+            self._handle_short_option_or_negative(arg)
+        else:
+            self._handle_subcommand_or_positional(arg)
+
+    def _handle_trailing_arg(self, arg: str) -> None:
+        """Handle argument in trailing mode (after --)."""
+        self.trailing_args.append(arg)
+        self.position += 1
+
+    def _handle_double_dash(self) -> None:
+        """Handle -- separator (start trailing mode)."""
+        self.trailing_mode = True
+        self.position += 1
+
+    def _handle_long_option(self, arg: str) -> None:
+        """Handle long option like --option."""
+        # Check if should treat as positional
+        if self._should_treat_as_positional():
+            self.positionals += (arg,)
+            self.position += 1
+            return
+
+        # Parse as long option
+        parsed_option, consumed = self.parser._parse_long_option(  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+            arg[2:],
+            self.args[self.position + 1 :],
+            self.current_spec,
+            MappingProxyType(self.options),
+        )
+        self.options[parsed_option.name] = parsed_option
+        self.position += 1 + consumed
+
+    def _handle_short_option_or_negative(self, arg: str) -> None:
+        """Handle short option or negative number like -o or -5."""
+        # Check for negative number
+        if self._is_negative_number(arg):
+            self.positionals += (arg,)
+            self.position += 1
+            self.positionals_started = True
+            return
+
+        # Check if should treat as positional
+        if self._should_treat_as_positional():
+            self.positionals += (arg,)
+            self.position += 1
+            return
+
+        # Parse as short option(s)
+        parsed_options, consumed = self.parser._parse_short_options(  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+            arg[1:],
+            self.args[self.position + 1 :],
+            self.current_spec,
+            MappingProxyType(self.options),
+        )
+        for parsed_option in parsed_options:
+            self.options[parsed_option.name] = parsed_option
+        self.position += 1 + consumed
+
+    def _handle_subcommand_or_positional(self, arg: str) -> None:
+        """Handle potential subcommand or positional argument."""
+        # Try to resolve as subcommand
+        if subcommand_resolution := self._try_resolve_subcommand(arg):
+            self._handle_subcommand(subcommand_resolution)
+            return
+
+        # Check if unknown subcommand error should be raised
+        if self._should_raise_unknown_subcommand():
+            all_names = tuple(self.current_spec.subcommands.keys())
+            raise UnknownSubcommandError(arg, all_names)
+
+        # Treat as positional
+        self.positionals += (arg,)
+        self.position += 1
+        self.positionals_started = True
+
+    def _should_treat_as_positional(self) -> bool:
+        """Check if option-like arg should be treated as positional."""
+        # Strict mode: after positionals started, everything is positional
+        if self.positionals_started and self.parser._strict_options_before_positionals:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+            return True
+
+        # No options defined: everything is positional after first positional
+        return self.positionals_started and not self.current_spec.options
+
+    def _is_negative_number(self, arg: str) -> bool:
+        """Check if arg is a negative number in value context."""
+        return (
+            self.parser._allow_negative_numbers  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+            and self.parser._is_negative_number(arg)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+            and self.parser._in_value_consuming_context(self.current_spec)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        )
+
+    def _try_resolve_subcommand(self, arg: str) -> tuple[str, "CommandSpec"] | None:
+        """Try to resolve arg as a subcommand."""
+        return self.current_spec.resolve_subcommand(
+            arg,
+            allow_aliases=self.parser.allow_aliases,
+            allow_abbreviations=self.parser.allow_abbreviated_subcommands,
+            case_insensitive=self.parser.case_insensitive_subcommands,
+            minimum_abbreviation_length=self.parser.minimum_abbreviation_length,
+        )
+
+    def _should_raise_unknown_subcommand(self) -> bool:
+        """Check if unknown subcommand error should be raised."""
+        return (
+            bool(self.current_spec.subcommands)
+            and not self.positionals_started
+            and not self.current_spec.positionals
+        )
+
+    def _handle_subcommand(self, resolution: tuple[str, "CommandSpec"]) -> None:
+        """Handle a resolved subcommand (raises _SubcommandParsed to exit parsing)."""
+        matched_name, subcommand_spec = resolution
+
+        # Parse subcommand recursively
+        subcommand_result = self.parser._parse_argument_list(  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+            self.args[self.position + 1 :],
+            subcommand_spec,
+            command_path=(*self.command_path, subcommand_spec.name),
+        )
+
+        # Set alias if one was used
+        if matched_name != subcommand_spec.name:
+            subcommand_result = replace(subcommand_result, alias=matched_name)
+
+        # Build and return result (raises to exit parsing)
+        result = ParseResult(
+            command=self.current_spec.name,
+            options=self.options,
+            positionals=self.parser._group_positionals(  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+                self.positionals, self.current_spec
+            ),
+            extra_args=tuple(self.trailing_args),
+            subcommand=subcommand_result,
+        )
+
+        # Raise special exception to exit parsing early
+        raise _SubcommandParsedError(result)
+
+    def _build_result(self) -> "ParseResult":
+        """Build final parse result."""
+        return ParseResult(
+            command=self.current_spec.name,
+            options=self.options,
+            positionals=self.parser._group_positionals(  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+                self.positionals, self.current_spec
+            ),
+            extra_args=tuple(self.trailing_args),
+        )
+
+
 @final
 class Parser(BaseParser):
     """Concrete implementation of the command-line argument parser.
@@ -337,129 +561,41 @@ class Parser(BaseParser):
             args, self.spec, command_path=(self.spec.name,)
         )
 
-    def _parse_argument_list(  # noqa: PLR0912 - Complex argument parsing logic
+    def _parse_argument_list(
         self,
         args: "Sequence[str]",
         root_spec: "CommandSpec",
         command_path: "Sequence[str]",
     ) -> "ParseResult":
-        current_spec = root_spec
-        position = 0
-        options: dict[str, ParsedOption] = {}
-        positionals: tuple[str, ...] = ()
-        positionals_started = False
-        trailing_mode = False
-        trailing_args: list[str] = []
+        """Parse a list of command-line arguments.
 
-        while position < len(args):
-            arg = args[position]
+        This method creates a parsing context and delegates to it for the actual
+        parsing work. The context encapsulates all mutable state and provides
+        focused methods for each argument type.
 
-            match (arg, trailing_mode, positionals_started):
-                case (_, True, _):
-                    trailing_args.append(arg)
-                    position += 1
-                case ("--", False, _):
-                    trailing_mode = True
-                    position += 1
-                case (str() as opt, False, _) if opt.startswith("--"):
-                    # Treat as positional if:
-                    # - strict mode is enabled and positionals have started, OR
-                    # - positionals have started and no options are defined
-                    if (
-                        positionals_started and self._strict_options_before_positionals
-                    ) or (positionals_started and not current_spec.options):
-                        positionals += (arg,)
-                        position += 1
-                    else:
-                        parsed_option, consumed = self._parse_long_option(
-                            opt[2:],
-                            args[position + 1 :],
-                            current_spec,
-                            MappingProxyType(options),
-                        )
-                        options[parsed_option.name] = parsed_option
-                        position += 1 + consumed
-                case (str() as opt, False, _) if opt.startswith("-") and opt != "-":
-                    # Short option(s) or negative number
-                    # Check for negative number BEFORE processing as option
-                    if self._should_treat_as_negative_number(opt, current_spec):
-                        # Treat as positional value (negative number)
-                        positionals += (arg,)
-                        position += 1
-                        positionals_started = True
-                    # Treat as positional if:
-                    # - strict mode is enabled and positionals have started, OR
-                    # - positionals have started and no options are defined
-                    elif (
-                        positionals_started and self._strict_options_before_positionals
-                    ) or (positionals_started and not current_spec.options):
-                        positionals += (arg,)
-                        position += 1
-                    else:
-                        # Process as short option(s)
-                        parsed_options, consumed = self._parse_short_options(
-                            opt[1:],
-                            args[position + 1 :],
-                            current_spec,
-                            MappingProxyType(options),
-                        )
-                        for parsed_option in parsed_options:
-                            options[parsed_option.name] = parsed_option
-                        position += 1 + consumed
-                case _:
-                    if subcommand_resolution := self._resolve_subcommand(
-                        arg, current_spec
-                    ):
-                        matched_name, subcommand_spec = subcommand_resolution
-                        subcommand_result = self._parse_argument_list(
-                            args[position + 1 :],
-                            subcommand_spec,
-                            command_path=(*command_path, subcommand_spec.name),
-                        )
-                        # Determine if an alias was used
-                        alias_used = (
-                            matched_name
-                            if matched_name != subcommand_spec.name
-                            else None
-                        )
-                        # Set the alias on the subcommand result if one was used
-                        if alias_used:
-                            subcommand_result = replace(
-                                subcommand_result, alias=alias_used
-                            )
-                        return ParseResult(
-                            command=current_spec.name,
-                            options=options,
-                            positionals=self._group_positionals(
-                                positionals, current_spec
-                            ),
-                            extra_args=tuple(trailing_args),
-                            subcommand=subcommand_result,
-                        )
-                    # Check if this could be an unknown subcommand
-                    # Only raise error if:
-                    # 1. We have subcommands defined
-                    # 2. No positionals are defined (or all are optional)
-                    # 3. No positionals have been started yet
-                    if (
-                        current_spec.subcommands
-                        and not positionals_started
-                        and not current_spec.positionals
-                    ):
-                        # We have subcommands and no positionals defined,
-                        # so this must be an unknown subcommand
-                        all_subcommand_names = tuple(current_spec.subcommands.keys())
-                        raise UnknownSubcommandError(arg, all_subcommand_names)
-                    positionals += (arg,)
-                    position += 1
-                    positionals_started = True
+        Args:
+            args: The argument list to parse
+            root_spec: The command specification to parse against
+            command_path: The command path (for nested subcommands)
 
-        return ParseResult(
-            command=current_spec.name,
-            options=options,
-            positionals=self._group_positionals(positionals, current_spec),
-            extra_args=tuple(trailing_args),
-        )
+        Returns:
+            The parse result containing options, positionals, and subcommand
+
+        Raises:
+            UnknownOptionError: If an unknown option is encountered
+            UnknownSubcommandError: If an unknown subcommand is encountered
+            Various validation errors: If argument validation fails
+        """
+        try:
+            context = _ParsingContext(
+                args=args,
+                root_spec=root_spec,
+                command_path=command_path,
+                parser=self,
+            )
+            return context.parse()
+        except _SubcommandParsedError as e:
+            return e.result
 
     def _resolve_subcommand(
         self, arg: str, current_spec: "CommandSpec"
@@ -502,24 +638,6 @@ class Parser(BaseParser):
             case_insensitive=self.case_insensitive_options,
             convert_underscores=self.convert_underscores_to_dashes,
             minimum_abbreviation_length=self.minimum_abbreviation_length,
-        )
-
-    def _should_treat_as_negative_number(
-        self, arg: str, current_spec: "CommandSpec"
-    ) -> bool:
-        """Check if arg should be treated as a negative number.
-
-        Args:
-            arg: The argument to check.
-            current_spec: The current command specification.
-
-        Returns:
-            True if should be treated as negative number, False otherwise.
-        """
-        return (
-            self._allow_negative_numbers
-            and self._is_negative_number(arg)
-            and self._in_value_consuming_context(current_spec)
         )
 
     def _parse_long_option(  # noqa: PLR0912 - Complex long option parsing logic
