@@ -38,6 +38,279 @@ if TYPE_CHECKING:
 
 
 @final
+class _ShortOptionSpecParser:
+    """State machine for parsing combined short options.
+
+    This extracts the structure of a combined short option string like:
+    - -abc (three flags)
+    - -xvalue (option x with inline value)
+    - -o=val (option o with equals-delimited value)
+
+    The parser maintains parsing state and provides clean methods for each
+    state transition, making the complex character-by-character parsing logic
+    easier to understand and maintain.
+    """
+
+    def __init__(
+        self,
+        arg_without_dash: str,
+        current_spec: "CommandSpec",
+        allow_abbreviated_options: bool,  # noqa: FBT001 - Internal parser class
+        case_insensitive_flags: bool,  # noqa: FBT001 - Internal parser class
+        allow_equals_for_flags: bool,  # noqa: FBT001 - Internal parser class
+    ):
+        self.arg = arg_without_dash
+        self.spec = current_spec
+        self.allow_abbreviated = allow_abbreviated_options
+        self.case_insensitive = case_insensitive_flags
+        self.allow_equals = allow_equals_for_flags
+
+        # State tracking
+        self.position = 0
+        self.option_specs: list[tuple[str, OptionSpec]] = []
+        self.inline_value: str | None = None
+        self.inline_value_from_equals = False
+        self.last_option_spec: OptionSpec | None = None
+
+    def parse(self) -> tuple[list[tuple[str, "OptionSpec"]], str | None, bool]:
+        """Parse the short option string.
+
+        Returns:
+            Tuple of (option specs list, inline value if any, whether from =)
+        """
+        while self.position < len(self.arg) and self.inline_value is None:
+            self._parse_next_character()
+
+        return self.option_specs, self.inline_value, self.inline_value_from_equals
+
+    def _parse_next_character(self) -> None:
+        """Parse the next character in the option string."""
+        char = self.arg[self.position]
+
+        # Check for equals sign
+        if char == "=":
+            self._handle_equals_sign()
+            return
+
+        # Try to resolve as an option
+        try:
+            option_resolution = self._resolve_option(char)
+        except UnknownOptionError:
+            self._handle_unknown_option(char)
+            return
+
+        # Successfully resolved option
+        self._handle_resolved_option(char, option_resolution)
+
+    def _handle_equals_sign(self) -> None:
+        """Handle = character indicating start of inline value."""
+        self.position += 1
+        self.inline_value = self.arg[self.position :]
+        self.inline_value_from_equals = True
+
+    def _resolve_option(self, char: str) -> tuple[str, "OptionSpec"]:
+        """Resolve a character to an option spec.
+
+        Args:
+            char: Single character to resolve
+
+        Returns:
+            Tuple of (resolved option name, option spec)
+
+        Raises:
+            UnknownOptionError: If character doesn't resolve to known option
+        """
+        return self.spec.resolve_option(
+            char,
+            allow_abbreviations=self.allow_abbreviated,
+            case_insensitive=self.case_insensitive,
+        )
+
+    def _handle_unknown_option(self, char: str) -> None:
+        """Handle character that doesn't resolve to a known option.
+
+        This may indicate the start of an inline value.
+
+        Args:
+            char: Unknown character
+
+        Raises:
+            UnknownOptionError: If truly unknown option
+            OptionDoesNotAcceptValueError: If looks like value for zero-arity option
+        """
+        # If this is the first character, it's definitely unknown
+        if self.position == 0:
+            raise UnknownOptionError(
+                char,
+                tuple(self.spec.options.keys()),
+            )
+
+        # Check if previous option needs a value
+        if self._previous_option_needs_value():
+            self.inline_value = self.arg[self.position :]
+            return
+
+        # Check if this looks like an inline value attempt
+        if self._looks_like_inline_value_attempt():
+            # Previous option was ZERO_ARITY but user tried to provide value
+            # last_option_spec is guaranteed to be non-None in this code path
+            if self.last_option_spec is None:
+                msg = "Unexpected state: last_option_spec is None"
+                raise RuntimeError(msg)
+            raise OptionDoesNotAcceptValueError(
+                self.option_specs[-1][0],
+                self.last_option_spec,
+            ) from None
+
+        # Unknown option character
+        raise UnknownOptionError(
+            char,
+            tuple(self.spec.options.keys()),
+        )
+
+    def _previous_option_needs_value(self) -> bool:
+        """Check if the previous option requires a value."""
+        return bool(
+            self.last_option_spec
+            and self.last_option_spec.arity
+            and self.last_option_spec.arity.min > 0
+        )
+
+    def _looks_like_inline_value_attempt(self) -> bool:
+        """Check if remaining characters look like a value, not flags."""
+        if not self.last_option_spec:
+            return False
+
+        if self.last_option_spec.arity != ZERO_ARITY:
+            return False
+
+        remaining = len(self.arg) - self.position
+        min_chars_for_value = 2  # Need 2+ chars to look like value not flag
+
+        return remaining > min_chars_for_value
+
+    def _handle_resolved_option(
+        self, char: str, option_resolution: tuple[str, "OptionSpec"]
+    ) -> None:
+        """Handle a successfully resolved option character.
+
+        Args:
+            char: The character that was resolved
+            option_resolution: The (option_name, option_spec) tuple from resolution
+
+        Raises:
+            OptionDoesNotAcceptValueError: If zero-arity with = when not allowed
+            InsufficientOptionValuesError: If value-required with ambiguous char
+        """
+        _, option_spec = option_resolution
+
+        self.option_specs.append((char, option_spec))
+        self.last_option_spec = option_spec
+        self.position += 1
+
+        # Check for zero-arity option followed by =
+        if self._zero_arity_followed_by_equals(option_spec):
+            # This would be handled in _zero_arity_followed_by_equals
+            # Start inline value
+            self.inline_value = self.arg[self.position + 1 :]
+            self.inline_value_from_equals = True
+            return
+
+        # Check if this option requires values
+        if self._option_requires_values_and_has_remaining(option_spec):
+            self._handle_value_required_option()
+
+    def _zero_arity_followed_by_equals(self, option_spec: "OptionSpec") -> bool:
+        """Check if this is a zero-arity option followed by =.
+
+        Args:
+            option_spec: The option specification
+
+        Returns:
+            True if zero-arity followed by =
+
+        Raises:
+            OptionDoesNotAcceptValueError: If not allowed by configuration
+        """
+        if not (
+            option_spec.arity == ZERO_ARITY
+            and self.position < len(self.arg)
+            and self.arg[self.position] == "="
+        ):
+            return False
+
+        # Found zero-arity followed by =
+        # Check if this is allowed by configuration
+        if not self.allow_equals:
+            raise OptionDoesNotAcceptValueError(self.option_specs[-1][0], option_spec)
+
+        return True
+
+    def _option_requires_values_and_has_remaining(
+        self, option_spec: "OptionSpec"
+    ) -> bool:
+        """Check if option requires values and there are remaining characters."""
+        return (
+            not option_spec.is_flag
+            and option_spec.arity is not None
+            and option_spec.arity.min > 0
+            and self.position < len(self.arg)
+        )
+
+    def _handle_value_required_option(self) -> None:
+        """Handle an option that requires values with remaining characters.
+
+        Raises:
+            InsufficientOptionValuesError: If ambiguous single character remains
+        """
+        next_char = self.arg[self.position]
+
+        # Explicit = means inline value
+        if next_char == "=":
+            self.inline_value = self.arg[self.position + 1 :]
+            self.inline_value_from_equals = True
+            return
+
+        # Check if next char is a known option
+        is_known_option = self._is_known_option(next_char)
+
+        # If known option AND not first option AND only one char remaining
+        # -> error (insufficient values)
+        if self._is_ambiguous_single_char(is_known_option):
+            current_option_name = self.option_specs[-1][0]
+            current_option_spec = self.option_specs[-1][1]
+            raise InsufficientOptionValuesError(
+                current_option_name, current_option_spec
+            )
+
+        # Remaining characters are the inline value
+        self.inline_value = self.arg[self.position :]
+
+    def _is_known_option(self, char: str) -> bool:
+        """Check if a character resolves to a known option."""
+        try:
+            _ = self.spec.resolve_option(
+                char,
+                allow_abbreviations=self.allow_abbreviated,
+                case_insensitive=self.case_insensitive,
+            )
+        except UnknownOptionError:
+            return False
+        else:
+            return True
+
+    def _is_ambiguous_single_char(
+        self,
+        is_known_option: bool,  # noqa: FBT001 - Clear in context
+    ) -> bool:
+        """Check if remaining single char is ambiguous (flag vs value)."""
+        remaining_chars = len(self.arg) - self.position
+        has_previous_options = len(self.option_specs) > 1
+
+        return is_known_option and has_previous_options and remaining_chars == 1
+
+
+@final
 class Parser(BaseParser):
     """Concrete implementation of the command-line argument parser.
 
@@ -229,27 +502,6 @@ class Parser(BaseParser):
             case_insensitive=self.case_insensitive_options,
             convert_underscores=self.convert_underscores_to_dashes,
             minimum_abbreviation_length=self.minimum_abbreviation_length,
-        )
-
-    def _resolve_short_option(
-        self, option_char: str, current_spec: "CommandSpec"
-    ) -> tuple[str, "OptionSpec"]:
-        """Resolve short option character using parser configuration.
-
-        Args:
-            option_char: The single-character option to resolve.
-            current_spec: Current command specification.
-
-        Returns:
-            Tuple of (matched_name, option_spec).
-
-        Raises:
-            UnknownOptionError: If option cannot be resolved.
-        """
-        return current_spec.resolve_option(
-            option_char,
-            allow_abbreviations=self.allow_abbreviated_options,
-            case_insensitive=self.case_insensitive_flags,
         )
 
     def _should_treat_as_negative_number(
@@ -808,132 +1060,31 @@ class Parser(BaseParser):
 
         return tuple(accumulated_options)
 
-    def _extract_short_option_specs(  # noqa: PLR0912, PLR0915 - Complex short option extraction
+    def _extract_short_option_specs(
         self, arg_without_dash: str, current_spec: "CommandSpec"
     ) -> tuple[list[tuple[str, "OptionSpec"]], str | None, bool]:
-        option_specs: list[tuple[str, OptionSpec]] = []
-        position = 0
-        inline_value_started = False
-        inline_value_from_equals = False
-        last_option_spec: OptionSpec | None = None
+        """Extract short option specs from a combined short option string.
 
-        while position < len(arg_without_dash) and not inline_value_started:
-            char = arg_without_dash[position]
+        Examples:
+            -abc -> [a, b, c], None, False
+            -xvalue -> [x], "value", False
+            -o=val -> [o], "val", True
 
-            if char == "=":
-                position += 1
-                inline_value_started = True
-                inline_value_from_equals = True
-                break
+        Args:
+            arg_without_dash: Short option string without leading dash
+            current_spec: Current command specification
 
-            try:
-                _, option_spec = self._resolve_short_option(char, current_spec)
-            except UnknownOptionError:
-                if position == 0:
-                    raise
-                # Only treat as inline value if previous option needs a value
-                if (
-                    last_option_spec
-                    and last_option_spec.arity
-                    and last_option_spec.arity.min > 0
-                ):
-                    inline_value_started = True
-                else:
-                    # If previous option was ZERO_ARITY and there are MORE than
-                    # one character remaining, this looks like an inline value attempt
-                    # (e.g., -vfoo where foo is a value)
-                    # Raise OptionDoesNotAcceptValueError for better clarity
-                    # But if there's only 1-2 chars remaining, it looks like flags
-                    # (e.g., -vxf), so raise UnknownOptionError
-                    remaining = len(arg_without_dash) - position
-                    _min_chars_for_value = 2  # Minimum chars to treat as value not flag
-                    if (
-                        last_option_spec
-                        and last_option_spec.arity == ZERO_ARITY
-                        and remaining > _min_chars_for_value
-                    ):
-                        raise OptionDoesNotAcceptValueError(
-                            option_specs[-1][0], last_option_spec
-                        ) from None
-                    # Unknown option - raise UnknownOptionError
-                    raise
-            else:
-                option_specs.append((char, option_spec))
-                last_option_spec = option_spec
-                position += 1
-
-                # Check for ZERO_ARITY with = (error case when flag values not allowed)
-                # ZERO_ARITY options can be followed by more short options,
-                # but not by =value unless allow_equals_for_flags is enabled
-                if (
-                    option_spec.arity == ZERO_ARITY
-                    and position < len(arg_without_dash)
-                    and arg_without_dash[position] == "="
-                    and not self.allow_equals_for_flags
-                ):
-                    # ZERO_ARITY option cannot have inline values via =
-                    # (unless flag values allowed)
-                    raise OptionDoesNotAcceptValueError(char, option_spec)
-
-                # If ZERO_ARITY with = and flag values allowed,
-                # treat rest as inline value
-                if (
-                    option_spec.arity == ZERO_ARITY
-                    and position < len(arg_without_dash)
-                    and arg_without_dash[position] == "="
-                    and self.allow_equals_for_flags
-                ):
-                    inline_value_started = True
-                    inline_value_from_equals = True
-
-                # If this option requires values and there are more chars,
-                # treat the rest as inline value (but not for flags)
-                if (
-                    not option_spec.is_flag
-                    and option_spec.arity
-                    and option_spec.arity.min > 0
-                    and position < len(arg_without_dash)
-                ):
-                    # Check next character
-                    next_char = arg_without_dash[position]
-
-                    # If next char is '=', it's an explicit value separator - always OK
-                    if next_char == "=":
-                        inline_value_started = True
-                        inline_value_from_equals = True
-                    # Otherwise, check if next char is a known option
-                    else:
-                        is_known_option = False
-                        try:
-                            _ = self._resolve_short_option(next_char, current_spec)
-                            is_known_option = True
-                        except UnknownOptionError:
-                            pass
-
-                        # If next char is a known option AND this value option is not
-                        # at position 0 AND there's only one char remaining
-                        # (looks like a flag, not a value), error
-                        # Note: option_specs already includes the current option,
-                        # so > 1 means there were others before
-                        remaining_chars = len(arg_without_dash) - position
-                        if (
-                            is_known_option
-                            and len(option_specs) > 1
-                            and remaining_chars == 1
-                        ):
-                            raise InsufficientOptionValuesError(char, option_spec)
-
-                        # The remaining characters are treated as the inline value
-                        inline_value_started = True
-
-        inline_value: str | None = None
-        if inline_value_started:
-            # Skip leading = if present
-            if arg_without_dash[position : position + 1] == "=":
-                position += 1
-            inline_value = arg_without_dash[position:]
-
-        return option_specs, inline_value, inline_value_from_equals
+        Returns:
+            Tuple of (option specs list, inline value if any, whether from =)
+        """
+        parser = _ShortOptionSpecParser(
+            arg_without_dash=arg_without_dash,
+            current_spec=current_spec,
+            allow_abbreviated_options=self.allow_abbreviated_options,
+            case_insensitive_flags=self.case_insensitive_flags,
+            allow_equals_for_flags=self.allow_equals_for_flags,
+        )
+        return parser.parse()
 
     def _parse_flag_with_value(
         self,
