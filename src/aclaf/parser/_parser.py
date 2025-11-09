@@ -109,11 +109,7 @@ class Parser(BaseParser):
                 case (str() as opt, False, _) if opt.startswith("-") and opt != "-":
                     # Short option(s) or negative number
                     # Check for negative number BEFORE processing as option
-                    if (
-                        self._allow_negative_numbers
-                        and self._is_negative_number(opt)
-                        and self._in_value_consuming_context(current_spec)
-                    ):
+                    if self._should_treat_as_negative_number(opt, current_spec):
                         # Treat as positional value (negative number)
                         positionals += (arg,)
                         position += 1
@@ -254,6 +250,24 @@ class Parser(BaseParser):
             option_char,
             allow_abbreviations=self.allow_abbreviated_options,
             case_insensitive=self.case_insensitive_flags,
+        )
+
+    def _should_treat_as_negative_number(
+        self, arg: str, current_spec: "CommandSpec"
+    ) -> bool:
+        """Check if arg should be treated as a negative number.
+
+        Args:
+            arg: The argument to check.
+            current_spec: The current command specification.
+
+        Returns:
+            True if should be treated as negative number, False otherwise.
+        """
+        return (
+            self._allow_negative_numbers
+            and self._is_negative_number(arg)
+            and self._in_value_consuming_context(current_spec)
         )
 
     def _parse_long_option(  # noqa: PLR0912 - Complex long option parsing logic
@@ -860,8 +874,9 @@ class Parser(BaseParser):
             current_value = next_args[consumed]
             if current_value.startswith("-") and current_value != "-":
                 # If negative numbers enabled and matches pattern, consume as value
-                if self._allow_negative_numbers and self._is_negative_number(
-                    current_value
+                if (
+                    self._allow_negative_numbers
+                    and self._is_negative_number(current_value)
                 ):
                     # Continue to consume as value
                     pass
