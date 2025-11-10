@@ -1,10 +1,12 @@
-# Parser Exceptions
+# Parser exceptions
 
 --8<-- "internal.md"
 
-Exception types raised during parsing and specification validation. This page documents all exceptions that can be raised by the parser, including base exceptions (ParseError, SpecValidationError, OptionError) and specific exceptions for various parsing failures such as unknown options, invalid values, and arity violations.
+Exception types raised during parsing and specification validation. This page documents all exceptions that the parser raises, including base exceptions (`ParseError`, `SpecValidationError`, `OptionError`) and specific exceptions for parsing failures such as unknown options, invalid values, and arity violations.
 
-## Base Exceptions
+<!-- vale off -->
+
+## Base exceptions
 
 ::: aclaf.parser
     options:
@@ -15,7 +17,7 @@ Exception types raised during parsing and specification validation. This page do
       - SpecValidationError
       - OptionError
 
-## Option Exceptions
+## Option exceptions
 
 ::: aclaf.parser
     options:
@@ -30,7 +32,7 @@ Exception types raised during parsing and specification validation. This page do
       - InvalidFlagValueError
       - InsufficientOptionValuesError
 
-## Subcommand Exceptions
+## Exceptions for subcommands
 
 ::: aclaf.parser
     options:
@@ -40,7 +42,7 @@ Exception types raised during parsing and specification validation. This page do
       - UnknownSubcommandError
       - AmbiguousSubcommandError
 
-## Positional Exceptions
+## Exceptions for positionals
 
 ::: aclaf.parser
     options:
@@ -49,3 +51,5 @@ Exception types raised during parsing and specification validation. This page do
       members:
       - InsufficientPositionalArgumentsError
       - UnexpectedPositionalArgumentError
+
+<!-- vale on -->
