@@ -34,15 +34,19 @@ class TestKubectlGetCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_names", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_names": PositionalSpec(
+                            "resource_names", arity=ZERO_OR_MORE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -68,15 +72,19 @@ class TestKubectlGetCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_names", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_names": PositionalSpec(
+                            "resource_names", arity=ZERO_OR_MORE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -101,15 +109,19 @@ class TestKubectlGetCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_names", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_names": PositionalSpec(
+                            "resource_names", arity=ZERO_OR_MORE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -138,17 +150,21 @@ class TestKubectlGetCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    options=[
-                        OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY)
-                    ],
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+                    options={
+                        "output": OptionSpec(
+                            "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                        )
+                    },
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -173,17 +189,21 @@ class TestKubectlGetCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    options=[
-                        OptionSpec("watch", short=["w"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+                    options={
+                        "watch": OptionSpec(
+                            "watch", short=frozenset({"w"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -207,17 +227,21 @@ class TestKubectlGetCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    options=[
-                        OptionSpec("all-namespaces", short=["A"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+                    options={
+                        "all-namespaces": OptionSpec(
+                            "all-namespaces", short=frozenset({"A"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -249,15 +273,19 @@ class TestKubectlDescribeCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "describe": CommandSpec(
                     name="describe",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_name", arity=EXACTLY_ONE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_name": PositionalSpec(
+                            "resource_name", arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -283,15 +311,19 @@ class TestKubectlDescribeCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "describe": CommandSpec(
                     name="describe",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_name", arity=EXACTLY_ONE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_name": PositionalSpec(
+                            "resource_name", arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -320,15 +352,19 @@ class TestKubectlDeleteCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "delete": CommandSpec(
                     name="delete",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_names", arity=ONE_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_names": PositionalSpec(
+                            "resource_names", arity=ONE_OR_MORE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -354,15 +390,19 @@ class TestKubectlDeleteCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "delete": CommandSpec(
                     name="delete",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_names", arity=ONE_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_names": PositionalSpec(
+                            "resource_names", arity=ONE_OR_MORE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -385,15 +425,19 @@ class TestKubectlDeleteCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "delete": CommandSpec(
                     name="delete",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_names", arity=ONE_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_names": PositionalSpec(
+                            "resource_names", arity=ONE_OR_MORE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -422,19 +466,19 @@ class TestKubectlApplyCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "apply": CommandSpec(
                     name="apply",
-                    options=[
-                        OptionSpec(
+                    options={
+                        "filename": OptionSpec(
                             "filename",
-                            short=["f"],
+                            short=frozenset({"f"}),
                             arity=EXACTLY_ONE_ARITY,
                             accumulation_mode=AccumulationMode.COLLECT,
                         )
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -460,19 +504,19 @@ class TestKubectlApplyCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "apply": CommandSpec(
                     name="apply",
-                    options=[
-                        OptionSpec(
+                    options={
+                        "filename": OptionSpec(
                             "filename",
-                            short=["f"],
+                            short=frozenset({"f"}),
                             arity=EXACTLY_ONE_ARITY,
                             accumulation_mode=AccumulationMode.COLLECT,
                         )
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -502,12 +546,14 @@ class TestKubectlLogsCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "logs": CommandSpec(
                     name="logs",
-                    positionals=[PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)],
+                    positionals={
+                        "pod_name": PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -533,13 +579,19 @@ class TestKubectlLogsCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "logs": CommandSpec(
                     name="logs",
-                    options=[OptionSpec("follow", short=["f"], arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "follow": OptionSpec(
+                            "follow", short=frozenset({"f"}), arity=ZERO_ARITY
+                        )
+                    },
+                    positionals={
+                        "pod_name": PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -574,12 +626,14 @@ class TestKubectlExecCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "exec": CommandSpec(
                     name="exec",
-                    positionals=[PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)],
+                    positionals={
+                        "pod_name": PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -606,16 +660,22 @@ class TestKubectlExecCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "exec": CommandSpec(
                     name="exec",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "pod_name": PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -643,15 +703,19 @@ class TestKubectlExecCommand:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "exec": CommandSpec(
                     name="exec",
-                    options=[
-                        OptionSpec("container", short=["c"], arity=EXACTLY_ONE_ARITY),
-                    ],
-                    positionals=[PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "container": OptionSpec(
+                            "container", short=frozenset({"c"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
+                    positionals={
+                        "pod_name": PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -682,17 +746,21 @@ class TestKubectlGlobalFlags:
         """
         spec = CommandSpec(
             name="kubectl",
-            options=[
-                OptionSpec("namespace", short=["n"], arity=EXACTLY_ONE_ARITY),
-            ],
-            subcommands=[
-                CommandSpec(
-                    name="get",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+            options={
+                "namespace": OptionSpec(
+                    "namespace", short=frozenset({"n"}), arity=EXACTLY_ONE_ARITY
                 ),
-            ],
+            },
+            subcommands={
+                "get": CommandSpec(
+                    name="get",
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -723,17 +791,19 @@ class TestKubectlGlobalFlags:
         """
         spec = CommandSpec(
             name="kubectl",
-            options=[
-                OptionSpec("context", arity=EXACTLY_ONE_ARITY),
-            ],
-            subcommands=[
-                CommandSpec(
+            options={
+                "context": OptionSpec("context", arity=EXACTLY_ONE_ARITY),
+            },
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -759,17 +829,19 @@ class TestKubectlGlobalFlags:
         """
         spec = CommandSpec(
             name="kubectl",
-            options=[
-                OptionSpec("kubeconfig", arity=EXACTLY_ONE_ARITY),
-            ],
-            subcommands=[
-                CommandSpec(
+            options={
+                "kubeconfig": OptionSpec("kubeconfig", arity=EXACTLY_ONE_ARITY),
+            },
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -793,21 +865,27 @@ class TestKubectlGlobalFlags:
         """
         spec = CommandSpec(
             name="kubectl",
-            options=[
-                OptionSpec("namespace", short=["n"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("context", arity=EXACTLY_ONE_ARITY),
-            ],
-            subcommands=[
-                CommandSpec(
-                    name="get",
-                    options=[
-                        OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY)
-                    ],
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+            options={
+                "namespace": OptionSpec(
+                    "namespace", short=frozenset({"n"}), arity=EXACTLY_ONE_ARITY
                 ),
-            ],
+                "context": OptionSpec("context", arity=EXACTLY_ONE_ARITY),
+            },
+            subcommands={
+                "get": CommandSpec(
+                    name="get",
+                    options={
+                        "output": OptionSpec(
+                            "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                        )
+                    },
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -851,64 +929,98 @@ class TestComplexKubectlScenarios:
         """
         spec = CommandSpec(
             name="kubectl",
-            options=[
-                OptionSpec("namespace", short=["n"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("context", arity=EXACTLY_ONE_ARITY),
-                OptionSpec("kubeconfig", arity=EXACTLY_ONE_ARITY),
-            ],
-            subcommands=[
-                CommandSpec(
+            options={
+                "namespace": OptionSpec(
+                    "namespace", short=frozenset({"n"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "context": OptionSpec("context", arity=EXACTLY_ONE_ARITY),
+                "kubeconfig": OptionSpec("kubeconfig", arity=EXACTLY_ONE_ARITY),
+            },
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    options=[
-                        OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("watch", short=["w"], arity=ZERO_ARITY),
-                        OptionSpec("all-namespaces", short=["A"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_names", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    options={
+                        "output": OptionSpec(
+                            "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                        "watch": OptionSpec(
+                            "watch", short=frozenset({"w"}), arity=ZERO_ARITY
+                        ),
+                        "all-namespaces": OptionSpec(
+                            "all-namespaces", short=frozenset({"A"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_names": PositionalSpec(
+                            "resource_names", arity=ZERO_OR_MORE_ARITY
+                        ),
+                    },
                 ),
-                CommandSpec(
+                "describe": CommandSpec(
                     name="describe",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_name", arity=EXACTLY_ONE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_name": PositionalSpec(
+                            "resource_name", arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
                 ),
-                CommandSpec(
+                "delete": CommandSpec(
                     name="delete",
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("resource_names", arity=ONE_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "resource_names": PositionalSpec(
+                            "resource_names", arity=ONE_OR_MORE_ARITY
+                        ),
+                    },
                 ),
-                CommandSpec(
+                "apply": CommandSpec(
                     name="apply",
-                    options=[
-                        OptionSpec(
+                    options={
+                        "filename": OptionSpec(
                             "filename",
-                            short=["f"],
+                            short=frozenset({"f"}),
                             arity=EXACTLY_ONE_ARITY,
                             accumulation_mode=AccumulationMode.COLLECT,
                         )
-                    ],
+                    },
                 ),
-                CommandSpec(
+                "logs": CommandSpec(
                     name="logs",
-                    options=[OptionSpec("follow", short=["f"], arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "follow": OptionSpec(
+                            "follow", short=frozenset({"f"}), arity=ZERO_ARITY
+                        )
+                    },
+                    positionals={
+                        "pod_name": PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-                CommandSpec(
+                "exec": CommandSpec(
                     name="exec",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                        OptionSpec("container", short=["c"], arity=EXACTLY_ONE_ARITY),
-                    ],
-                    positionals=[PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                        "container": OptionSpec(
+                            "container", short=frozenset({"c"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
+                    positionals={
+                        "pod_name": PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -973,18 +1085,24 @@ class TestComplexKubectlScenarios:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "get": CommandSpec(
                     name="get",
-                    options=[
-                        OptionSpec("all-namespaces", short=["A"], arity=ZERO_ARITY),
-                        OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+                    options={
+                        "all-namespaces": OptionSpec(
+                            "all-namespaces", short=frozenset({"A"}), arity=ZERO_ARITY
+                        ),
+                        "output": OptionSpec(
+                            "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -1011,17 +1129,25 @@ class TestComplexKubectlScenarios:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "exec": CommandSpec(
                     name="exec",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                        OptionSpec("container", short=["c"], arity=EXACTLY_ONE_ARITY),
-                    ],
-                    positionals=[PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                        "container": OptionSpec(
+                            "container", short=frozenset({"c"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
+                    positionals={
+                        "pod_name": PositionalSpec("pod_name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -1063,21 +1189,29 @@ class TestComplexKubectlScenarios:
         """
         spec = CommandSpec(
             name="kubectl",
-            options=[
-                OptionSpec("namespace", short=["n"], arity=EXACTLY_ONE_ARITY),
-            ],
-            subcommands=[
-                CommandSpec(
-                    name="get",
-                    options=[
-                        OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("watch", short=["w"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("resource_type", arity=EXACTLY_ONE_ARITY)
-                    ],
+            options={
+                "namespace": OptionSpec(
+                    "namespace", short=frozenset({"n"}), arity=EXACTLY_ONE_ARITY
                 ),
-            ],
+            },
+            subcommands={
+                "get": CommandSpec(
+                    name="get",
+                    options={
+                        "output": OptionSpec(
+                            "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                        "watch": OptionSpec(
+                            "watch", short=frozenset({"w"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "resource_type": PositionalSpec(
+                            "resource_type", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
+                ),
+            },
         )
         parser = Parser(spec)
 

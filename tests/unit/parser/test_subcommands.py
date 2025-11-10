@@ -16,6 +16,7 @@ from aclaf.parser.types import (
     ONE_OR_MORE_ARITY,
     ZERO_ARITY,
     ZERO_OR_MORE_ARITY,
+    Arity,
 )
 
 
@@ -27,9 +28,9 @@ class TestBasicSubcommands:
         args = ["foo"]
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec("foo"),
-            ],
+            subcommands={
+                "foo": CommandSpec("foo"),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -40,11 +41,11 @@ class TestBasicSubcommands:
         """Multiple subcommands are recognized."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="stop"),
-                CommandSpec(name="status"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "stop": CommandSpec(name="stop"),
+                "status": CommandSpec(name="status"),
+            },
         )
         parser = Parser(spec)
 
@@ -64,7 +65,7 @@ class TestBasicSubcommands:
         """Parser works when no subcommand is provided."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec)
 
@@ -75,7 +76,7 @@ class TestBasicSubcommands:
         """Unknown subcommands raise UnknownSubcommandError."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec)
 
@@ -86,7 +87,7 @@ class TestBasicSubcommands:
         """Result includes subcommand name and alias info."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec)
 
@@ -104,12 +105,12 @@ class TestSubcommandOptions:
         args = ["--opt", "val1", "val2", "sub"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", arity=(1, 3)),
-            ],
-            subcommands=[
-                CommandSpec("sub"),
-            ],
+            options={
+                "opt": OptionSpec("opt", arity=Arity(1, 3)),
+            },
+            subcommands={
+                "sub": CommandSpec("sub"),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -121,13 +122,13 @@ class TestSubcommandOptions:
         """Each subcommand can have its own options."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt")],
-            subcommands=[
-                CommandSpec(
+            options={"opt": OptionSpec("opt")},
+            subcommands={
+                "sub": CommandSpec(
                     name="sub",
-                    options=[OptionSpec("opt")],
+                    options={"opt": OptionSpec("opt")},
                 ),
-            ],
+            },
         )
         args = ["--opt", "foo", "sub", "--opt", "bar"]
         parser = Parser(spec)
@@ -141,14 +142,16 @@ class TestSubcommandOptions:
         """Subcommand can have options not in parent."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "build": CommandSpec(
                     name="build",
-                    options=[
-                        OptionSpec("threads", short=["t"], arity=EXACTLY_ONE_ARITY)
-                    ],
+                    options={
+                        "threads": OptionSpec(
+                            "threads", short=frozenset({"t"}), arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -161,13 +164,21 @@ class TestSubcommandOptions:
         """Parent options can appear before subcommand."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            subcommands=[
-                CommandSpec(
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            subcommands={
+                "start": CommandSpec(
                     name="start",
-                    options=[OptionSpec("force", short=["f"], arity=ZERO_ARITY)],
+                    options={
+                        "force": OptionSpec(
+                            "force", short=frozenset({"f"}), arity=ZERO_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -181,13 +192,21 @@ class TestSubcommandOptions:
         """Subcommand options don't leak to parent."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            subcommands=[
-                CommandSpec(
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            subcommands={
+                "start": CommandSpec(
                     name="start",
-                    options=[OptionSpec("force", short=["f"], arity=ZERO_ARITY)],
+                    options={
+                        "force": OptionSpec(
+                            "force", short=frozenset({"f"}), arity=ZERO_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -204,12 +223,14 @@ class TestSubcommandPositionals:
         """Subcommands can have positional arguments."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "add": CommandSpec(
                     name="add",
-                    positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+                    positionals={
+                        "files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -225,13 +246,15 @@ class TestSubcommandPositionals:
         """Both parent and subcommand can have positionals."""
         spec = CommandSpec(
             name="cmd",
-            positionals=[PositionalSpec("config", arity=EXACTLY_ONE_ARITY)],
-            subcommands=[
-                CommandSpec(
+            positionals={"config": PositionalSpec("config", arity=EXACTLY_ONE_ARITY)},
+            subcommands={
+                "process": CommandSpec(
                     name="process",
-                    positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+                    positionals={
+                        "files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -248,12 +271,14 @@ class TestSubcommandPositionals:
         """Subcommands can have optional positionals."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "list": CommandSpec(
                     name="list",
-                    positionals=[PositionalSpec("pattern", arity=ZERO_OR_MORE_ARITY)],
+                    positionals={
+                        "pattern": PositionalSpec("pattern", arity=ZERO_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -273,15 +298,15 @@ class TestNestedSubcommands:
         """Two levels of subcommands work."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "remote": CommandSpec(
                     name="remote",
-                    subcommands=[
-                        CommandSpec(name="add"),
-                        CommandSpec(name="remove"),
-                    ],
+                    subcommands={
+                        "add": CommandSpec(name="add"),
+                        "remove": CommandSpec(name="remove"),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -296,19 +321,19 @@ class TestNestedSubcommands:
         """Three levels of subcommands work."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "level1": CommandSpec(
                     name="level1",
-                    subcommands=[
-                        CommandSpec(
+                    subcommands={
+                        "level2": CommandSpec(
                             name="level2",
-                            subcommands=[
-                                CommandSpec(name="level3"),
-                            ],
+                            subcommands={
+                                "level3": CommandSpec(name="level3"),
+                            },
                         ),
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -325,21 +350,31 @@ class TestNestedSubcommands:
         """Nested subcommands can have options at each level."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            subcommands=[
-                CommandSpec(
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            subcommands={
+                "remote": CommandSpec(
                     name="remote",
-                    options=[OptionSpec("all", short=["a"], arity=ZERO_ARITY)],
-                    subcommands=[
-                        CommandSpec(
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        )
+                    },
+                    subcommands={
+                        "add": CommandSpec(
                             name="add",
-                            options=[
-                                OptionSpec("fetch", short=["f"], arity=ZERO_ARITY)
-                            ],
+                            options={
+                                "fetch": OptionSpec(
+                                    "fetch", short=frozenset({"f"}), arity=ZERO_ARITY
+                                )
+                            },
                         ),
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -358,21 +393,25 @@ class TestNestedSubcommands:
         """Nested subcommands can have positionals at each level."""
         spec = CommandSpec(
             name="cmd",
-            positionals=[PositionalSpec("repo", arity=EXACTLY_ONE_ARITY)],
-            subcommands=[
-                CommandSpec(
+            positionals={"repo": PositionalSpec("repo", arity=EXACTLY_ONE_ARITY)},
+            subcommands={
+                "branch": CommandSpec(
                     name="branch",
-                    positionals=[PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)],
-                    subcommands=[
-                        CommandSpec(
+                    positionals={
+                        "name": PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)
+                    },
+                    subcommands={
+                        "delete": CommandSpec(
                             name="delete",
-                            positionals=[
-                                PositionalSpec("branches", arity=ONE_OR_MORE_ARITY)
-                            ],
+                            positionals={
+                                "branches": PositionalSpec(
+                                    "branches", arity=ONE_OR_MORE_ARITY
+                                )
+                            },
                         ),
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -398,7 +437,9 @@ class TestSubcommandAliases:
         """Single alias works."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -411,16 +452,12 @@ class TestSubcommandAliases:
         """Multiple aliases work."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "remove": CommandSpec(
                     name="remove",
-                    aliases=(
-                        "rm",
-                        "del",
-                        "delete",
-                    ),
+                    aliases=frozenset({"rm", "del", "delete"}),
                 )
-            ],
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -434,7 +471,9 @@ class TestSubcommandAliases:
         """Both alias and primary name work."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -452,15 +491,15 @@ class TestSubcommandAliases:
         """Aliases work for nested subcommands."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "remote": CommandSpec(
                     name="remote",
-                    aliases=("r",),
-                    subcommands=[
-                        CommandSpec(name="add", aliases=("a",)),
-                    ],
+                    aliases=frozenset({"r"}),
+                    subcommands={
+                        "add": CommandSpec(name="add", aliases=frozenset({"a"})),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -482,10 +521,10 @@ class TestSubcommandAbbreviations:
         """Unambiguous abbreviations work."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="remove"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "remove": CommandSpec(name="remove"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -501,11 +540,11 @@ class TestSubcommandAbbreviations:
         """Ambiguous abbreviations raise error."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="stop"),
-                CommandSpec(name="status"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "stop": CommandSpec(name="stop"),
+                "status": CommandSpec(name="status"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -519,15 +558,12 @@ class TestSubcommandAbbreviations:
         """Abbreviations work with aliases."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "remove": CommandSpec(
                     name="remove",
-                    aliases=(
-                        "rm",
-                        "delete",
-                    ),
+                    aliases=frozenset({"rm", "delete"}),
                 )
-            ],
+            },
         )
         parser = Parser(
             spec,
@@ -549,15 +585,15 @@ class TestSubcommandAbbreviations:
         """Abbreviations work at all nesting levels."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "remote": CommandSpec(
                     name="remote",
-                    subcommands=[
-                        CommandSpec(name="add"),
-                        CommandSpec(name="remove"),
-                    ],
+                    subcommands={
+                        "add": CommandSpec(name="add"),
+                        "remove": CommandSpec(name="remove"),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -576,7 +612,7 @@ class TestSubcommandCaseInsensitive:
         """Case-insensitive matching works."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec, case_insensitive_subcommands=True)
 
@@ -588,7 +624,9 @@ class TestSubcommandCaseInsensitive:
         """Case-insensitive matching works with aliases."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(
             spec,
@@ -612,32 +650,42 @@ class TestComplexSubcommandScenarios:
         """Git-like command structure works."""
         spec = CommandSpec(
             name="git",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            subcommands=[
-                CommandSpec(
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            subcommands={
+                "commit": CommandSpec(
                     name="commit",
-                    options=[
-                        OptionSpec("message", short=["m"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("all", short=["a"], arity=ZERO_ARITY),
-                    ],
-                ),
-                CommandSpec(
-                    name="branch",
-                    positionals=[PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)],
-                ),
-                CommandSpec(
-                    name="remote",
-                    subcommands=[
-                        CommandSpec(
-                            name="add",
-                            positionals=[
-                                PositionalSpec("name", arity=EXACTLY_ONE_ARITY),
-                                PositionalSpec("url", arity=EXACTLY_ONE_ARITY),
-                            ],
+                    options={
+                        "message": OptionSpec(
+                            "message", short=frozenset({"m"}), arity=EXACTLY_ONE_ARITY
                         ),
-                    ],
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        ),
+                    },
                 ),
-            ],
+                "branch": CommandSpec(
+                    name="branch",
+                    positionals={
+                        "name": PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)
+                    },
+                ),
+                "remote": CommandSpec(
+                    name="remote",
+                    subcommands={
+                        "add": CommandSpec(
+                            name="add",
+                            positionals={
+                                "name": PositionalSpec("name", arity=EXACTLY_ONE_ARITY),
+                                "url": PositionalSpec("url", arity=EXACTLY_ONE_ARITY),
+                            },
+                        ),
+                    },
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -671,24 +719,32 @@ class TestComplexSubcommandScenarios:
         """Docker-like command structure works."""
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                        OptionSpec("rm", arity=ZERO_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                        "rm": OptionSpec("rm", arity=ZERO_ARITY),
+                    },
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
+                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
+                    },
                 ),
-                CommandSpec(
+                "ps": CommandSpec(
                     name="ps",
-                    options=[OptionSpec("all", short=["a"], arity=ZERO_ARITY)],
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 

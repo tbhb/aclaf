@@ -32,10 +32,12 @@ class TestBasicCombinedFlags:
         """Two flags can be combined."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("quiet", short=["q"], arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "quiet": OptionSpec("quiet", short=frozenset({"q"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -47,11 +49,13 @@ class TestBasicCombinedFlags:
         """Three flags can be combined."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("quiet", short=["q"], arity=ZERO_ARITY),
-                OptionSpec("force", short=["f"], arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "quiet": OptionSpec("quiet", short=frozenset({"q"}), arity=ZERO_ARITY),
+                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -64,13 +68,13 @@ class TestBasicCombinedFlags:
         """Many flags can be combined."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", short=["a"], arity=ZERO_ARITY),
-                OptionSpec("b", short=["b"], arity=ZERO_ARITY),
-                OptionSpec("c", short=["c"], arity=ZERO_ARITY),
-                OptionSpec("d", short=["d"], arity=ZERO_ARITY),
-                OptionSpec("e", short=["e"], arity=ZERO_ARITY),
-            ],
+            options={
+                "a": OptionSpec("a", short=frozenset({"a"}), arity=ZERO_ARITY),
+                "b": OptionSpec("b", short=frozenset({"b"}), arity=ZERO_ARITY),
+                "c": OptionSpec("c", short=frozenset({"c"}), arity=ZERO_ARITY),
+                "d": OptionSpec("d", short=frozenset({"d"}), arity=ZERO_ARITY),
+                "e": OptionSpec("e", short=frozenset({"e"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -82,10 +86,12 @@ class TestBasicCombinedFlags:
         """Order of combined flags doesn't matter."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("force", short=["f"], arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -105,10 +111,14 @@ class TestCombinedFlagsWithValues:
         """Combined flags with value in next argument."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -120,10 +130,14 @@ class TestCombinedFlagsWithValues:
         """Combined flags with value using equals syntax."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -135,10 +149,14 @@ class TestCombinedFlagsWithValues:
         """Combined flags with inline value (no space/equals)."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -150,11 +168,15 @@ class TestCombinedFlagsWithValues:
         """Multiple flags can precede a value-accepting option."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("force", short=["f"], arity=ZERO_ARITY),
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -167,10 +189,14 @@ class TestCombinedFlagsWithValues:
         """Value-accepting option must be last in combination."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-            ],
+            options={
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -187,10 +213,14 @@ class TestCombinedFlagsWithMultipleValues:
         """Combined flags with one-or-more arity."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("files", short=["f"], arity=ONE_OR_MORE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "files": OptionSpec(
+                    "files", short=frozenset({"f"}), arity=ONE_OR_MORE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -202,10 +232,14 @@ class TestCombinedFlagsWithMultipleValues:
         """Combined flags with inline start of multiple values."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("files", short=["f"], arity=ONE_OR_MORE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "files": OptionSpec(
+                    "files", short=frozenset({"f"}), arity=ONE_OR_MORE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -221,7 +255,11 @@ class TestCombinedFlagsErrorCases:
         """Unknown flag in combination raises error."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -234,7 +272,11 @@ class TestCombinedFlagsErrorCases:
         """Unknown flag at start of combination raises error."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -245,10 +287,12 @@ class TestCombinedFlagsErrorCases:
         """Unknown flag in middle of combination raises error."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("force", short=["f"], arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -259,10 +303,14 @@ class TestCombinedFlagsErrorCases:
         """Insufficient values for combined option raises error."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -277,12 +325,17 @@ class TestCombinedFlagsWithConstValues:
         """Combined flags with const_value option."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec(
-                    "log-level", short=["l"], arity=ZERO_ARITY, const_value="debug"
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
                 ),
-            ],
+                "log-level": OptionSpec(
+                    "log-level",
+                    short=frozenset({"l"}),
+                    arity=ZERO_ARITY,
+                    const_value="debug",
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -294,11 +347,15 @@ class TestCombinedFlagsWithConstValues:
         """Const value option works as last in combination."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("force", short=["f"], arity=ZERO_ARITY),
-                OptionSpec("mode", short=["m"], arity=ZERO_ARITY, const_value="fast"),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
+                "mode": OptionSpec(
+                    "mode", short=frozenset({"m"}), arity=ZERO_ARITY, const_value="fast"
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -315,14 +372,14 @@ class TestCombinedFlagsWithNegation:
         """Negation words don't work in short form combinations."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
-                    negation_words=["no"],
+                    negation_words=frozenset({"no"}),
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -339,15 +396,15 @@ class TestCombinedFlagsWithAccumulation:
         """Combined flags with COLLECT accumulation."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COLLECT,
                 ),
-                OptionSpec("force", short=["f"], arity=ZERO_ARITY),
-            ],
+                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -359,14 +416,14 @@ class TestCombinedFlagsWithAccumulation:
         """Combined flags with COUNT accumulation."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -377,14 +434,14 @@ class TestCombinedFlagsWithAccumulation:
         """Count accumulation works with mix of combined and separate."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -399,10 +456,12 @@ class TestCombinedFlagsWithFlagValues:
         """Combined flags with equals value at end."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("debug", short=["d"], arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "debug": OptionSpec("debug", short=frozenset({"d"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -414,10 +473,12 @@ class TestCombinedFlagsWithFlagValues:
         """Combined flags ending with equals is invalid without value."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("debug", short=["d"], arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "debug": OptionSpec("debug", short=frozenset({"d"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -432,12 +493,14 @@ class TestComplexCombinedScenarios:
         """Multiple flag combinations in one command."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("force", short=["f"], arity=ZERO_ARITY),
-                OptionSpec("quiet", short=["q"], arity=ZERO_ARITY),
-                OptionSpec("debug", short=["d"], arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
+                "quiet": OptionSpec("quiet", short=frozenset({"q"}), arity=ZERO_ARITY),
+                "debug": OptionSpec("debug", short=frozenset({"d"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -451,13 +514,21 @@ class TestComplexCombinedScenarios:
         """Combined flags work with options and positionals."""
         spec = CommandSpec(
             name="tar",
-            options=[
-                OptionSpec("create", short=["c"], arity=ZERO_ARITY),
-                OptionSpec("extract", short=["x"], arity=ZERO_ARITY),
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("file", short=["f"], arity=EXACTLY_ONE_ARITY),
-            ],
-            positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+            options={
+                "create": OptionSpec(
+                    "create", short=frozenset({"c"}), arity=ZERO_ARITY
+                ),
+                "extract": OptionSpec(
+                    "extract", short=frozenset({"x"}), arity=ZERO_ARITY
+                ),
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "file": OptionSpec(
+                    "file", short=frozenset({"f"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
+            positionals={"files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)},
         )
         parser = Parser(spec)
 
@@ -472,12 +543,18 @@ class TestComplexCombinedScenarios:
         """Tar-style command with combined options."""
         spec = CommandSpec(
             name="tar",
-            options=[
-                OptionSpec("create", short=["c"], arity=ZERO_ARITY),
-                OptionSpec("gzip", short=["z"], arity=ZERO_ARITY),
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("file", short=["f"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "create": OptionSpec(
+                    "create", short=frozenset({"c"}), arity=ZERO_ARITY
+                ),
+                "gzip": OptionSpec("gzip", short=frozenset({"z"}), arity=ZERO_ARITY),
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "file": OptionSpec(
+                    "file", short=frozenset({"f"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -492,11 +569,13 @@ class TestComplexCombinedScenarios:
         """Combined short options can mix with long options."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("force", short=["f"], arity=ZERO_ARITY),
-                OptionSpec("output", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
+                "output": OptionSpec("output", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
 

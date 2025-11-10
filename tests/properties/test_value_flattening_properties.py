@@ -49,12 +49,14 @@ class TestLengthPreservation:
         """Total count of values must match before and after flattening."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -85,12 +87,14 @@ class TestLengthPreservation:
         """Empty occurrences are filtered, preserving only actual values."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(0, None),  # Allows 0 values
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(0, None),  # Allows 0 values
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -124,12 +128,14 @@ class TestOrderPreservation:
         """Flattening must preserve the original order of values."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -159,12 +165,14 @@ class TestOrderPreservation:
         """Order preservation works with numeric string values."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="nums",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "nums": OptionSpec(
+                    name="nums",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -193,12 +201,14 @@ class TestIdempotency:
         # With flattening
         spec_flat = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser_flat = Parser(spec=spec_flat)
         result_flat = parser_flat.parse(["--items", *values])
@@ -206,12 +216,14 @@ class TestIdempotency:
         # Without flattening
         spec_nested = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=False,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=False,
+                )
+            },
         )
         parser_nested = Parser(spec=spec_nested)
         result_nested = parser_nested.parse(["--items", *values])
@@ -238,12 +250,14 @@ class TestNoNestedTuples:
         """All elements in flattened result should be strings, never tuples."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -274,12 +288,14 @@ class TestNoNestedTuples:
         """Without flattening, result is tuple of tuples of strings."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=False,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=False,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -319,12 +335,14 @@ class TestApplicability:
             # Test LAST_WINS
             spec_last = CommandSpec(
                 name="cmd",
-                options=OptionSpec(
-                    name="items",
-                    arity=Arity(1, None),
-                    accumulation_mode=AccumulationMode.LAST_WINS,
-                    flatten_values=True,  # Triggers warning but has no effect
-                ),
+                options={
+                    "items": OptionSpec(
+                        name="items",
+                        arity=Arity(1, None),
+                        accumulation_mode=AccumulationMode.LAST_WINS,
+                        flatten_values=True,  # Triggers warning but has no effect
+                    )
+                },
             )
             parser_last = Parser(spec=spec_last)
 
@@ -351,12 +369,14 @@ class TestApplicability:
         """Single-value arity with COLLECT naturally produces flat tuple."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="item",
-                arity=Arity(1, 1),  # Single value per occurrence
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,  # Shouldn't matter
-            ),
+            options={
+                "item": OptionSpec(
+                    name="item",
+                    arity=Arity(1, 1),  # Single value per occurrence
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,  # Shouldn't matter
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -377,13 +397,15 @@ class TestApplicability:
         """Flag options with COLLECT produce tuple of bools."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="verbose",
-                arity=Arity(0, 0),
-                accumulation_mode=AccumulationMode.COLLECT,
-                is_flag=True,
-                flatten_values=True,  # Should have no effect
-            ),
+            options={
+                "verbose": OptionSpec(
+                    name="verbose",
+                    arity=Arity(0, 0),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    is_flag=True,
+                    flatten_values=True,  # Should have no effect
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -411,20 +433,20 @@ class TestPrecedenceProperties:
         """OptionSpec setting always takes precedence."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flat": OptionSpec(
                     name="flat",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
                     flatten_values=True,  # Explicit True
                 ),
-                OptionSpec(
+                "nested": OptionSpec(
                     name="nested",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
                     flatten_values=False,  # Explicit False
                 ),
-            ],
+            },
             flatten_option_values=None,  # Different command-level setting
         )
         parser = Parser(
@@ -459,12 +481,14 @@ class TestEdgeCases:
         """Option never specified produces empty result."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -481,12 +505,14 @@ class TestEdgeCases:
         # Use arity (2, 2) - exactly 2 values per occurrence
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="pairs",
-                arity=Arity(2, 2),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "pairs": OptionSpec(
+                    name="pairs",
+                    arity=Arity(2, 2),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 

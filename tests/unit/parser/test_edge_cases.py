@@ -32,7 +32,7 @@ class TestLongOptionEdgeCases:
         args = ["--verbose", "true"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", is_flag=True)],
+            options={"verbose": OptionSpec("verbose", is_flag=True)},
         )
         parser = Parser(spec, allow_equals_for_flags=True)
         result = parser.parse(args)
@@ -55,11 +55,11 @@ class TestShortOptionEdgeCases:
         args = ["-abc"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", is_flag=True),
-                OptionSpec("b", is_flag=True),
-                OptionSpec("c", is_flag=True),
-            ],
+            options={
+                "a": OptionSpec("a", is_flag=True),
+                "b": OptionSpec("b", is_flag=True),
+                "c": OptionSpec("c", is_flag=True),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -79,11 +79,11 @@ class TestShortOptionEdgeCases:
         args = ["-abv"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", is_flag=True),
-                OptionSpec("b", is_flag=True),
-                OptionSpec("v", is_flag=True, const_value="verbose_mode"),
-            ],
+            options={
+                "a": OptionSpec("a", is_flag=True),
+                "b": OptionSpec("b", is_flag=True),
+                "v": OptionSpec("v", is_flag=True, const_value="verbose_mode"),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -103,10 +103,10 @@ class TestShortOptionEdgeCases:
         args = ["-x"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", is_flag=True),
-                OptionSpec("f", is_flag=True),
-            ],
+            options={
+                "a": OptionSpec("a", is_flag=True),
+                "f": OptionSpec("f", is_flag=True),
+            },
         )
         parser = Parser(spec)
         with pytest.raises(UnknownOptionError) as exc_info:
@@ -125,10 +125,10 @@ class TestShortOptionEdgeCases:
         args = ["-ab=", "value"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", is_flag=True),
-                OptionSpec("b", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "a": OptionSpec("a", is_flag=True),
+                "b": OptionSpec("b", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -153,13 +153,13 @@ class TestOptionValueEdgeCases:
         args = ["--files", "file1.txt", "--other"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "files": OptionSpec(
                     "files",
                     arity=Arity(2, 3),  # Requires at least 2 values
                 ),
-                OptionSpec("other", is_flag=True),
-            ],
+                "other": OptionSpec("other", is_flag=True),
+            },
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientOptionValuesError) as exc_info:
@@ -178,11 +178,11 @@ class TestPositionalEdgeCases:
         args = ["file1.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("first", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("second", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("third", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "first": PositionalSpec("first", arity=EXACTLY_ONE_ARITY),
+                "second": PositionalSpec("second", arity=EXACTLY_ONE_ARITY),
+                "third": PositionalSpec("third", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientPositionalArgumentsError) as exc_info:

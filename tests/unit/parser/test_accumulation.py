@@ -29,9 +29,9 @@ class TestCollectMode:
         args = ["--opt", "val1", "--opt", "val2", "--opt", "val3"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT),
-            ],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -41,7 +41,9 @@ class TestCollectMode:
         """COLLECT with single occurrence returns tuple of one."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
+            },
         )
         parser = Parser(spec)
 
@@ -52,7 +54,9 @@ class TestCollectMode:
         """COLLECT mode preserves insertion order."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
+            },
         )
         parser = Parser(spec)
 
@@ -63,14 +67,14 @@ class TestCollectMode:
         """COLLECT mode works with boolean flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COLLECT,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -81,13 +85,13 @@ class TestCollectMode:
         """COLLECT mode with options that accept multiple values."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "files": OptionSpec(
                     "files",
                     arity=ONE_OR_MORE_ARITY,
                     accumulation_mode=AccumulationMode.COLLECT,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -98,10 +102,12 @@ class TestCollectMode:
         """COLLECT mode works alongside other options."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("collect", accumulation_mode=AccumulationMode.COLLECT),
-                OptionSpec("normal", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "collect": OptionSpec(
+                    "collect", accumulation_mode=AccumulationMode.COLLECT
+                ),
+                "normal": OptionSpec("normal", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -118,11 +124,11 @@ class TestCountMode:
         args = ["--flag", "--flag", "--flag"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag", is_flag=True, accumulation_mode=AccumulationMode.COUNT
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -132,11 +138,11 @@ class TestCountMode:
         """COUNT with single occurrence returns 1."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag", arity=ZERO_ARITY, accumulation_mode=AccumulationMode.COUNT
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -147,11 +153,11 @@ class TestCountMode:
         """COUNT with no occurrences means option not in result."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag", arity=ZERO_ARITY, accumulation_mode=AccumulationMode.COUNT
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -162,14 +168,14 @@ class TestCountMode:
         """COUNT mode counts many occurrences."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -180,14 +186,14 @@ class TestCountMode:
         """COUNT mode works with combined short flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -198,14 +204,14 @@ class TestCountMode:
         """COUNT mode with mix of separate and combined flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -220,7 +226,9 @@ class TestFirstWinsMode:
         """FIRST_WINS keeps the first value."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)
+            },
         )
         parser = Parser(spec)
 
@@ -231,7 +239,9 @@ class TestFirstWinsMode:
         """FIRST_WINS with single occurrence."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)
+            },
         )
         parser = Parser(spec)
 
@@ -242,13 +252,13 @@ class TestFirstWinsMode:
         """FIRST_WINS works with boolean flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag",
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.FIRST_WINS,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -259,13 +269,13 @@ class TestFirstWinsMode:
         """FIRST_WINS with options accepting multiple values."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "files": OptionSpec(
                     "files",
                     arity=ONE_OR_MORE_ARITY,
                     accumulation_mode=AccumulationMode.FIRST_WINS,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -276,13 +286,13 @@ class TestFirstWinsMode:
         """FIRST_WINS keeps first regardless of option form used."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "output": OptionSpec(
                     "output",
-                    short=["o"],
+                    short=frozenset({"o"}),
                     accumulation_mode=AccumulationMode.FIRST_WINS,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -297,7 +307,9 @@ class TestLastWinsMode:
         """LAST_WINS keeps the last value."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)
+            },
         )
         parser = Parser(spec)
 
@@ -308,7 +320,7 @@ class TestLastWinsMode:
         """LAST_WINS is the default accumulation mode."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt")],  # No accumulation_mode specified
+            options={"opt": OptionSpec("opt")},  # No accumulation_mode specified
         )
         parser = Parser(spec)
 
@@ -319,7 +331,9 @@ class TestLastWinsMode:
         """LAST_WINS with single occurrence."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)
+            },
         )
         parser = Parser(spec)
 
@@ -330,13 +344,13 @@ class TestLastWinsMode:
         """LAST_WINS works with boolean flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag",
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.LAST_WINS,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -347,13 +361,13 @@ class TestLastWinsMode:
         """LAST_WINS with options accepting multiple values."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "files": OptionSpec(
                     "files",
                     arity=ONE_OR_MORE_ARITY,
                     accumulation_mode=AccumulationMode.LAST_WINS,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -368,7 +382,9 @@ class TestErrorMode:
         """ERROR mode raises on duplicate occurrence."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR)
+            },
         )
         parser = Parser(spec)
 
@@ -381,7 +397,9 @@ class TestErrorMode:
         """ERROR mode allows single occurrence."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR)
+            },
         )
         parser = Parser(spec)
 
@@ -392,13 +410,13 @@ class TestErrorMode:
         """ERROR mode works with flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag",
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.ERROR,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -409,13 +427,13 @@ class TestErrorMode:
         """ERROR mode treats different forms as duplicate."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "output": OptionSpec(
                     "output",
-                    short=["o"],
+                    short=frozenset({"o"}),
                     accumulation_mode=AccumulationMode.ERROR,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -430,14 +448,14 @@ class TestAccumulationModeInteractions:
         """Accumulation modes work with const_value."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "mode": OptionSpec(
                     "mode",
                     arity=ZERO_ARITY,
                     const_value="debug",
                     accumulation_mode=AccumulationMode.COLLECT,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -448,14 +466,14 @@ class TestAccumulationModeInteractions:
         """Accumulation modes work with negation words."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
                     arity=ZERO_ARITY,
-                    negation_words=["no"],
+                    negation_words=frozenset({"no"}),
                     accumulation_mode=AccumulationMode.COLLECT,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -466,14 +484,20 @@ class TestAccumulationModeInteractions:
         """Different options can have different accumulation modes."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("collect", accumulation_mode=AccumulationMode.COLLECT),
-                OptionSpec(
+            options={
+                "collect": OptionSpec(
+                    "collect", accumulation_mode=AccumulationMode.COLLECT
+                ),
+                "count": OptionSpec(
                     "count", arity=ZERO_ARITY, accumulation_mode=AccumulationMode.COUNT
                 ),
-                OptionSpec("first", accumulation_mode=AccumulationMode.FIRST_WINS),
-                OptionSpec("last", accumulation_mode=AccumulationMode.LAST_WINS),
-            ],
+                "first": OptionSpec(
+                    "first", accumulation_mode=AccumulationMode.FIRST_WINS
+                ),
+                "last": OptionSpec(
+                    "last", accumulation_mode=AccumulationMode.LAST_WINS
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -504,13 +528,13 @@ class TestAccumulationModeInteractions:
         """Accumulation modes work with complex arity."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "range": OptionSpec(
                     "range",
                     arity=Arity(2, 4),
                     accumulation_mode=AccumulationMode.COLLECT,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -525,7 +549,9 @@ class TestAccumulationEdgeCases:
         """Option not in result when not provided (all modes)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
+            },
         )
         parser = Parser(spec)
 
@@ -536,13 +562,13 @@ class TestAccumulationEdgeCases:
         """COUNT mode is typically used with zero-arity flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -553,7 +579,11 @@ class TestAccumulationEdgeCases:
         """ERROR mode exception includes the option name."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("myoption", accumulation_mode=AccumulationMode.ERROR)],
+            options={
+                "myoption": OptionSpec(
+                    "myoption", accumulation_mode=AccumulationMode.ERROR
+                )
+            },
         )
         parser = Parser(spec)
 

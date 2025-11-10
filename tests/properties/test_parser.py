@@ -45,9 +45,9 @@ class TestAccumulationModeProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT),
-            ],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -72,11 +72,11 @@ class TestAccumulationModeProperties:
         args = ["--flag"] * count
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag", is_flag=True, accumulation_mode=AccumulationMode.COUNT
-                ),
-            ],
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -109,9 +109,9 @@ class TestAccumulationModeProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS),
-            ],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -139,9 +139,9 @@ class TestAccumulationModeProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS),
-            ],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -163,9 +163,9 @@ class TestAccumulationModeProperties:
         args = ["--opt", value1, "--opt", value2]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR),
-            ],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR)
+            },
         )
         parser = Parser(spec)
 
@@ -186,9 +186,9 @@ class TestAccumulationModeProperties:
         args = ["--opt", value]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR),
-            ],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR)
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -215,11 +215,15 @@ class TestAccumulationModeProperties:
 
         spec_first = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)
+            },
         )
         spec_collect = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
+            },
         )
 
         result_first = Parser(spec_first).parse(args)
@@ -250,11 +254,15 @@ class TestAccumulationModeProperties:
 
         spec_last = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)
+            },
         )
         spec_collect = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
+            },
         )
 
         result_last = Parser(spec_last).parse(args)
@@ -279,19 +287,19 @@ class TestAccumulationModeProperties:
 
         spec_count = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag", is_flag=True, accumulation_mode=AccumulationMode.COUNT
                 )
-            ],
+            },
         )
         spec_collect = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag", is_flag=True, accumulation_mode=AccumulationMode.COLLECT
                 )
-            ],
+            },
         )
 
         result_count = Parser(spec_count).parse(args)
@@ -318,7 +326,9 @@ class TestAccumulationModeProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -337,7 +347,7 @@ class TestAccumulationModeProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", arity=Arity(0, 1))],
+            options={"opt": OptionSpec("opt", arity=Arity(0, 1))},
         )
         parser = Parser(spec)
 
@@ -373,7 +383,9 @@ class TestAccumulationModeProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)],
+            options={
+                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -394,7 +406,7 @@ class TestAccumulationModeProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt")],
+            options={"opt": OptionSpec("opt")},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -419,7 +431,7 @@ class TestAccumulationModeProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt")],
+            options={"opt": OptionSpec("opt")},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -510,33 +522,6 @@ class TestArityValidationProperties:
             _ = _validate_arity(Arity(min_arity, max_arity))
 
     @given(
-        value=st.integers(min_value=0, max_value=100),
-    )
-    def test_validate_arity_int_creates_exact_arity(self, value: int):
-        """Property: Integer input creates exact arity (min = max = value).
-
-        For any non-negative integer, _validate_arity should create an
-        Arity where min and max are both equal to that integer.
-        """
-        arity = _validate_arity(value)
-
-        # Property: min and max should both equal the input
-        assert arity.min == value
-        assert arity.max == value
-
-    def test_validate_arity_none_defaults_to_exactly_one(self):
-        """Property: None input defaults to Arity(1, 1).
-
-        When None is passed to _validate_arity, it should return
-        an arity of exactly one (min=1, max=1).
-        """
-        arity = _validate_arity(None)
-
-        # Property: should default to exactly one
-        assert arity.min == 1
-        assert arity.max == 1
-
-    @given(
         min_arity=st.integers(min_value=0, max_value=100),
         max_arity=st.integers(min_value=0, max_value=100) | st.none(),
     )
@@ -585,13 +570,13 @@ class TestParserIdempotenceProperties:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt1", arity=Arity(0, None)),
-                OptionSpec("opt2", is_flag=True),
-                OptionSpec(
+            options={
+                "opt1": OptionSpec("opt1", arity=Arity(0, None)),
+                "opt2": OptionSpec("opt2", is_flag=True),
+                "verbose": OptionSpec(
                     "verbose", is_flag=True, accumulation_mode=AccumulationMode.COUNT
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -623,11 +608,11 @@ class TestBoundaryValues:
         args = ["--flag"] * count
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flag": OptionSpec(
                     "flag", is_flag=True, accumulation_mode=AccumulationMode.COUNT
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -666,7 +651,7 @@ class TestBoundaryValues:
 
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", arity=Arity(min_arity, max_arity))],
+            options={"opt": OptionSpec("opt", arity=Arity(min_arity, max_arity))},
         )
         parser = Parser(spec)
 
@@ -725,9 +710,7 @@ class TestOptionValueConsumptionProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", arity=Arity(min_arity, max_arity)),
-            ],
+            options={"opt": OptionSpec("opt", arity=Arity(min_arity, max_arity))},
         )
         parser = Parser(spec)
 
@@ -788,10 +771,10 @@ class TestOptionValueConsumptionProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt1", arity=Arity(0, None)),  # Unbounded
-                OptionSpec("opt2", arity=Arity(0, None)),  # Unbounded
-            ],
+            options={
+                "opt1": OptionSpec("opt1", arity=Arity(0, None)),  # Unbounded
+                "opt2": OptionSpec("opt2", arity=Arity(0, None)),  # Unbounded
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)

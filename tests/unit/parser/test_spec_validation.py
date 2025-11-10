@@ -67,19 +67,19 @@ class TestCommandSpecAliasValidation:
 
     def test_valid_single_alias(self):
         """Single alias is accepted."""
-        spec = CommandSpec(name="remove", aliases=("rm",))
+        spec = CommandSpec(name="remove", aliases=frozenset({"rm"}))
         assert "rm" in spec.aliases
 
     def test_valid_multiple_aliases(self):
         """Multiple aliases are accepted."""
-        spec = CommandSpec(name="remove", aliases=("rm", "del"))
+        spec = CommandSpec(name="remove", aliases=frozenset({"rm", "del"}))
         assert "rm" in spec.aliases
         assert "del" in spec.aliases
 
     def test_invalid_alias_format(self):
         """Invalid alias format is rejected."""
         with pytest.raises(ValueError, match=r"(?i).*alias.*"):
-            _ = CommandSpec(name="cmd", aliases=("@invalid",))
+            _ = CommandSpec(name="cmd", aliases=frozenset({"@invalid"}))
 
 
 class TestCommandSpecOptionValidation:
@@ -89,7 +89,7 @@ class TestCommandSpecOptionValidation:
         """Single option is accepted."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("verbose"),
+            options={"verbose": OptionSpec("verbose")},
         )
         assert "verbose" in spec.options
 
@@ -97,10 +97,10 @@ class TestCommandSpecOptionValidation:
         """Multiple options are accepted."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose"),
-                OptionSpec("output"),
-            ],
+            options={
+                "verbose": OptionSpec("verbose"),
+                "output": OptionSpec("output"),
+            },
         )
         assert "verbose" in spec.options
         assert "output" in spec.options
@@ -110,10 +110,12 @@ class TestCommandSpecOptionValidation:
         with pytest.raises(ValueError, match=r"(?i).*duplicate.*output.*"):
             _ = CommandSpec(
                 name="cmd",
-                options=[
-                    OptionSpec("output", long=["output"]),
-                    OptionSpec("out", long=["output"]),  # Duplicate long name
-                ],
+                options={
+                    "output": OptionSpec("output", long=frozenset({"output"})),
+                    "out": OptionSpec(
+                        "out", long=frozenset({"output"})
+                    ),  # Duplicate long name
+                },
             )
 
     def test_duplicate_short_option_names(self):
@@ -121,10 +123,12 @@ class TestCommandSpecOptionValidation:
         with pytest.raises(ValueError, match=r"(?i).*duplicate.*v.*"):
             _ = CommandSpec(
                 name="cmd",
-                options=[
-                    OptionSpec("verbose", short=["v"]),
-                    OptionSpec("version", short=["v"]),  # Duplicate short name
-                ],
+                options={
+                    "verbose": OptionSpec("verbose", short=frozenset({"v"})),
+                    "version": OptionSpec(
+                        "version", short=frozenset({"v"})
+                    ),  # Duplicate short name
+                },
             )
 
     def test_long_short_option_collision(self):
@@ -132,10 +136,10 @@ class TestCommandSpecOptionValidation:
         # This should work - they're different namespaces
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("output", long=["output"]),
-                OptionSpec("o", short=["o"]),
-            ],
+            options={
+                "output": OptionSpec("output", long=frozenset({"output"})),
+                "o": OptionSpec("o", short=frozenset({"o"})),
+            },
         )
         assert "output" in spec.options
         assert "o" in spec.options
@@ -144,7 +148,7 @@ class TestCommandSpecOptionValidation:
         """Multiple long names for the same option are allowed."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("output", long=["output", "out"])],
+            options={"output": OptionSpec("output", long=frozenset({"output", "out"}))},
         )
         assert "output" in spec.options
 
@@ -153,11 +157,11 @@ class TestCommandSpecOptionValidation:
         with pytest.raises(ValueError, match=r"(?i).*duplicate.*"):
             _ = CommandSpec(
                 name="cmd",
-                options=[
-                    OptionSpec("output", long=["output", "out"]),
+                options={
+                    "output": OptionSpec("output", long=frozenset({"output", "out"})),
                     # Collides with first option's alias
-                    OptionSpec("other", long=["out"]),
-                ],
+                    "other": OptionSpec("other", long=frozenset({"out"})),
+                },
             )
 
 
@@ -168,7 +172,7 @@ class TestCommandSpecPositionalValidation:
         """Single positional is accepted."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("file", arity=Arity(1, 1)),
+            positionals={"file": PositionalSpec("file", arity=Arity(1, 1))},
         )
         assert "file" in spec.positionals
 
@@ -176,24 +180,13 @@ class TestCommandSpecPositionalValidation:
         """Multiple positionals are accepted."""
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("source", arity=Arity(1, 1)),
-                PositionalSpec("dest", arity=Arity(1, 1)),
-            ],
+            positionals={
+                "source": PositionalSpec("source", arity=Arity(1, 1)),
+                "dest": PositionalSpec("dest", arity=Arity(1, 1)),
+            },
         )
         assert "source" in spec.positionals
         assert "dest" in spec.positionals
-
-    def test_duplicate_positional_names(self):
-        """Duplicate positional names are rejected."""
-        with pytest.raises(ValueError, match=r"(?i).*duplicate.*"):
-            _ = CommandSpec(
-                name="cmd",
-                positionals=[
-                    PositionalSpec("file", arity=Arity(1, 1)),
-                    PositionalSpec("file", arity=Arity(1, 1)),  # Duplicate
-                ],
-            )
 
 
 class TestCommandSpecSubcommandValidation:
@@ -203,7 +196,7 @@ class TestCommandSpecSubcommandValidation:
         """Single subcommand is accepted."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=CommandSpec(name="start"),
+            subcommands={"start": CommandSpec(name="start")},
         )
         assert "start" in spec.subcommands
 
@@ -211,10 +204,10 @@ class TestCommandSpecSubcommandValidation:
         """Multiple subcommands are accepted."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="stop"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "stop": CommandSpec(name="stop"),
+            },
         )
         assert "start" in spec.subcommands
         assert "stop" in spec.subcommands
@@ -224,10 +217,10 @@ class TestCommandSpecSubcommandValidation:
         with pytest.raises(ValueError, match=r"(?i).*duplicate.*"):
             _ = CommandSpec(
                 name="cmd",
-                subcommands=[
-                    CommandSpec(name="start"),
-                    CommandSpec(name="start"),  # Duplicate
-                ],
+                subcommands={
+                    "start": CommandSpec(name="start"),
+                    "start2": CommandSpec(name="start"),  # Duplicate name "start"
+                },
             )
 
     def test_subcommand_alias_collision(self):
@@ -235,10 +228,12 @@ class TestCommandSpecSubcommandValidation:
         with pytest.raises(ValueError, match=r"(?i).*duplicate.*rm.*"):
             _ = CommandSpec(
                 name="cmd",
-                subcommands=[
-                    CommandSpec(name="remove", aliases=("rm",)),
-                    CommandSpec(name="rm"),  # Collides with first subcommand's alias
-                ],
+                subcommands={
+                    "remove": CommandSpec(name="remove", aliases=frozenset({"rm"})),
+                    "rm": CommandSpec(
+                        name="rm"
+                    ),  # Collides with first subcommand's alias
+                },
             )
 
     def test_subcommand_aliases_collision(self):
@@ -246,10 +241,12 @@ class TestCommandSpecSubcommandValidation:
         with pytest.raises(ValueError, match=r"(?i).*duplicate.*"):
             _ = CommandSpec(
                 name="cmd",
-                subcommands=[
-                    CommandSpec(name="remove", aliases=("rm",)),
-                    CommandSpec(name="delete", aliases=("rm",)),  # Duplicate alias
-                ],
+                subcommands={
+                    "remove": CommandSpec(name="remove", aliases=frozenset({"rm"})),
+                    "delete": CommandSpec(
+                        name="delete", aliases=frozenset({"rm"})
+                    ),  # Duplicate alias
+                },
             )
 
 
@@ -297,12 +294,12 @@ class TestOptionSpecLongNameValidation:
 
     def test_valid_long_name(self):
         """Valid long name is accepted."""
-        opt = OptionSpec("opt", long=["option"])
+        opt = OptionSpec("opt", long=frozenset({"option"}))
         assert "option" in opt.long
 
     def test_valid_multiple_long_names(self):
         """Multiple long names are accepted."""
-        opt = OptionSpec("opt", long=["option", "output"])
+        opt = OptionSpec("opt", long=frozenset({"option", "output"}))
         assert "option" in opt.long
         assert "output" in opt.long
 
@@ -319,17 +316,17 @@ class TestOptionSpecLongNameValidation:
     def test_invalid_long_name_too_short(self):
         """Long names must be at least 2 characters."""
         with pytest.raises(ValueError, match=r"(?i).*at least two characters.*"):
-            _ = OptionSpec("opt", long=["o"])
+            _ = OptionSpec("opt", long=frozenset({"o"}))
 
     def test_invalid_long_name_starts_with_dash(self):
         """Long names cannot start with dash."""
         with pytest.raises(ValueError, match=r".*"):
-            _ = OptionSpec("opt", long=["-option"])
+            _ = OptionSpec("opt", long=frozenset({"-option"}))
 
     def test_invalid_long_name_ends_with_dash(self):
         """Long names cannot end with dash."""
         with pytest.raises(ValueError, match=r".*"):
-            _ = OptionSpec("opt", long=["option-"])
+            _ = OptionSpec("opt", long=frozenset({"option-"}))
 
 
 class TestOptionSpecShortNameValidation:
@@ -337,12 +334,12 @@ class TestOptionSpecShortNameValidation:
 
     def test_valid_short_name(self):
         """Valid short name is accepted."""
-        opt = OptionSpec("verbose", short=["v"])
+        opt = OptionSpec("verbose", short=frozenset({"v"}))
         assert "v" in opt.short
 
     def test_valid_multiple_short_names(self):
         """Multiple short names are accepted."""
-        opt = OptionSpec("verbose", short=["v", "V"])
+        opt = OptionSpec("verbose", short=frozenset({"v", "V"}))
         assert "v" in opt.short
         assert "V" in opt.short
 
@@ -359,12 +356,12 @@ class TestOptionSpecShortNameValidation:
     def test_invalid_short_name_too_long(self):
         """Short names must be exactly 1 character."""
         with pytest.raises(ValueError, match=r"(?i).*exactly one character.*"):
-            _ = OptionSpec("opt", short=["verb"])
+            _ = OptionSpec("opt", short=frozenset({"verb"}))
 
     def test_invalid_short_name_special_character(self):
         """Short names must be alphanumeric."""
         with pytest.raises(ValueError, match=r".*"):
-            _ = OptionSpec("opt", short=["@"])
+            _ = OptionSpec("opt", short=frozenset({"@"}))
 
 
 class TestOptionSpecArityValidation:
@@ -411,14 +408,14 @@ class TestOptionSpecFlagValueValidation:
 
     def test_valid_truthy_values(self):
         """Valid truthy values are accepted."""
-        opt = OptionSpec("verbose", truthy_flag_values=["yes", "y"])
+        opt = OptionSpec("verbose", truthy_flag_values=frozenset({"yes", "y"}))
         assert opt.truthy_flag_values is not None
         assert "yes" in opt.truthy_flag_values
         assert "y" in opt.truthy_flag_values
 
     def test_valid_falsey_values(self):
         """Valid falsey values are accepted."""
-        opt = OptionSpec("verbose", falsey_flag_values=["no", "n"])
+        opt = OptionSpec("verbose", falsey_flag_values=frozenset({"no", "n"}))
         assert opt.falsey_flag_values is not None
         assert "no" in opt.falsey_flag_values
         assert "n" in opt.falsey_flag_values
@@ -428,8 +425,8 @@ class TestOptionSpecFlagValueValidation:
         with pytest.raises(ValueError, match=r"(?i).*must not overlap.*maybe.*"):
             _ = OptionSpec(
                 "verbose",
-                truthy_flag_values=["yes", "maybe"],
-                falsey_flag_values=["no", "maybe"],  # Overlap
+                truthy_flag_values=frozenset({"yes", "maybe"}),
+                falsey_flag_values=frozenset({"no", "maybe"}),  # Overlap
             )
 
 
@@ -438,13 +435,13 @@ class TestOptionSpecNegationWordValidation:
 
     def test_valid_single_negation_word(self):
         """Valid negation word is accepted."""
-        opt = OptionSpec("verbose", negation_words=["no"])
+        opt = OptionSpec("verbose", negation_words=frozenset({"no"}))
         assert opt.negation_words is not None
         assert "no" in opt.negation_words
 
     def test_valid_multiple_negation_words(self):
         """Multiple negation words are accepted."""
-        opt = OptionSpec("verbose", negation_words=["no", "without"])
+        opt = OptionSpec("verbose", negation_words=frozenset({"no", "without"}))
         assert opt.negation_words is not None
         assert "no" in opt.negation_words
         assert "without" in opt.negation_words
@@ -452,12 +449,12 @@ class TestOptionSpecNegationWordValidation:
     def test_invalid_empty_negation_word(self):
         """Empty negation words are rejected."""
         with pytest.raises(ValueError, match=r"(?i).*at least one character.*"):
-            _ = OptionSpec("verbose", negation_words=[""])
+            _ = OptionSpec("verbose", negation_words=frozenset({""}))
 
     def test_invalid_negation_word_with_whitespace(self):
         """Negation words with whitespace are rejected."""
         with pytest.raises(ValueError, match=r"(?i).*must not contain whitespace.*"):
-            _ = OptionSpec("verbose", negation_words=["no space"])
+            _ = OptionSpec("verbose", negation_words=frozenset({"no space"}))
 
 
 class TestPositionalSpecValidation:
@@ -491,19 +488,19 @@ class TestComplexValidationScenarios:
         """Deeply nested subcommands are accepted."""
         spec = CommandSpec(
             name="root",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "level1": CommandSpec(
                     name="level1",
-                    subcommands=[
-                        CommandSpec(
+                    subcommands={
+                        "level2": CommandSpec(
                             name="level2",
-                            subcommands=[
-                                CommandSpec(name="level3"),
-                            ],
+                            subcommands={
+                                "level3": CommandSpec(name="level3"),
+                            },
                         ),
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         assert "level1" in spec.subcommands
 
@@ -511,18 +508,22 @@ class TestComplexValidationScenarios:
         """Command with options, positionals, and subcommands is valid."""
         spec = CommandSpec(
             name="tool",
-            aliases=("t",),
-            options=[
-                OptionSpec("verbose", short=["v"], arity=Arity(0, 0)),
-                OptionSpec("output", short=["o"], arity=Arity(1, 1)),
-            ],
-            positionals=[
-                PositionalSpec("input", arity=Arity(1, 1)),
-                PositionalSpec("extras", arity=Arity(0, None)),
-            ],
-            subcommands=[
-                CommandSpec(name="process"),
-            ],
+            aliases=frozenset({"t"}),
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=Arity(0, 0)
+                ),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=Arity(1, 1)
+                ),
+            },
+            positionals={
+                "input": PositionalSpec("input", arity=Arity(1, 1)),
+                "extras": PositionalSpec("extras", arity=Arity(0, None)),
+            },
+            subcommands={
+                "process": CommandSpec(name="process"),
+            },
         )
         assert spec.name == "tool"
         assert "t" in spec.aliases

@@ -33,7 +33,8 @@ class TestLongOptionWithEquals:
         """
         args = ["--output=file.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("output", arity=EXACTLY_ONE_ARITY)
+            name="cmd",
+            options={"output": OptionSpec("output", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -49,7 +50,7 @@ class TestLongOptionWithEquals:
         """
         args = ["--files=file.txt", "file2.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", arity=ONE_OR_MORE_ARITY)
+            name="cmd", options={"files": OptionSpec("files", arity=ONE_OR_MORE_ARITY)}
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -65,7 +66,7 @@ class TestLongOptionWithEquals:
         """
         args = ["--files=file1.txt", "file2.txt", "file3.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", arity=Arity(2, None))
+            name="cmd", options={"files": OptionSpec("files", arity=Arity(2, None))}
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientOptionValuesError):
@@ -81,7 +82,8 @@ class TestLongOptionWithEquals:
         """
         args = ["--output="]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("output", arity=EXACTLY_ONE_ARITY)
+            name="cmd",
+            options={"output": OptionSpec("output", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -97,7 +99,7 @@ class TestLongOptionWithEquals:
         """
         args = ["--files="]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", arity=ONE_OR_MORE_ARITY)
+            name="cmd", options={"files": OptionSpec("files", arity=ONE_OR_MORE_ARITY)}
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -112,7 +114,9 @@ class TestLongOptionWithEquals:
         Example: --verbose= (error: flags don't accept values)
         """
         args = ["--verbose="]
-        spec = CommandSpec(name="cmd", options=OptionSpec("verbose", arity=ZERO_ARITY))
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)}
+        )
         parser = Parser(spec)
         with pytest.raises(OptionDoesNotAcceptValueError):
             _ = parser.parse(args)
@@ -126,7 +130,9 @@ class TestLongOptionWithEquals:
         Example: --verbose=true (error: flags don't accept values)
         """
         args = ["--verbose=true"]
-        spec = CommandSpec(name="cmd", options=OptionSpec("verbose", arity=ZERO_ARITY))
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)}
+        )
         parser = Parser(spec)
         with pytest.raises(FlagWithValueError):
             _ = parser.parse(args)
@@ -142,7 +148,9 @@ class TestLongOptionWithEquals:
         Example: --verbose= (error: flags cannot have values when disabled)
         """
         args = ["--verbose="]
-        spec = CommandSpec(name="cmd", options=OptionSpec("verbose", is_flag=True))
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", is_flag=True)}
+        )
         parser = Parser(spec, allow_equals_for_flags=False)
         with pytest.raises(FlagWithValueError):
             _ = parser.parse(args)
@@ -157,7 +165,9 @@ class TestLongOptionWithEquals:
         Example: --verbose= (error: empty string is not a valid flag value)
         """
         args = ["--verbose="]
-        spec = CommandSpec(name="cmd", options=OptionSpec("verbose", is_flag=True))
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", is_flag=True)}
+        )
         parser = Parser(spec, allow_equals_for_flags=True)
         with pytest.raises(InvalidFlagValueError):
             _ = parser.parse(args)
@@ -171,7 +181,9 @@ class TestLongOptionWithEquals:
         Example: --verbose=true (error: flags cannot have values)
         """
         args = ["--verbose=true"]
-        spec = CommandSpec(name="cmd", options=OptionSpec("verbose", is_flag=True))
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", is_flag=True)}
+        )
         parser = Parser(spec, allow_equals_for_flags=False)
         with pytest.raises(FlagWithValueError):
             _ = parser.parse(args)
@@ -185,7 +197,9 @@ class TestLongOptionWithEquals:
 
         Examples: --verbose=true, --verbose=false, --verbose=1, --verbose=0
         """
-        spec = CommandSpec(name="cmd", options=OptionSpec("verbose", is_flag=True))
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", is_flag=True)}
+        )
         parser = Parser(spec, allow_equals_for_flags=True)
 
         for value in DEFAULT_FALSEY_VALUES:
@@ -207,13 +221,15 @@ class TestLongOptionWithEquals:
         """
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                "verbose",
-                short="v",
-                is_flag=True,
-                falsey_flag_values=("foo"),
-                truthy_flag_values=("bar"),
-            ),
+            options={
+                "verbose": OptionSpec(
+                    "verbose",
+                    short=frozenset({"v"}),
+                    is_flag=True,
+                    falsey_flag_values=frozenset({"foo"}),
+                    truthy_flag_values=frozenset({"bar"}),
+                )
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -234,7 +250,7 @@ class TestLongOptionWithEquals:
         """
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("verbose", is_flag=True),
+            options={"verbose": OptionSpec("verbose", is_flag=True)},
         )
         parser = Parser(
             spec,
@@ -258,7 +274,9 @@ class TestLongOptionWithEquals:
         Example: --verbose=invalid (error: "invalid" is not a valid flag value)
         """
         args = ["--verbose=invalid"]
-        spec = CommandSpec(name="cmd", options=OptionSpec("verbose", is_flag=True))
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", is_flag=True)}
+        )
         parser = Parser(spec, allow_equals_for_flags=True)
         with pytest.raises(InvalidFlagValueError):
             _ = parser.parse(args)
@@ -277,7 +295,8 @@ class TestLongOptionWithoutEquals:
         """
         args = ["--output", "file.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("output", arity=EXACTLY_ONE_ARITY)
+            name="cmd",
+            options={"output": OptionSpec("output", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -292,7 +311,9 @@ class TestLongOptionWithoutEquals:
         Example: --verbose (sets verbose to True)
         """
         args = ["--verbose"]
-        spec = CommandSpec(name="cmd", options=OptionSpec("verbose", arity=ZERO_ARITY))
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)}
+        )
         parser = Parser(spec)
         result = parser.parse(args)
         assert result.options["verbose"].value is True
@@ -307,7 +328,7 @@ class TestLongOptionWithoutEquals:
         """
         args = ["--files", "file1.txt", "file2.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", arity=Arity(0, None))
+            name="cmd", options={"files": OptionSpec("files", arity=Arity(0, None))}
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -323,7 +344,7 @@ class TestLongOptionWithoutEquals:
         """
         args = ["--files"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", arity=ONE_OR_MORE_ARITY)
+            name="cmd", options={"files": OptionSpec("files", arity=ONE_OR_MORE_ARITY)}
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientOptionValuesError):

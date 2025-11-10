@@ -6,6 +6,7 @@ to discover edge cases and verify invariants across a wide range of inputs.
 
 import dataclasses
 import re
+import warnings
 from contextlib import suppress
 from typing import TYPE_CHECKING
 
@@ -70,7 +71,7 @@ class TestNegativeNumberProperties:
         """Property: All negative integers parse as positional values."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -82,7 +83,7 @@ class TestNegativeNumberProperties:
         """Property: All negative floats parse as positional values."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -94,7 +95,7 @@ class TestNegativeNumberProperties:
         """Property: All scientific notation negatives parse as positional values."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -106,7 +107,7 @@ class TestNegativeNumberProperties:
         """Property: Multiple negative numbers preserve input order."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("values", arity=ZERO_OR_MORE_ARITY),
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -118,7 +119,7 @@ class TestNegativeNumberProperties:
         """Property: Negative numbers are consumed as option values."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("value", arity=EXACTLY_ONE_ARITY),
+            options={"value": OptionSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -132,7 +133,9 @@ class TestNegativeNumberProperties:
 
         # Invalid patterns should raise ValueError during parser construction
         # Use hypothesis to fuzz pattern inputs
-        with suppress(ValueError):
+        # Suppress FutureWarning for patterns like '[[' that trigger regex warnings
+        with warnings.catch_warnings(), suppress(ValueError):
+            warnings.simplefilter("ignore", FutureWarning)
             parser = Parser(
                 spec,
                 allow_negative_numbers=True,
@@ -153,7 +156,7 @@ class TestNegativeNumberInvariants:
         """Invariant: ParseResult has correct structure and values."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -174,7 +177,7 @@ class TestNegativeNumberInvariants:
         """Invariant: Parsing the same input produces the same result."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -189,7 +192,7 @@ class TestNegativeNumberInvariants:
         """Invariant: Parsing does not modify input list."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("values", arity=ZERO_OR_MORE_ARITY),
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -210,7 +213,7 @@ class TestNegativeNumberEdgeProperties:
         """Property: Mixed positive and negative numbers preserve order."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("values", arity=ZERO_OR_MORE_ARITY),
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -245,7 +248,7 @@ class TestNegativeNumberEdgeProperties:
         """Property: Options can consume multiple negative number values."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("values", arity=Arity(count, count)),
+            options={"values": OptionSpec("values", arity=Arity(count, count))},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 

@@ -90,10 +90,10 @@ def test_benchmark_simple_parsing(benchmark):
     # Setup code runs once, not included in timing
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec("verbose", short="v", is_flag=True),
-            OptionSpec("output", short="o"),
-        ],
+        options={
+            "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True),
+            "output": OptionSpec("output", short=frozenset({"o"})),
+        },
     )
     parser = Parser(spec)
 
@@ -109,13 +109,13 @@ def test_benchmark_combined_short_options(benchmark):
     """Test combined short option parsing (-xvfza)."""
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec("x", is_flag=True),
-            OptionSpec("v", is_flag=True),
-            OptionSpec("f", is_flag=True),
-            OptionSpec("z", is_flag=True),
-            OptionSpec("a", is_flag=True),
-        ],
+        options={
+            "x": OptionSpec("x", is_flag=True),
+            "v": OptionSpec("v", is_flag=True),
+            "f": OptionSpec("f", is_flag=True),
+            "z": OptionSpec("z", is_flag=True),
+            "a": OptionSpec("a", is_flag=True),
+        },
     )
     parser = Parser(spec)
 
@@ -155,7 +155,7 @@ def test_benchmark_many_options(benchmark):
     ]
     spec = CommandSpec(
         "test",
-        options=[OptionSpec(name, is_flag=True) for name in option_names],
+        options={name: OptionSpec(name, is_flag=True) for name in option_names},
     )
     parser = Parser(spec)
     args = [f"--{name}" for name in option_names]
@@ -183,9 +183,9 @@ def test_benchmark_option_value_consumption(benchmark):
     """Test option value consumption from arguments."""
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec("files", short="f", arity=Arity(1, 5)),
-        ],
+        options={
+            "files": OptionSpec("files", short=frozenset({"f"}), arity=Arity(1, 5)),
+        },
     )
     parser = Parser(spec)
 
@@ -207,11 +207,11 @@ def test_benchmark_positional_grouping_few(benchmark):
     """Test positional grouping with few specs (baseline)."""
     spec = CommandSpec(
         "test",
-        positionals=[
-            PositionalSpec("source", arity=Arity(1, 1)),
-            PositionalSpec("dest", arity=Arity(1, 1)),
-            PositionalSpec("extras", arity=ZERO_OR_MORE_ARITY),
-        ],
+        positionals={
+            "source": PositionalSpec("source", arity=Arity(1, 1)),
+            "dest": PositionalSpec("dest", arity=Arity(1, 1)),
+            "extras": PositionalSpec("extras", arity=ZERO_OR_MORE_ARITY),
+        },
     )
     parser = Parser(spec)
     args = ["file1.txt", "file2.txt", "extra1", "extra2", "extra3"]
@@ -241,7 +241,9 @@ def test_benchmark_positional_grouping_many(benchmark):
     ]
     spec = CommandSpec(
         "test",
-        positionals=[PositionalSpec(name, arity=Arity(1, 1)) for name in pos_names],
+        positionals={
+            name: PositionalSpec(name, arity=Arity(1, 1)) for name in pos_names
+        },
     )
     parser = Parser(spec)
     args = [f"value-{name}" for name in pos_names]
@@ -279,7 +281,9 @@ def test_benchmark_positional_grouping_very_many(benchmark):
     ]
     spec = CommandSpec(
         "test",
-        positionals=[PositionalSpec(name, arity=Arity(1, 1)) for name in pos_names],
+        positionals={
+            name: PositionalSpec(name, arity=Arity(1, 1)) for name in pos_names
+        },
     )
     parser = Parser(spec)
     args = [f"value-{name}" for name in pos_names]
@@ -294,13 +298,13 @@ def test_benchmark_option_accumulation_collect_10(benchmark):
     """Test option accumulation with COLLECT mode (tuple concatenation)."""
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec(
+        options={
+            "include": OptionSpec(
                 "include",
-                short="i",
+                short=frozenset({"i"}),
                 accumulation_mode=AccumulationMode.COLLECT,
             )
-        ],
+        },
     )
     parser = Parser(spec)
     # Test with 10 occurrences
@@ -330,13 +334,13 @@ def test_benchmark_option_accumulation_collect_50(benchmark):
     """Test option accumulation with many occurrences."""
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec(
+        options={
+            "include": OptionSpec(
                 "include",
-                short="i",
+                short=frozenset({"i"}),
                 accumulation_mode=AccumulationMode.COLLECT,
             )
-        ],
+        },
     )
     parser = Parser(spec)
     # Test with 50 occurrences
@@ -357,14 +361,14 @@ def test_benchmark_option_accumulation_count(benchmark):
     """Test option accumulation with COUNT mode."""
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec(
+        options={
+            "verbose": OptionSpec(
                 "verbose",
-                short="v",
+                short=frozenset({"v"}),
                 is_flag=True,
                 accumulation_mode=AccumulationMode.COUNT,
             )
-        ],
+        },
     )
     parser = Parser(spec)
     args = ["-v"] * 20
@@ -379,9 +383,11 @@ def test_benchmark_subcommand_resolution(benchmark):
     """Test subcommand resolution."""
     subcommand = CommandSpec(
         "sub",
-        options=[OptionSpec("flag", short="f", is_flag=True)],
+        options={
+            "flag": OptionSpec("flag", short=frozenset({"f"}), is_flag=True),
+        },
     )
-    spec = CommandSpec("test", subcommands=[subcommand])
+    spec = CommandSpec("test", subcommands={"sub": subcommand})
     parser = Parser(spec)
 
     result = benchmark(parser.parse, ["sub", "-f"])
@@ -394,10 +400,13 @@ def test_benchmark_subcommand_resolution(benchmark):
 def test_benchmark_deep_subcommand_nesting(benchmark):
     """Test deep subcommand nesting."""
     # Create nested subcommands: cmd > sub1 > sub2 > sub3
-    sub3 = CommandSpec("sub3", options=[OptionSpec("opt", is_flag=True)])
-    sub2 = CommandSpec("sub2", subcommands=[sub3])
-    sub1 = CommandSpec("sub1", subcommands=[sub2])
-    spec = CommandSpec("test", subcommands=[sub1])
+    sub3 = CommandSpec(
+        "sub3",
+        options={"opt": OptionSpec("opt", is_flag=True)},
+    )
+    sub2 = CommandSpec("sub2", subcommands={"sub3": sub3})
+    sub1 = CommandSpec("sub1", subcommands={"sub2": sub2})
+    spec = CommandSpec("test", subcommands={"sub1": sub1})
     parser = Parser(spec)
 
     result = benchmark(parser.parse, ["sub1", "sub2", "sub3", "--opt"])
@@ -413,28 +422,28 @@ def test_benchmark_complex_realistic(benchmark):
     """Realistic complex command with mixed features."""
     spec = CommandSpec(
         "git",
-        options=[
-            OptionSpec(
+        options={
+            "verbose": OptionSpec(
                 "verbose",
-                short="v",
+                short=frozenset({"v"}),
                 is_flag=True,
                 accumulation_mode=AccumulationMode.COUNT,
             ),
-            OptionSpec("quiet", short="q", is_flag=True),
-        ],
-        subcommands=[
-            CommandSpec(
+            "quiet": OptionSpec("quiet", short=frozenset({"q"}), is_flag=True),
+        },
+        subcommands={
+            "commit": CommandSpec(
                 "commit",
-                options=[
-                    OptionSpec("message", short="m"),
-                    OptionSpec("all", short="a", is_flag=True),
-                    OptionSpec("amend", is_flag=True),
-                ],
-                positionals=[
-                    PositionalSpec("files", arity=ZERO_OR_MORE_ARITY),
-                ],
+                options={
+                    "message": OptionSpec("message", short=frozenset({"m"})),
+                    "all": OptionSpec("all", short=frozenset({"a"}), is_flag=True),
+                    "amend": OptionSpec("amend", is_flag=True),
+                },
+                positionals={
+                    "files": PositionalSpec("files", arity=ZERO_OR_MORE_ARITY),
+                },
             ),
-        ],
+        },
     )
     parser = Parser(spec)
 
@@ -454,11 +463,11 @@ def test_benchmark_abbreviation_matching_success(benchmark):
     """Test successful abbreviated option matching."""
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec("verbose", is_flag=True),
-            OptionSpec("output", is_flag=True),
-            OptionSpec("verify", is_flag=True),
-        ],
+        options={
+            "verbose": OptionSpec("verbose", is_flag=True),
+            "output": OptionSpec("output", is_flag=True),
+            "verify": OptionSpec("verify", is_flag=True),
+        },
     )
     parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -474,11 +483,11 @@ def test_benchmark_abbreviation_matching_baseline(benchmark):
     """Baseline: Full option names without abbreviation matching."""
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec("verbose", is_flag=True),
-            OptionSpec("output", is_flag=True),
-            OptionSpec("verify", is_flag=True),
-        ],
+        options={
+            "verbose": OptionSpec("verbose", is_flag=True),
+            "output": OptionSpec("output", is_flag=True),
+            "verify": OptionSpec("verify", is_flag=True),
+        },
     )
     parser = Parser(spec, allow_abbreviated_options=False)
 
@@ -494,7 +503,9 @@ def test_benchmark_validation_error_missing_required(benchmark):
     """Test performance when required option is missing."""
     spec = CommandSpec(
         "test",
-        options=[OptionSpec("required", arity=Arity(1, 1))],
+        options={
+            "required": OptionSpec("required", arity=Arity(1, 1)),
+        },
     )
     parser = Parser(spec)
 
@@ -509,7 +520,7 @@ def test_benchmark_validation_error_missing_required(benchmark):
 
 def test_benchmark_validation_error_unknown_option(benchmark):
     """Test performance when unknown option is provided."""
-    spec = CommandSpec("test", options=[])
+    spec = CommandSpec("test", options={})
     parser = Parser(spec)
 
     # Create wrapper for error case
@@ -525,25 +536,25 @@ def test_benchmark_realistic_mixed_all_features(benchmark):
     """Test realistic mix of all parser features."""
     spec = CommandSpec(
         "app",
-        options=[
-            OptionSpec(
+        options={
+            "verbose": OptionSpec(
                 "verbose",
-                short="v",
+                short=frozenset({"v"}),
                 is_flag=True,
                 accumulation_mode=AccumulationMode.COUNT,
             ),
-            OptionSpec("config", short="c"),
-            OptionSpec(
+            "config": OptionSpec("config", short=frozenset({"c"})),
+            "include": OptionSpec(
                 "include",
-                short="i",
+                short=frozenset({"i"}),
                 accumulation_mode=AccumulationMode.COLLECT,
             ),
-            OptionSpec("quiet", short="q", is_flag=True),
-        ],
-        positionals=[
-            PositionalSpec("command", arity=Arity(1, 1)),
-            PositionalSpec("files", arity=ZERO_OR_MORE_ARITY),
-        ],
+            "quiet": OptionSpec("quiet", short=frozenset({"q"}), is_flag=True),
+        },
+        positionals={
+            "command": PositionalSpec("command", arity=Arity(1, 1)),
+            "files": PositionalSpec("files", arity=ZERO_OR_MORE_ARITY),
+        },
     )
     parser = Parser(spec)
 
@@ -576,7 +587,9 @@ def test_benchmark_only_double_dash(benchmark):
     """Test parsing with only double-dash separator."""
     spec = CommandSpec(
         "test",
-        positionals=[PositionalSpec("args", arity=ZERO_OR_MORE_ARITY)],
+        positionals={
+            "args": PositionalSpec("args", arity=ZERO_OR_MORE_ARITY),
+        },
     )
     parser = Parser(spec)
 
@@ -590,7 +603,9 @@ def test_benchmark_negative_numbers_as_positionals(benchmark):
     """Benchmark negative number parsing as positional arguments."""
     spec = CommandSpec(
         "test",
-        positionals=[PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)],
+        positionals={
+            "values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY),
+        },
     )
     parser = Parser(spec, allow_negative_numbers=True)
 
@@ -604,11 +619,11 @@ def test_benchmark_negative_numbers_as_option_values(benchmark):
     """Benchmark negative numbers consumed as option values."""
     spec = CommandSpec(
         "test",
-        options=[
-            OptionSpec("min", arity=Arity(1, 1)),
-            OptionSpec("max", arity=Arity(1, 1)),
-            OptionSpec("threshold", arity=Arity(1, 1)),
-        ],
+        options={
+            "min": OptionSpec("min", arity=Arity(1, 1)),
+            "max": OptionSpec("max", arity=Arity(1, 1)),
+            "threshold": OptionSpec("threshold", arity=Arity(1, 1)),
+        },
     )
     parser = Parser(spec, allow_negative_numbers=True)
 
@@ -626,7 +641,9 @@ def test_benchmark_mixed_positive_negative_numbers(benchmark):
     """Benchmark parser with mix of positive and negative numbers."""
     spec = CommandSpec(
         "test",
-        positionals=[PositionalSpec("coords", arity=ZERO_OR_MORE_ARITY)],
+        positionals={
+            "coords": PositionalSpec("coords", arity=ZERO_OR_MORE_ARITY),
+        },
     )
     parser = Parser(spec, allow_negative_numbers=True)
 

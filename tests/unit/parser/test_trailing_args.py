@@ -65,10 +65,14 @@ class TestTrailingArgsWithOptions:
         """Options can appear before --."""
         spec = CommandSpec(
             "cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -83,7 +87,11 @@ class TestTrailingArgsWithOptions:
         """Option-like strings after -- are treated as trailing args."""
         spec = CommandSpec(
             "cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -95,7 +103,7 @@ class TestTrailingArgsWithOptions:
         """Options after -- are not parsed as options."""
         spec = CommandSpec(
             "cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec)
 
@@ -107,7 +115,11 @@ class TestTrailingArgsWithOptions:
         """Short options after -- are treated as trailing args."""
         spec = CommandSpec(
             "cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -122,10 +134,10 @@ class TestTrailingArgsWithPositionals:
         """Positionals can appear before --."""
         spec = CommandSpec(
             "cmd",
-            positionals=[
-                PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "source": PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
+                "dest": PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -138,7 +150,7 @@ class TestTrailingArgsWithPositionals:
         """Optional positionals work with trailing args."""
         spec = CommandSpec(
             "cmd",
-            positionals=[PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)],
+            positionals={"files": PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec)
 
@@ -154,7 +166,7 @@ class TestTrailingArgsWithPositionals:
         """Unbounded positionals stop consuming at --."""
         spec = CommandSpec(
             "cmd",
-            positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+            positionals={"files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)},
         )
         parser = Parser(spec)
 
@@ -170,7 +182,7 @@ class TestTrailingArgsWithSubcommands:
         """Trailing args work in parent command with subcommands."""
         spec = CommandSpec(
             "cmd",
-            subcommands=[CommandSpec("sub")],
+            subcommands={"sub": CommandSpec("sub")},
         )
         parser = Parser(spec)
 
@@ -182,7 +194,7 @@ class TestTrailingArgsWithSubcommands:
         """Trailing args work in subcommand context."""
         spec = CommandSpec(
             "cmd",
-            subcommands=[CommandSpec("sub")],
+            subcommands={"sub": CommandSpec("sub")},
         )
         parser = Parser(spec)
 
@@ -195,12 +207,16 @@ class TestTrailingArgsWithSubcommands:
         """Subcommand can have options before trailing args."""
         spec = CommandSpec(
             "cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "sub": CommandSpec(
                     "sub",
-                    options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+                    options={
+                        "verbose": OptionSpec(
+                            "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -213,7 +229,7 @@ class TestTrailingArgsWithSubcommands:
         """Parent can't have trailing args if subcommand present."""
         spec = CommandSpec(
             "cmd",
-            subcommands=[CommandSpec("sub")],
+            subcommands={"sub": CommandSpec("sub")},
         )
         parser = Parser(spec)
 
@@ -276,17 +292,25 @@ class TestTrailingArgsWithMixedFeatures:
         """Options, positionals, subcommand, and trailing args together."""
         spec = CommandSpec(
             "cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            positionals=[PositionalSpec("input", arity=EXACTLY_ONE_ARITY)],
-            subcommands=[
-                CommandSpec(
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            positionals={"input": PositionalSpec("input", arity=EXACTLY_ONE_ARITY)},
+            subcommands={
+                "process": CommandSpec(
                     "process",
-                    options=[
-                        OptionSpec("threads", short=["t"], arity=EXACTLY_ONE_ARITY)
-                    ],
-                    positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+                    options={
+                        "threads": OptionSpec(
+                            "threads", short=frozenset({"t"}), arity=EXACTLY_ONE_ARITY
+                        )
+                    },
+                    positionals={
+                        "files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -320,8 +344,12 @@ class TestTrailingArgsWithMixedFeatures:
         """POSIX strict mode works with trailing args."""
         spec = CommandSpec(
             "cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, strict_options_before_positionals=True)
 
@@ -338,13 +366,19 @@ class TestTrailingArgsRealWorldExamples:
         """Git-style command with trailing args."""
         spec = CommandSpec(
             "git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "grep": CommandSpec(
                     "grep",
-                    options=[OptionSpec("ignore-case", short=["i"], arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("pattern", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "ignore-case": OptionSpec(
+                            "ignore-case", short=frozenset({"i"}), arity=ZERO_ARITY
+                        )
+                    },
+                    positionals={
+                        "pattern": PositionalSpec("pattern", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -362,16 +396,24 @@ class TestTrailingArgsRealWorldExamples:
         """Docker exec style with command after --."""
         spec = CommandSpec(
             "docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "exec": CommandSpec(
                     "exec",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[PositionalSpec("container", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "container": PositionalSpec(
+                            "container", arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -389,8 +431,8 @@ class TestTrailingArgsRealWorldExamples:
         """Find -exec style with command in trailing args."""
         spec = CommandSpec(
             "find",
-            positionals=[PositionalSpec("path", arity=EXACTLY_ONE_ARITY)],
-            options=[OptionSpec("name", arity=EXACTLY_ONE_ARITY)],
+            positionals={"path": PositionalSpec("path", arity=EXACTLY_ONE_ARITY)},
+            options={"name": OptionSpec("name", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
 

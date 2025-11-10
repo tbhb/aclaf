@@ -36,7 +36,7 @@ class TestNegativeNumbersDisabled:
         """When disabled, -3.14 is short option '3' with inline value '.14'."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("3", arity=EXACTLY_ONE_ARITY),
+            options={"3": OptionSpec("3", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=False)
 
@@ -60,7 +60,7 @@ class TestNegativeNumbersEnabled:
         """Negative integer accepted as positional value."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -71,7 +71,7 @@ class TestNegativeNumbersEnabled:
         """Negative decimal accepted as positional value."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -82,7 +82,7 @@ class TestNegativeNumbersEnabled:
         """Negative number consumed as option value."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("threshold", arity=EXACTLY_ONE_ARITY),
+            options={"threshold": OptionSpec("threshold", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -93,7 +93,7 @@ class TestNegativeNumbersEnabled:
         """When option -1 is defined, it takes precedence."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("1", arity=ZERO_ARITY),
+            options={"1": OptionSpec("1", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -104,7 +104,7 @@ class TestNegativeNumbersEnabled:
         """-0 is valid negative number."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -115,7 +115,7 @@ class TestNegativeNumbersEnabled:
         """Multiple negative numbers as positionals."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("values", arity=ZERO_OR_MORE_ARITY),
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -134,7 +134,7 @@ class TestNegativeNumbersEnabled:
         """Scientific notation is supported by default."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -149,7 +149,7 @@ class TestNegativeNumbersEnabled:
         """Scientific notation works as option values."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("value", arity=EXACTLY_ONE_ARITY),
+            options={"value": OptionSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -160,7 +160,7 @@ class TestNegativeNumbersEnabled:
         """Negative numbers work with options requiring multiple values."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("range", arity=Arity(2, 2)),
+            options={"range": OptionSpec("range", arity=Arity(2, 2))},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -171,7 +171,7 @@ class TestNegativeNumbersEnabled:
         """Mix of positive and negative numbers as positionals."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("values", arity=ZERO_OR_MORE_ARITY),
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -186,7 +186,7 @@ class TestNegativeNumberCustomPattern:
         """Custom pattern can match leading decimal point."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(
             spec,
@@ -238,7 +238,7 @@ class TestNegativeNumberEdgeCases:
         """Single - alone is not a negative number."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("file", arity=EXACTLY_ONE_ARITY),
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -249,7 +249,7 @@ class TestNegativeNumberEdgeCases:
         """--1 is long option, never negative number."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("1", arity=ZERO_ARITY),
+            options={"1": OptionSpec("1", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -268,7 +268,11 @@ class TestNegativeNumberEdgeCases:
         """Short option with inline negative value."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("offset", short="o", arity=EXACTLY_ONE_ARITY),
+            options={
+                "offset": OptionSpec(
+                    "offset", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -279,7 +283,11 @@ class TestNegativeNumberEdgeCases:
         """Negative number without value context raises error."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("verbose", short="v", arity=ZERO_ARITY),
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -291,7 +299,7 @@ class TestNegativeNumberEdgeCases:
         """Very large negative numbers are accepted."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -302,7 +310,7 @@ class TestNegativeNumberEdgeCases:
         """Negative number with trailing decimal point."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -313,7 +321,7 @@ class TestNegativeNumberEdgeCases:
         """Scientific notation with uppercase E."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -324,7 +332,7 @@ class TestNegativeNumberEdgeCases:
         """Scientific notation with explicit positive exponent."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 

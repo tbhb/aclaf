@@ -22,12 +22,14 @@ class TestBasicFlattening:
         """Multiple occurrences with different value counts should flatten."""
         spec = CommandSpec(
             name="build",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -57,12 +59,14 @@ class TestBasicFlattening:
         """Without flattening, nested structure is preserved."""
         spec = CommandSpec(
             name="build",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=False,
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=False,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -76,12 +80,14 @@ class TestBasicFlattening:
         # With flattening
         spec_flat = CommandSpec(
             name="build",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser_flat = Parser(spec=spec_flat)
         result_flat = parser_flat.parse(["--files", "a", "b", "c"])
@@ -89,12 +95,14 @@ class TestBasicFlattening:
         # Without flattening
         spec_nested = CommandSpec(
             name="build",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=False,
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=False,
+                )
+            },
         )
         parser_nested = Parser(spec=spec_nested)
         result_nested = parser_nested.parse(["--files", "a", "b", "c"])
@@ -109,12 +117,14 @@ class TestBasicFlattening:
         """Zero-value occurrences are effectively filtered during flattening."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(0, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(0, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -128,12 +138,14 @@ class TestBasicFlattening:
         """Different occurrences with varying value counts."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -148,12 +160,14 @@ class TestBasicFlattening:
         """Flattening works with fixed multi-value arity (e.g., 2-3 values)."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="coords",
-                arity=Arity(2, 3),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "coords": OptionSpec(
+                    name="coords",
+                    arity=Arity(2, 3),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -170,20 +184,20 @@ class TestConfigurationPrecedence:
         """OptionSpec.flatten_values=True overrides CommandSpec=False."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "files": OptionSpec(
                     name="files",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
                     flatten_values=True,  # Override command-level setting
                 ),
-                OptionSpec(
+                "inputs": OptionSpec(
                     name="inputs",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
                     # No override, uses command-level setting
                 ),
-            ],
+            },
             flatten_option_values=False,  # Command-level default
         )
         parser = Parser(spec=spec)
@@ -212,20 +226,20 @@ class TestConfigurationPrecedence:
         """OptionSpec.flatten_values=False overrides CommandSpec=True."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "files": OptionSpec(
                     name="files",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
                     flatten_values=False,  # Explicitly disable
                 ),
-                OptionSpec(
+                "inputs": OptionSpec(
                     name="inputs",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
                     # Uses command-level setting
                 ),
-            ],
+            },
             flatten_option_values=True,  # Command-level default
         )
         parser = Parser(spec=spec)
@@ -254,12 +268,14 @@ class TestConfigurationPrecedence:
         """CommandSpec.flatten_option_values overrides BaseParser."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                # No option-level setting, uses command-level
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    # No option-level setting, uses command-level
+                )
+            },
             flatten_option_values=True,  # Override parser-level
         )
         parser = Parser(
@@ -276,12 +292,14 @@ class TestConfigurationPrecedence:
         """When both option and command are None, uses parser default."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=None,  # Inherit
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=None,  # Inherit
+                )
+            },
             flatten_option_values=None,  # Inherit
         )
 
@@ -299,12 +317,14 @@ class TestConfigurationPrecedence:
         """Default is False when no settings provided at any level."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="files",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                # flatten_values defaults to None
-            ),
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    # flatten_values defaults to None
+                )
+            },
             # flatten_option_values defaults to None
         )
         parser = Parser(
@@ -328,12 +348,14 @@ class TestNonApplicableCases:
 
             spec = CommandSpec(
                 name="cmd",
-                options=OptionSpec(
-                    name="file",
-                    arity=Arity(1, None),
-                    accumulation_mode=AccumulationMode.LAST_WINS,
-                    flatten_values=True,  # Has no effect (triggers warning)
-                ),
+                options={
+                    "file": OptionSpec(
+                        name="file",
+                        arity=Arity(1, None),
+                        accumulation_mode=AccumulationMode.LAST_WINS,
+                        flatten_values=True,  # Has no effect (triggers warning)
+                    )
+                },
             )
             parser = Parser(spec=spec)
 
@@ -349,12 +371,14 @@ class TestNonApplicableCases:
 
             spec = CommandSpec(
                 name="cmd",
-                options=OptionSpec(
-                    name="file",
-                    arity=Arity(1, None),
-                    accumulation_mode=AccumulationMode.FIRST_WINS,
-                    flatten_values=True,  # Has no effect (triggers warning)
-                ),
+                options={
+                    "file": OptionSpec(
+                        name="file",
+                        arity=Arity(1, None),
+                        accumulation_mode=AccumulationMode.FIRST_WINS,
+                        flatten_values=True,  # Has no effect (triggers warning)
+                    )
+                },
             )
             parser = Parser(spec=spec)
 
@@ -370,13 +394,15 @@ class TestNonApplicableCases:
 
             spec = CommandSpec(
                 name="cmd",
-                options=OptionSpec(
-                    name="verbose",
-                    arity=Arity(0, 0),
-                    accumulation_mode=AccumulationMode.COUNT,
-                    is_flag=True,
-                    flatten_values=True,  # Has no effect (triggers warning)
-                ),
+                options={
+                    "verbose": OptionSpec(
+                        name="verbose",
+                        arity=Arity(0, 0),
+                        accumulation_mode=AccumulationMode.COUNT,
+                        is_flag=True,
+                        flatten_values=True,  # Has no effect (triggers warning)
+                    )
+                },
             )
             parser = Parser(spec=spec)
 
@@ -392,12 +418,14 @@ class TestNonApplicableCases:
 
             spec = CommandSpec(
                 name="cmd",
-                options=OptionSpec(
-                    name="file",
-                    arity=Arity(1, None),
-                    accumulation_mode=AccumulationMode.ERROR,
-                    flatten_values=True,  # Has no effect (triggers warning)
-                ),
+                options={
+                    "file": OptionSpec(
+                        name="file",
+                        arity=Arity(1, None),
+                        accumulation_mode=AccumulationMode.ERROR,
+                        flatten_values=True,  # Has no effect (triggers warning)
+                    )
+                },
             )
             parser = Parser(spec=spec)
 
@@ -410,12 +438,14 @@ class TestNonApplicableCases:
         """Options with max arity of 1 don't produce nested tuples in COLLECT."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="file",
-                arity=Arity(1, 1),  # Single value per occurrence
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,  # Has no effect (no nesting with max=1)
-            ),
+            options={
+                "file": OptionSpec(
+                    name="file",
+                    arity=Arity(1, 1),  # Single value per occurrence
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,  # Has no effect (no nesting with max=1)
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -428,13 +458,15 @@ class TestNonApplicableCases:
         """Flag options (arity 0) with COLLECT mode."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="flag",
-                arity=Arity(0, 0),
-                accumulation_mode=AccumulationMode.COLLECT,
-                is_flag=True,
-                flatten_values=True,  # Has no effect
-            ),
+            options={
+                "flag": OptionSpec(
+                    name="flag",
+                    arity=Arity(0, 0),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    is_flag=True,
+                    flatten_values=True,  # Has no effect
+                )
+            },
         )
         parser = Parser(spec=spec)
 
@@ -514,25 +546,25 @@ class TestInteractionWithOtherOptions:
         """Flattening only affects options with flatten_values=True."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "flat": OptionSpec(
                     name="flat",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
                     flatten_values=True,
                 ),
-                OptionSpec(
+                "nested": OptionSpec(
                     name="nested",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
                     flatten_values=False,
                 ),
-                OptionSpec(
+                "single": OptionSpec(
                     name="single",
                     arity=Arity(1, 1),
                     accumulation_mode=AccumulationMode.LAST_WINS,
                 ),
-            ],
+            },
         )
         parser = Parser(spec=spec)
 
@@ -561,12 +593,14 @@ class TestInteractionWithOtherOptions:
         """Flattening handles large numbers of occurrences efficiently."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                name="items",
-                arity=Arity(1, None),
-                accumulation_mode=AccumulationMode.COLLECT,
-                flatten_values=True,
-            ),
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=Arity(1, None),
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=True,
+                )
+            },
         )
         parser = Parser(spec=spec)
 

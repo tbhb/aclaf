@@ -33,16 +33,20 @@ class TestGitCommitCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "commit": CommandSpec(
                     name="commit",
-                    options=[
-                        OptionSpec("message", short=["m"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("all", short=["a"], arity=ZERO_ARITY),
-                        OptionSpec("amend", arity=ZERO_ARITY),
-                    ],
+                    options={
+                        "message": OptionSpec(
+                            "message", short=frozenset({"m"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        ),
+                        "amend": OptionSpec("amend", arity=ZERO_ARITY),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -68,15 +72,19 @@ class TestGitCommitCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "commit": CommandSpec(
                     name="commit",
-                    options=[
-                        OptionSpec("message", short=["m"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("all", short=["a"], arity=ZERO_ARITY),
-                    ],
+                    options={
+                        "message": OptionSpec(
+                            "message", short=frozenset({"m"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -101,16 +109,18 @@ class TestGitCommitCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "commit": CommandSpec(
                     name="commit",
-                    options=[
-                        OptionSpec("message", short=["m"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("amend", arity=ZERO_ARITY),
-                        OptionSpec("no-edit", arity=ZERO_ARITY),
-                    ],
+                    options={
+                        "message": OptionSpec(
+                            "message", short=frozenset({"m"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                        "amend": OptionSpec("amend", arity=ZERO_ARITY),
+                        "no-edit": OptionSpec("no-edit", arity=ZERO_ARITY),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -139,17 +149,19 @@ class TestGitLogCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "log": CommandSpec(
                     name="log",
-                    options=[
-                        OptionSpec("oneline", arity=ZERO_ARITY),
-                        OptionSpec("graph", arity=ZERO_ARITY),
-                        OptionSpec("all", arity=ZERO_ARITY),
-                        OptionSpec("max-count", short=["n"], arity=EXACTLY_ONE_ARITY),
-                    ],
+                    options={
+                        "oneline": OptionSpec("oneline", arity=ZERO_ARITY),
+                        "graph": OptionSpec("graph", arity=ZERO_ARITY),
+                        "all": OptionSpec("all", arity=ZERO_ARITY),
+                        "max-count": OptionSpec(
+                            "max-count", short=frozenset({"n"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -175,14 +187,16 @@ class TestGitLogCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "log": CommandSpec(
                     name="log",
-                    options=[
-                        OptionSpec("max-count", short=["n"], arity=EXACTLY_ONE_ARITY)
-                    ],
+                    options={
+                        "max-count": OptionSpec(
+                            "max-count", short=frozenset({"n"}), arity=EXACTLY_ONE_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -210,13 +224,19 @@ class TestGitBranchCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "branch": CommandSpec(
                     name="branch",
-                    options=[OptionSpec("all", short=["a"], arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)],
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        )
+                    },
+                    positionals={
+                        "name": PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -240,12 +260,14 @@ class TestGitBranchCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "branch": CommandSpec(
                     name="branch",
-                    positionals=[PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)],
+                    positionals={
+                        "name": PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -269,16 +291,22 @@ class TestGitBranchCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "branch": CommandSpec(
                     name="branch",
-                    options=[
-                        OptionSpec("delete", short=["d"], arity=ZERO_ARITY),
-                        OptionSpec("force-delete", short=["D"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[PositionalSpec("branches", arity=ONE_OR_MORE_ARITY)],
+                    options={
+                        "delete": OptionSpec(
+                            "delete", short=frozenset({"d"}), arity=ZERO_ARITY
+                        ),
+                        "force-delete": OptionSpec(
+                            "force-delete", short=frozenset({"D"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "branches": PositionalSpec("branches", arity=ONE_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -307,27 +335,27 @@ class TestGitRemoteCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "remote": CommandSpec(
                     name="remote",
-                    subcommands=[
-                        CommandSpec(
+                    subcommands={
+                        "add": CommandSpec(
                             name="add",
-                            positionals=[
-                                PositionalSpec("name", arity=EXACTLY_ONE_ARITY),
-                                PositionalSpec("url", arity=EXACTLY_ONE_ARITY),
-                            ],
+                            positionals={
+                                "name": PositionalSpec("name", arity=EXACTLY_ONE_ARITY),
+                                "url": PositionalSpec("url", arity=EXACTLY_ONE_ARITY),
+                            },
                         ),
-                        CommandSpec(
+                        "remove": CommandSpec(
                             name="remove",
-                            aliases=("rm",),
-                            positionals=[
-                                PositionalSpec("name", arity=EXACTLY_ONE_ARITY)
-                            ],
+                            aliases=frozenset({"rm"}),
+                            positionals={
+                                "name": PositionalSpec("name", arity=EXACTLY_ONE_ARITY)
+                            },
                         ),
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -362,20 +390,20 @@ class TestGitRemoteCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "remote": CommandSpec(
                     name="remote",
-                    subcommands=[
-                        CommandSpec(
+                    subcommands={
+                        "remove": CommandSpec(
                             name="remove",
-                            aliases=("rm",),
-                            positionals=[
-                                PositionalSpec("name", arity=EXACTLY_ONE_ARITY)
-                            ],
+                            aliases=frozenset({"rm"}),
+                            positionals={
+                                "name": PositionalSpec("name", arity=EXACTLY_ONE_ARITY)
+                            },
                         ),
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -409,13 +437,19 @@ class TestGitCheckoutCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "checkout": CommandSpec(
                     name="checkout",
-                    options=[OptionSpec("branch", short=["b"], arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("target", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "branch": OptionSpec(
+                            "branch", short=frozenset({"b"}), arity=ZERO_ARITY
+                        )
+                    },
+                    positionals={
+                        "target": PositionalSpec("target", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -439,13 +473,19 @@ class TestGitCheckoutCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "checkout": CommandSpec(
                     name="checkout",
-                    options=[OptionSpec("branch", short=["b"], arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("name", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "branch": OptionSpec(
+                            "branch", short=frozenset({"b"}), arity=ZERO_ARITY
+                        )
+                    },
+                    positionals={
+                        "name": PositionalSpec("name", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -474,16 +514,22 @@ class TestGitAddCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "add": CommandSpec(
                     name="add",
-                    options=[
-                        OptionSpec("all", short=["A"], arity=ZERO_ARITY),
-                        OptionSpec("patch", short=["p"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"A"}), arity=ZERO_ARITY
+                        ),
+                        "patch": OptionSpec(
+                            "patch", short=frozenset({"p"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -510,13 +556,19 @@ class TestGitAddCommand:
         """
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "add": CommandSpec(
                     name="add",
-                    options=[OptionSpec("all", short=["A"], arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)],
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"A"}), arity=ZERO_ARITY
+                        )
+                    },
+                    positionals={
+                        "files": PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -546,31 +598,41 @@ class TestComplexGitScenarios:
         """
         spec = CommandSpec(
             name="git",
-            options=[
-                OptionSpec("version", arity=ZERO_ARITY),
-                OptionSpec("help", short=["h"], arity=ZERO_ARITY),
-            ],
-            subcommands=[
-                CommandSpec(
+            options={
+                "version": OptionSpec("version", arity=ZERO_ARITY),
+                "help": OptionSpec("help", short=frozenset({"h"}), arity=ZERO_ARITY),
+            },
+            subcommands={
+                "commit": CommandSpec(
                     name="commit",
-                    options=[
-                        OptionSpec("message", short=["m"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("all", short=["a"], arity=ZERO_ARITY),
-                    ],
+                    options={
+                        "message": OptionSpec(
+                            "message", short=frozenset({"m"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        ),
+                    },
                 ),
-                CommandSpec(
+                "log": CommandSpec(
                     name="log",
-                    options=[
-                        OptionSpec("oneline", arity=ZERO_ARITY),
-                        OptionSpec("graph", arity=ZERO_ARITY),
-                    ],
+                    options={
+                        "oneline": OptionSpec("oneline", arity=ZERO_ARITY),
+                        "graph": OptionSpec("graph", arity=ZERO_ARITY),
+                    },
                 ),
-                CommandSpec(
+                "branch": CommandSpec(
                     name="branch",
-                    options=[OptionSpec("delete", short=["d"], arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("names", arity=ZERO_OR_MORE_ARITY)],
+                    options={
+                        "delete": OptionSpec(
+                            "delete", short=frozenset({"d"}), arity=ZERO_ARITY
+                        )
+                    },
+                    positionals={
+                        "names": PositionalSpec("names", arity=ZERO_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -604,21 +666,25 @@ class TestComplexGitScenarios:
         """
         spec = CommandSpec(
             name="git",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 ),
-                OptionSpec("quiet", short=["q"], arity=ZERO_ARITY),
-            ],
-            subcommands=[
-                CommandSpec(
+                "quiet": OptionSpec("quiet", short=frozenset({"q"}), arity=ZERO_ARITY),
+            },
+            subcommands={
+                "status": CommandSpec(
                     name="status",
-                    options=[OptionSpec("short", short=["s"], arity=ZERO_ARITY)],
+                    options={
+                        "short": OptionSpec(
+                            "short", short=frozenset({"s"}), arity=ZERO_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 

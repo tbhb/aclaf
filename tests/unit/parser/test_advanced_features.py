@@ -17,8 +17,8 @@ class TestStrictOptionsBeforePositionals:
         args = ["file.txt", "--verbose"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", is_flag=True)],
-            positionals=[PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)],
+            options={"verbose": OptionSpec("verbose", is_flag=True)},
+            positionals={"files": PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec, strict_options_before_positionals=True)
         result = parser.parse(args)
@@ -31,8 +31,10 @@ class TestStrictOptionsBeforePositionals:
         args = ["file.txt", "-v"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short="v", is_flag=True)],
-            positionals=[PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)],
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
+            positionals={"files": PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec, strict_options_before_positionals=True)
         result = parser.parse(args)
@@ -45,8 +47,8 @@ class TestStrictOptionsBeforePositionals:
         args = ["file.txt", "--verbose"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", is_flag=True)],
-            positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)],
+            options={"verbose": OptionSpec("verbose", is_flag=True)},
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, strict_options_before_positionals=False)
         result = parser.parse(args)
@@ -59,8 +61,10 @@ class TestStrictOptionsBeforePositionals:
         args = ["file.txt", "-v"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short="v", is_flag=True)],
-            positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)],
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, strict_options_before_positionals=False)
         result = parser.parse(args)
@@ -77,7 +81,9 @@ class TestConstValueFlags:
         args = ["--mode"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("mode", is_flag=True, const_value="production")],
+            options={
+                "mode": OptionSpec("mode", is_flag=True, const_value="production")
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -86,7 +92,9 @@ class TestConstValueFlags:
     def test_flag_without_const_value_uses_true(self):
         """Flag without const_value should default to True."""
         args = ["--verbose"]
-        spec = CommandSpec(name="cmd", options=[OptionSpec("verbose", is_flag=True)])
+        spec = CommandSpec(
+            name="cmd", options={"verbose": OptionSpec("verbose", is_flag=True)}
+        )
         parser = Parser(spec)
         result = parser.parse(args)
         assert result.options["verbose"].value is True
@@ -96,14 +104,14 @@ class TestConstValueFlags:
         args = ["--mode", "--mode", "--mode"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "mode": OptionSpec(
                     "mode",
                     is_flag=True,
                     const_value="enabled",
                     accumulation_mode=AccumulationMode.COLLECT,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -118,7 +126,11 @@ class TestNegationWordFlags:
         args = ["--no-verbose"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", is_flag=True, negation_words=["no"])],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", is_flag=True, negation_words=frozenset({"no"})
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -129,7 +141,11 @@ class TestNegationWordFlags:
         args = ["--verbose"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", is_flag=True, negation_words=["no"])],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", is_flag=True, negation_words=frozenset({"no"})
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -139,11 +155,13 @@ class TestNegationWordFlags:
         """Flag with multiple negation words should recognize all."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
-                    "verbose", is_flag=True, negation_words=["no", "disable", "without"]
+            options={
+                "verbose": OptionSpec(
+                    "verbose",
+                    is_flag=True,
+                    negation_words=frozenset({"no", "disable", "without"}),
                 )
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -164,14 +182,14 @@ class TestNegationWordFlags:
         args = ["--verbose", "--no-verbose", "--verbose"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
                     is_flag=True,
-                    negation_words=["no"],
+                    negation_words=frozenset({"no"}),
                     accumulation_mode=AccumulationMode.LAST_WINS,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -187,13 +205,13 @@ class TestFirstWinsAccumulation:
         args = ["--output", "file1.txt", "--output", "file2.txt"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "output": OptionSpec(
                     "output",
                     arity=EXACTLY_ONE_ARITY,
                     accumulation_mode=AccumulationMode.FIRST_WINS,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -205,14 +223,14 @@ class TestFirstWinsAccumulation:
         args = ["-o", "a", "-o", "b", "-o", "c"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "output": OptionSpec(
                     "output",
-                    short="o",
+                    short=frozenset({"o"}),
                     arity=EXACTLY_ONE_ARITY,
                     accumulation_mode=AccumulationMode.FIRST_WINS,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -223,13 +241,13 @@ class TestFirstWinsAccumulation:
         args = ["--verbose", "--verbose"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
                     is_flag=True,
                     accumulation_mode=AccumulationMode.FIRST_WINS,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -240,13 +258,13 @@ class TestFirstWinsAccumulation:
         args = ["--files", "a", "b", "--files", "c", "d"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "files": OptionSpec(
                     "files",
                     arity=ZERO_OR_MORE_ARITY,
                     accumulation_mode=AccumulationMode.FIRST_WINS,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -262,13 +280,13 @@ class TestErrorAccumulation:
         args = ["--output", "file1.txt", "--output", "file2.txt"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "output": OptionSpec(
                     "output",
                     arity=EXACTLY_ONE_ARITY,
                     accumulation_mode=AccumulationMode.ERROR,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         with pytest.raises(OptionCannotBeSpecifiedMultipleTimesError) as exc_info:
@@ -280,13 +298,13 @@ class TestErrorAccumulation:
         args = ["--output", "file.txt"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "output": OptionSpec(
                     "output",
                     arity=EXACTLY_ONE_ARITY,
                     accumulation_mode=AccumulationMode.ERROR,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)

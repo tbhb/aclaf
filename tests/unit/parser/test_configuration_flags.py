@@ -47,10 +47,10 @@ class TestAllowAbbreviatedOptions:
         """Options cannot be abbreviated when flag is disabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", arity=ZERO_ARITY),
-                OptionSpec("version", arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec("verbose", arity=ZERO_ARITY),
+                "version": OptionSpec("version", arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=False)
 
@@ -63,10 +63,10 @@ class TestAllowAbbreviatedOptions:
         """Options can be abbreviated when flag is enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", arity=ZERO_ARITY),
-                OptionSpec("version", arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec("verbose", arity=ZERO_ARITY),
+                "version": OptionSpec("version", arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -78,10 +78,12 @@ class TestAllowAbbreviatedOptions:
         """Abbreviations work when there's no ambiguity."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", arity=ZERO_ARITY),
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec("verbose", arity=ZERO_ARITY),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -93,10 +95,10 @@ class TestAllowAbbreviatedOptions:
         """Ambiguous abbreviations raise AmbiguousOptionError."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", arity=ZERO_ARITY),
-                OptionSpec("version", arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec("verbose", arity=ZERO_ARITY),
+                "version": OptionSpec("version", arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -111,7 +113,11 @@ class TestAllowAbbreviatedOptions:
         """Short options cannot be abbreviated (single char only)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -130,10 +136,10 @@ class TestAllowAbbreviatedSubcommands:
         """Subcommands cannot be abbreviated when flag is disabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="stop"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "stop": CommandSpec(name="stop"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=False)
 
@@ -146,10 +152,10 @@ class TestAllowAbbreviatedSubcommands:
         """Subcommands can be abbreviated when flag is enabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="stop"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "stop": CommandSpec(name="stop"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -161,10 +167,10 @@ class TestAllowAbbreviatedSubcommands:
         """Abbreviations work when there's no ambiguity."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="remove"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "remove": CommandSpec(name="remove"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -180,11 +186,11 @@ class TestAllowAbbreviatedSubcommands:
         """Ambiguous abbreviations raise AmbiguousSubcommandError."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="stop"),
-                CommandSpec(name="status"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "stop": CommandSpec(name="stop"),
+                "status": CommandSpec(name="status"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -203,7 +209,7 @@ class TestAllowEqualsForFlags:
         """Flag options reject --flag=value syntax when disabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, allow_equals_for_flags=False)
 
@@ -216,7 +222,7 @@ class TestAllowEqualsForFlags:
         """Flag options accept --flag=true syntax when enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -227,7 +233,7 @@ class TestAllowEqualsForFlags:
         """Flag options accept --flag=false syntax when enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -238,7 +244,7 @@ class TestAllowEqualsForFlags:
         """Invalid flag values raise InvalidFlagValueError."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -256,7 +262,9 @@ class TestAllowAliases:
         """Aliases work when flag is enabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -269,7 +277,9 @@ class TestAllowAliases:
         """Aliases are ignored when flag is disabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(spec, allow_aliases=False)
 
@@ -282,7 +292,9 @@ class TestAllowAliases:
         """Primary name works even when aliases are disabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(spec, allow_aliases=False)
 
@@ -299,7 +311,11 @@ class TestCaseInsensitiveFlags:
         """Flags are case-sensitive when flag is disabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec, case_insensitive_flags=False)
 
@@ -310,7 +326,11 @@ class TestCaseInsensitiveFlags:
         """Flags match case-insensitively when flag is enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec, case_insensitive_flags=True)
 
@@ -325,7 +345,7 @@ class TestCaseInsensitiveOptions:
         """Options are case-sensitive when flag is disabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("output", arity=EXACTLY_ONE_ARITY)],
+            options={"output": OptionSpec("output", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, case_insensitive_options=False)
 
@@ -336,7 +356,7 @@ class TestCaseInsensitiveOptions:
         """Options match case-insensitively when flag is enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("output", arity=EXACTLY_ONE_ARITY)],
+            options={"output": OptionSpec("output", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, case_insensitive_options=True)
 
@@ -347,7 +367,7 @@ class TestCaseInsensitiveOptions:
         """Options match with any case combination."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, case_insensitive_options=True)
 
@@ -368,7 +388,7 @@ class TestCaseInsensitiveSubcommands:
         """Subcommands are case-sensitive when flag is disabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec, case_insensitive_subcommands=False)
 
@@ -379,7 +399,7 @@ class TestCaseInsensitiveSubcommands:
         """Subcommands match case-insensitively when flag is enabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec, case_insensitive_subcommands=True)
 
@@ -391,7 +411,7 @@ class TestCaseInsensitiveSubcommands:
         """Subcommands match with any case combination."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec, case_insensitive_subcommands=True)
 
@@ -411,7 +431,7 @@ class TestConvertUnderscoresToDashes:
         """Underscores are not converted when flag is disabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)],
+            options={"my-option": OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, convert_underscores_to_dashes=False)
 
@@ -422,7 +442,7 @@ class TestConvertUnderscoresToDashes:
         """Underscores convert to dashes when flag is enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)],
+            options={"my-option": OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -433,7 +453,7 @@ class TestConvertUnderscoresToDashes:
         """Both underscores and dashes match when conversion is enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)],
+            options={"my-option": OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -447,7 +467,11 @@ class TestConvertUnderscoresToDashes:
         """Multiple underscores are all converted."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-long-option-name", arity=EXACTLY_ONE_ARITY)],
+            options={
+                "my-long-option-name": OptionSpec(
+                    "my-long-option-name", arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -462,7 +486,7 @@ class TestMinimumAbbreviationLength:
         """Default minimum abbreviation length is 3."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -474,7 +498,7 @@ class TestMinimumAbbreviationLength:
         """Abbreviations shorter than minimum are rejected."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -489,7 +513,7 @@ class TestMinimumAbbreviationLength:
         """Custom minimum abbreviation length is respected."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -509,7 +533,7 @@ class TestMinimumAbbreviationLength:
         """Minimum abbreviation length can be set to 1."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -528,8 +552,12 @@ class TestStrictOptionsBeforePositionals:
         """Options can appear anywhere when flag is disabled (default GNU style)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, strict_options_before_positionals=False)
 
@@ -542,8 +570,12 @@ class TestStrictOptionsBeforePositionals:
         """Options must come before positionals when flag is enabled (POSIX style)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, strict_options_before_positionals=True)
 
@@ -565,7 +597,7 @@ class TestTruthyFalseyFlagValues:
         """Custom truthy values are recognized."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -586,7 +618,7 @@ class TestTruthyFalseyFlagValues:
         """Custom falsey values are recognized."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -607,7 +639,7 @@ class TestTruthyFalseyFlagValues:
         """Values not in custom truthy/falsey lists are rejected."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -628,7 +660,7 @@ class TestConfigurationFlagInteractions:
         """Abbreviations work with case-insensitive matching."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -643,7 +675,9 @@ class TestConfigurationFlagInteractions:
         """Aliases work with case-insensitive matching."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(
             spec,
@@ -660,7 +694,7 @@ class TestConfigurationFlagInteractions:
         """Underscore conversion works with case-insensitive matching."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)],
+            options={"my-option": OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(
             spec,
@@ -675,7 +709,7 @@ class TestConfigurationFlagInteractions:
         """Abbreviations work with underscore conversion."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-long-option", arity=ZERO_ARITY)],
+            options={"my-long-option": OptionSpec("my-long-option", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -690,11 +724,15 @@ class TestConfigurationFlagInteractions:
         """All case-insensitive flags can work together."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-                OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            ],
-            subcommands=[CommandSpec(name="start")],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                ),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(
             spec,
@@ -713,8 +751,8 @@ class TestConfigurationFlagInteractions:
         """POSIX strict mode works with abbreviated options."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
-            positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(
             spec,
