@@ -21,3 +21,4 @@ accumulation_mode
 is_flag
 composable
 negation_words
+heading_level

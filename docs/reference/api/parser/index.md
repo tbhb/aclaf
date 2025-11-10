@@ -2,9 +2,11 @@
 
 --8<-- "internal.md"
 
-The main parser API for processing command-line arguments. This page documents the Parser class, which implements the complete GNU/POSIX-compliant parsing algorithm, along with the BaseParser abstract base class and the result dataclasses (ParseResult, ParsedOption, ParsedPositional) that represent parsed arguments.
+The main parser API for processing command-line arguments. This page documents the `Parser` class, which implements the complete GNU/POSIX-compliant parsing algorithm, along with the `BaseParser` abstract base class and the result data classes (`ParseResult`, `ParsedOption`, `ParsedPositional`) that represent parsed arguments.
 
-::: aclaf.parser
+<!-- vale off -->
+
+::: Aclaf.parser
     options:
       members:
       - Parser
@@ -12,3 +14,5 @@ The main parser API for processing command-line arguments. This page documents t
       - ParseResult
       - ParsedOption
       - ParsedPositional
+
+<!-- vale on -->

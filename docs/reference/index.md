@@ -1,3 +1,3 @@
 # Reference
 
-This section contains reference materials like API documentation, CLI commands, and configuration options.
+This section contains reference materials like API documentation, command-line tool commands, and configuration options.
