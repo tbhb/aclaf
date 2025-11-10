@@ -31,7 +31,7 @@ class TestHypothesisRegressions:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", arity=Arity(0, 1))],
+            options={"opt": OptionSpec("opt", arity=Arity(0, 1))},
         )
         parser = Parser(spec)
 

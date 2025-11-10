@@ -20,12 +20,14 @@ class TestCalculatorLikeCLI:
         """Calculator CLI: add -10 5 -3."""
         spec = CommandSpec(
             name="calc",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "add": CommandSpec(
                     name="add",
-                    positionals=PositionalSpec("values", arity=ZERO_OR_MORE_ARITY),
+                    positionals={
+                        "values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)
+                    },
                 )
-            ],
+            },
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -38,13 +40,17 @@ class TestCalculatorLikeCLI:
         """Calculator CLI: multiply --precision 2 -5.5 3.14."""
         spec = CommandSpec(
             name="calc",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "multiply": CommandSpec(
                     name="multiply",
-                    options=OptionSpec("precision", arity=EXACTLY_ONE_ARITY),
-                    positionals=PositionalSpec("values", arity=ZERO_OR_MORE_ARITY),
+                    options={
+                        "precision": OptionSpec("precision", arity=EXACTLY_ONE_ARITY)
+                    },
+                    positionals={
+                        "values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)
+                    },
                 )
-            ],
+            },
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -61,11 +67,11 @@ class TestDataProcessingCLI:
         """Data processing: filter --min -100 --max 100 data.csv."""
         spec = CommandSpec(
             name="process",
-            options=[
-                OptionSpec("min", arity=EXACTLY_ONE_ARITY),
-                OptionSpec("max", arity=EXACTLY_ONE_ARITY),
-            ],
-            positionals=PositionalSpec("file", arity=EXACTLY_ONE_ARITY),
+            options={
+                "min": OptionSpec("min", arity=EXACTLY_ONE_ARITY),
+                "max": OptionSpec("max", arity=EXACTLY_ONE_ARITY),
+            },
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -78,8 +84,8 @@ class TestDataProcessingCLI:
         """Data processing: analyze --threshold -1.5e-10 input.dat."""
         spec = CommandSpec(
             name="analyze",
-            options=OptionSpec("threshold", arity=EXACTLY_ONE_ARITY),
-            positionals=PositionalSpec("input", arity=EXACTLY_ONE_ARITY),
+            options={"threshold": OptionSpec("threshold", arity=EXACTLY_ONE_ARITY)},
+            positionals={"input": PositionalSpec("input", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -95,11 +101,11 @@ class TestScientificComputing:
         """Simulation: run --temp -273.15 --pressure 1.0 --time -0.5."""
         spec = CommandSpec(
             name="simulate",
-            options=[
-                OptionSpec("temp", arity=EXACTLY_ONE_ARITY),
-                OptionSpec("pressure", arity=EXACTLY_ONE_ARITY),
-                OptionSpec("time", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "temp": OptionSpec("temp", arity=EXACTLY_ONE_ARITY),
+                "pressure": OptionSpec("pressure", arity=EXACTLY_ONE_ARITY),
+                "time": OptionSpec("time", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -121,7 +127,7 @@ class TestScientificComputing:
         """3D coordinates: plot -5.0 -3.2 10.5."""
         spec = CommandSpec(
             name="plot",
-            positionals=PositionalSpec("coords", arity=Arity(3, 3)),
+            positionals={"coords": PositionalSpec("coords", arity=Arity(3, 3))},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -136,10 +142,10 @@ class TestFinancialCLI:
         """Finance: transaction --amount -500.00 --description "Refund"."""
         spec = CommandSpec(
             name="finance",
-            options=[
-                OptionSpec("amount", arity=EXACTLY_ONE_ARITY),
-                OptionSpec("description", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "amount": OptionSpec("amount", arity=EXACTLY_ONE_ARITY),
+                "description": OptionSpec("description", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -151,10 +157,10 @@ class TestFinancialCLI:
         """Finance: adjust-balance 12345 -1000.50."""
         spec = CommandSpec(
             name="adjust-balance",
-            positionals=[
-                PositionalSpec("account", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("delta", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "account": PositionalSpec("account", arity=EXACTLY_ONE_ARITY),
+                "delta": PositionalSpec("delta", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -170,8 +176,8 @@ class TestMixedOptionsAndPositionals:
         """When -v option exists, it takes precedence over -5 number."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("v", arity=ZERO_ARITY),
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            options={"v": OptionSpec("v", arity=ZERO_ARITY)},
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -184,8 +190,12 @@ class TestMixedOptionsAndPositionals:
         """When no -1 option, -1 becomes positional."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("verbose", short="v", arity=ZERO_ARITY),
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -196,12 +206,12 @@ class TestMixedOptionsAndPositionals:
         """Combined flags followed by negative number."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", arity=ZERO_ARITY),
-                OptionSpec("b", arity=ZERO_ARITY),
-                OptionSpec("c", arity=ZERO_ARITY),
-            ],
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            options={
+                "a": OptionSpec("a", arity=ZERO_ARITY),
+                "b": OptionSpec("b", arity=ZERO_ARITY),
+                "c": OptionSpec("c", arity=ZERO_ARITY),
+            },
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -219,7 +229,7 @@ class TestEdgeCasesInRealScenarios:
         """Handle -0 correctly."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -230,7 +240,7 @@ class TestEdgeCasesInRealScenarios:
         """Handle large negative exponents in scientific notation."""
         spec = CommandSpec(
             name="cmd",
-            positionals=PositionalSpec("value", arity=EXACTLY_ONE_ARITY),
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -241,7 +251,7 @@ class TestEdgeCasesInRealScenarios:
         """Option consuming multiple negative values."""
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("range", arity=Arity(2, 2)),
+            options={"range": OptionSpec("range", arity=Arity(2, 2))},
         )
         parser = Parser(spec, allow_negative_numbers=True)
 

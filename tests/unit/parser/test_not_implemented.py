@@ -32,13 +32,13 @@ class TestRuntimeErrorFallbacks:
         # Create a spec with a valid accumulation mode
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "output": OptionSpec(
                     "output",
                     arity=EXACTLY_ONE_ARITY,
                     accumulation_mode=AccumulationMode.COLLECT,
                 )
-            ],
+            },
         )
         parser = Parser(spec)
 

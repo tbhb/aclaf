@@ -31,7 +31,7 @@ class TestOptionResolutionBasic:
         """Exact long option names match."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(["--verbose"])
@@ -41,7 +41,11 @@ class TestOptionResolutionBasic:
         """Exact short option names match."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(["-v"])
@@ -51,7 +55,7 @@ class TestOptionResolutionBasic:
         """Unknown options raise UnknownOptionError."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec)
 
@@ -68,10 +72,10 @@ class TestOptionResolutionAbbreviations:
         """Unambiguous abbreviations match correctly."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", arity=ZERO_ARITY),
-                OptionSpec("output", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec("verbose", arity=ZERO_ARITY),
+                "output": OptionSpec("output", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -83,7 +87,7 @@ class TestOptionResolutionAbbreviations:
         """Abbreviations respect minimum length."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -103,10 +107,10 @@ class TestOptionResolutionAbbreviations:
         """Ambiguous abbreviations raise AmbiguousOptionError."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", arity=ZERO_ARITY),
-                OptionSpec("version", arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec("verbose", arity=ZERO_ARITY),
+                "version": OptionSpec("version", arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -121,10 +125,10 @@ class TestOptionResolutionAbbreviations:
         """Full option names always work even with abbreviations enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", arity=ZERO_ARITY),
-                OptionSpec("version", arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec("verbose", arity=ZERO_ARITY),
+                "version": OptionSpec("version", arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -136,9 +140,11 @@ class TestOptionResolutionAbbreviations:
         """Abbreviations work with options that have multiple long names."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("output", long=["output", "out"], arity=EXACTLY_ONE_ARITY)
-            ],
+            options={
+                "output": OptionSpec(
+                    "output", long=frozenset({"output", "out"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -158,7 +164,7 @@ class TestOptionResolutionCaseInsensitive:
         """Long options match case-insensitively when enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec, case_insensitive_options=True)
 
@@ -169,7 +175,7 @@ class TestOptionResolutionCaseInsensitive:
         """Options match with any case combination."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("output", arity=EXACTLY_ONE_ARITY)],
+            options={"output": OptionSpec("output", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, case_insensitive_options=True)
 
@@ -180,7 +186,11 @@ class TestOptionResolutionCaseInsensitive:
         """Short flags match case-insensitively when case_insensitive_flags enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec, case_insensitive_flags=True)
 
@@ -195,7 +205,7 @@ class TestOptionResolutionUnderscores:
         """Underscores convert to dashes when enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)],
+            options={"my-option": OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -206,7 +216,7 @@ class TestOptionResolutionUnderscores:
         """Both underscores and dashes work when conversion enabled."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)],
+            options={"my-option": OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -220,7 +230,7 @@ class TestOptionResolutionUnderscores:
         """Underscores don't convert when disabled (default)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)],
+            options={"my-option": OptionSpec("my-option", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec, convert_underscores_to_dashes=False)
 
@@ -235,7 +245,11 @@ class TestOptionResolutionNegation:
         """Negation with 'no' prefix works."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY, negation_words=["no"])],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", arity=ZERO_ARITY, negation_words=frozenset({"no"})
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -246,7 +260,11 @@ class TestOptionResolutionNegation:
         """Negation with 'without' prefix works."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("color", arity=ZERO_ARITY, negation_words=["without"])],
+            options={
+                "color": OptionSpec(
+                    "color", arity=ZERO_ARITY, negation_words=frozenset({"without"})
+                )
+            },
         )
         parser = Parser(spec)
 
@@ -257,11 +275,13 @@ class TestOptionResolutionNegation:
         """Multiple negation words work."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
-                    "verbose", arity=ZERO_ARITY, negation_words=["no", "without"]
+            options={
+                "verbose": OptionSpec(
+                    "verbose",
+                    arity=ZERO_ARITY,
+                    negation_words=frozenset({"no", "without"}),
                 )
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -275,7 +295,11 @@ class TestOptionResolutionNegation:
         """Negated options work with case-insensitive matching."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY, negation_words=["no"])],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", arity=ZERO_ARITY, negation_words=frozenset({"no"})
+                )
+            },
         )
         parser = Parser(spec, case_insensitive_options=True)
 
@@ -290,7 +314,7 @@ class TestSubcommandResolutionBasic:
         """Exact subcommand names match."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec)
 
@@ -302,7 +326,7 @@ class TestSubcommandResolutionBasic:
         """Unknown subcommands raise UnknownSubcommandError."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec)
 
@@ -319,10 +343,10 @@ class TestSubcommandResolutionAbbreviations:
         """Unambiguous subcommand abbreviations match."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="remove"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "remove": CommandSpec(name="remove"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -334,11 +358,11 @@ class TestSubcommandResolutionAbbreviations:
         """Ambiguous subcommand abbreviations raise error."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="stop"),
-                CommandSpec(name="status"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "stop": CommandSpec(name="stop"),
+                "status": CommandSpec(name="status"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -352,7 +376,7 @@ class TestSubcommandResolutionAbbreviations:
         """Subcommand abbreviations respect minimum length."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(
             spec,
@@ -377,15 +401,12 @@ class TestSubcommandResolutionAliases:
         """Subcommand aliases match when aliases enabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "remove": CommandSpec(
                     name="remove",
-                    aliases=(
-                        "rm",
-                        "del",
-                    ),
+                    aliases=frozenset({"rm", "del"}),
                 )
-            ],
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -403,7 +424,9 @@ class TestSubcommandResolutionAliases:
         """Aliases don't match when disabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(spec, allow_aliases=False)
 
@@ -414,7 +437,9 @@ class TestSubcommandResolutionAliases:
         """Primary subcommand name works even when aliases disabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(spec, allow_aliases=False)
 
@@ -426,7 +451,9 @@ class TestSubcommandResolutionAliases:
         """Abbreviations work with aliases when both enabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(
             spec,
@@ -453,7 +480,7 @@ class TestSubcommandResolutionCaseInsensitive:
         """Subcommands match case-insensitively when enabled."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec, case_insensitive_subcommands=True)
 
@@ -465,7 +492,7 @@ class TestSubcommandResolutionCaseInsensitive:
         """Subcommands match with mixed case."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec, case_insensitive_subcommands=True)
 
@@ -477,7 +504,9 @@ class TestSubcommandResolutionCaseInsensitive:
         """Subcommand aliases work with case-insensitive matching."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="remove", aliases=("rm",))],
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
         )
         parser = Parser(
             spec,
@@ -498,7 +527,7 @@ class TestResolutionErrorMessages:
         """Unknown option errors include the unknown option name."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(spec)
 
@@ -511,10 +540,10 @@ class TestResolutionErrorMessages:
         """Ambiguous option errors list all matching options."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("verbose", arity=ZERO_ARITY),
-                OptionSpec("version", arity=ZERO_ARITY),
-            ],
+            options={
+                "verbose": OptionSpec("verbose", arity=ZERO_ARITY),
+                "version": OptionSpec("version", arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec, allow_abbreviated_options=True)
 
@@ -529,7 +558,7 @@ class TestResolutionErrorMessages:
         """Unknown subcommand errors include the unknown name."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start")],
+            subcommands={"start": CommandSpec(name="start")},
         )
         parser = Parser(spec)
 
@@ -542,10 +571,10 @@ class TestResolutionErrorMessages:
         """Ambiguous subcommand errors list all matching subcommands."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[
-                CommandSpec(name="start"),
-                CommandSpec(name="stop"),
-            ],
+            subcommands={
+                "start": CommandSpec(name="start"),
+                "stop": CommandSpec(name="stop"),
+            },
         )
         parser = Parser(spec, allow_abbreviated_subcommands=True)
 
@@ -564,7 +593,7 @@ class TestResolutionCombinations:
         """Abbreviations work with case-insensitive matching."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", arity=ZERO_ARITY)],
+            options={"verbose": OptionSpec("verbose", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -579,7 +608,7 @@ class TestResolutionCombinations:
         """Abbreviations work with underscore conversion."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-long-option", arity=ZERO_ARITY)],
+            options={"my-long-option": OptionSpec("my-long-option", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -594,7 +623,7 @@ class TestResolutionCombinations:
         """All option resolution features work together."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("my-option", arity=ZERO_ARITY)],
+            options={"my-option": OptionSpec("my-option", arity=ZERO_ARITY)},
         )
         parser = Parser(
             spec,
@@ -611,7 +640,9 @@ class TestResolutionCombinations:
         """All subcommand resolution features work together."""
         spec = CommandSpec(
             name="cmd",
-            subcommands=[CommandSpec(name="start", aliases=("begin",))],
+            subcommands={
+                "start": CommandSpec(name="start", aliases=frozenset({"begin"}))
+            },
         )
         parser = Parser(
             spec,

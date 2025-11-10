@@ -1,26 +1,17 @@
 import re
-from collections.abc import Sequence
 from functools import cache
-from typing import override
+from typing import TYPE_CHECKING, override
 
-from ._parameters import OptionSpec, PositionalSpec
-from ._utils import normalize_frozen_str_set
 from .exceptions import (
     AmbiguousOptionError,
     AmbiguousSubcommandError,
     UnknownOptionError,
 )
 
-COMMAND_NAME_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9-_]*$")
+if TYPE_CHECKING:
+    from ._parameters import OptionSpec, PositionalSpec
 
-# Type aliases for complex type annotations
-type OptionsInput = OptionSpec | dict[str, OptionSpec] | Sequence[OptionSpec] | None
-type PositionalsInput = (
-    PositionalSpec | dict[str, PositionalSpec] | Sequence[PositionalSpec] | None
-)
-type SubcommandsInput = (
-    "CommandSpec | dict[str, CommandSpec] | Sequence[CommandSpec] | None"
-)
+COMMAND_NAME_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9-_]*$")
 
 
 @cache
@@ -303,10 +294,10 @@ class CommandSpec:
         self,
         name: str,
         *,
-        aliases: tuple[str, ...] = (),
-        options: OptionsInput = None,
-        positionals: PositionalsInput = None,
-        subcommands: SubcommandsInput = None,
+        aliases: frozenset[str] | None = None,
+        options: "dict[str, OptionSpec] | None" = None,
+        positionals: "dict[str, PositionalSpec] | None" = None,
+        subcommands: dict[str, "CommandSpec"] | None = None,
         case_insensitive_aliases: bool = False,
         case_insensitive_options: bool = False,
         flatten_option_values: bool | None = None,
@@ -317,17 +308,15 @@ class CommandSpec:
             name: The canonical command name. Must start with an alphabetic
                 character and may contain alphanumeric characters, dashes, and
                 underscores.
-            aliases: Alternative names for this command. Each alias must follow
-                the same naming rules as the command name.
-            options: Option specifications for this command. Can be a single
-                [`OptionSpec`][aclaf.parser.OptionSpec], a dict mapping names to
-                specs, a sequence of specs, or `None`.
-            positionals: Positional argument specifications. Can be a single
-                [`PositionalSpec`][aclaf.parser.PositionalSpec], a dict mapping
-                names to specs, a sequence of specs, or `None`.
-            subcommands: Nested subcommand specifications. Can be a single
-                [`CommandSpec`][aclaf.parser.CommandSpec], a dict mapping names
-                to specs, a sequence of specs, or `None`.
+            aliases: Frozenset of alternative names for this command. Each alias
+                must follow the same naming rules as the command name. Default:
+                empty frozenset.
+            options: Dictionary mapping option names to their specifications.
+                Default: empty dict.
+            positionals: Dictionary mapping positional parameter names to their
+                specifications. Default: empty dict.
+            subcommands: Dictionary mapping subcommand names to their specifications.
+                Default: empty dict.
             case_insensitive_aliases: Whether command and subcommand name
                 matching should be case-insensitive.
             case_insensitive_options: Whether option name matching should be
@@ -343,13 +332,13 @@ class CommandSpec:
                 invalid name format, etc.).
         """
         self._name: str = self._validate_name(name)
-        self._aliases: frozenset[str] = self._validate_aliases(aliases)
-        self._options: dict[str, OptionSpec] = self._validate_options(options)
+        self._aliases: frozenset[str] = self._validate_aliases(aliases or frozenset())
+        self._options: dict[str, OptionSpec] = self._validate_options(options or {})
         self._positionals: dict[str, PositionalSpec] = self._validate_positionals(
-            positionals
+            positionals or {}
         )
         self._subcommands: dict[str, CommandSpec] = self._validate_subcommands(
-            subcommands
+            subcommands or {}
         )
         self._case_insensitive_aliases: bool = case_insensitive_aliases
         self._case_insensitive_options: bool = case_insensitive_options
@@ -502,9 +491,8 @@ class CommandSpec:
         return value
 
     @staticmethod
-    def _validate_aliases(value: str | Sequence[str]) -> frozenset[str]:
-        normalized = normalize_frozen_str_set(value)
-        for name in normalized:
+    def _validate_aliases(value: frozenset[str]) -> frozenset[str]:
+        for name in value:
             if not re.match(COMMAND_NAME_REGEX, name):
                 msg = (
                     f"Command alias {name} must start with an alphabetic "
@@ -512,21 +500,12 @@ class CommandSpec:
                     "dashes, and underscores."
                 )
                 raise ValueError(msg)
-        return normalized
+        return value
 
     @staticmethod
-    def _validate_options(value: OptionsInput) -> dict[str, "OptionSpec"]:
-        if value is None:
-            return {}
-        if isinstance(value, OptionSpec):
-            return {value.name: value}
-        normalized = (
-            {option.name: option for option in value}
-            if isinstance(value, Sequence)
-            else value
-        )
+    def _validate_options(value: dict[str, "OptionSpec"]) -> dict[str, "OptionSpec"]:
         name_occurrences: dict[str, tuple[OptionSpec, ...]] = {}
-        for option in normalized.values():
+        for option in value.values():
             for long_name in option.long:
                 _ = name_occurrences.setdefault(long_name, ())
                 name_occurrences[long_name] += (option,)
@@ -544,49 +523,21 @@ class CommandSpec:
                 for name, duplicates in name_duplicates.items()
             )
             raise ValueError(msg)
-        return normalized
+        return value
 
     @staticmethod
     def _validate_positionals(
-        value: PositionalsInput,
+        value: dict[str, "PositionalSpec"],
     ) -> dict[str, "PositionalSpec"]:
-        if value is None:
-            return {}
-        if isinstance(value, PositionalSpec):
-            return {value.name: value}
-        # Check for duplicates BEFORE converting to dict
-        if isinstance(value, Sequence):
-            seen_names: set[str] = set()
-            for positional in value:
-                if positional.name in seen_names:
-                    msg = f"Duplicate positional name: {positional.name}"
-                    raise ValueError(msg)
-                seen_names.add(positional.name)
-            normalized = {positional.name: positional for positional in value}
-        else:
-            normalized = value
-        return normalized
+        return value
 
     @staticmethod
-    def _validate_subcommands(value: SubcommandsInput) -> dict[str, "CommandSpec"]:
-        if value is None:
-            return {}
-        if isinstance(value, CommandSpec):
-            return {value.name: value}
-        # Check for duplicates BEFORE converting to dict
-        if isinstance(value, Sequence):
-            seen_names: set[str] = set()
-            for subcommand in value:
-                if subcommand.name in seen_names:
-                    msg = f"Duplicate subcommand name: {subcommand.name}"
-                    raise ValueError(msg)
-                seen_names.add(subcommand.name)
-            normalized = {subcommand.name: subcommand for subcommand in value}
-        else:
-            normalized = value
+    def _validate_subcommands(
+        value: dict[str, "CommandSpec"],
+    ) -> dict[str, "CommandSpec"]:
         # Check for alias collisions with names and other aliases
         name_occurrences: dict[str, list[str]] = {}
-        for subcommand in normalized.values():
+        for subcommand in value.values():
             # Track the subcommand name itself
             name_occurrences.setdefault(subcommand.name, []).append(subcommand.name)
             # Track each alias
@@ -604,4 +555,4 @@ class CommandSpec:
                 for name, sources in duplicates.items()
             )
             raise ValueError(msg)
-        return normalized
+        return value

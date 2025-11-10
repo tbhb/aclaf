@@ -33,7 +33,12 @@ class TestShortOptionWithEquals:
         """
         args = ["-o=file.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("output", short="o", arity=EXACTLY_ONE_ARITY)
+            name="cmd",
+            options={
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -49,7 +54,12 @@ class TestShortOptionWithEquals:
         """
         args = ["-f=file.txt", "file2.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", short="f", arity=ONE_OR_MORE_ARITY)
+            name="cmd",
+            options={
+                "files": OptionSpec(
+                    "files", short=frozenset({"f"}), arity=ONE_OR_MORE_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -65,7 +75,12 @@ class TestShortOptionWithEquals:
         """
         args = ["-f=file1.txt", "file2.txt", "file3.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", short="f", arity=Arity(2, None))
+            name="cmd",
+            options={
+                "files": OptionSpec(
+                    "files", short=frozenset({"f"}), arity=Arity(2, None)
+                )
+            },
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientOptionValuesError):
@@ -81,7 +96,12 @@ class TestShortOptionWithEquals:
         """
         args = ["-o="]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("output", short="o", arity=EXACTLY_ONE_ARITY)
+            name="cmd",
+            options={
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -97,7 +117,12 @@ class TestShortOptionWithEquals:
         """
         args = ["-f="]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", short="f", arity=ONE_OR_MORE_ARITY)
+            name="cmd",
+            options={
+                "files": OptionSpec(
+                    "files", short=frozenset({"f"}), arity=ONE_OR_MORE_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -113,7 +138,12 @@ class TestShortOptionWithEquals:
         """
         args = ["-v="]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", arity=ZERO_ARITY)
+            name="cmd",
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         with pytest.raises(OptionDoesNotAcceptValueError):
@@ -129,7 +159,12 @@ class TestShortOptionWithEquals:
         """
         args = ["-v=true"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", arity=ZERO_ARITY)
+            name="cmd",
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         with pytest.raises(OptionDoesNotAcceptValueError):
@@ -147,7 +182,10 @@ class TestShortOptionWithEquals:
         """
         args = ["-v="]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=False)
         with pytest.raises(FlagWithValueError):
@@ -164,7 +202,10 @@ class TestShortOptionWithEquals:
         """
         args = ["-v="]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
         with pytest.raises(InvalidFlagValueError):
@@ -180,7 +221,10 @@ class TestShortOptionWithEquals:
         """
         args = ["-v=true"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=False)
         with pytest.raises(FlagWithValueError):
@@ -196,7 +240,10 @@ class TestShortOptionWithEquals:
         Examples: -v=true, -v=false, -v=1, -v=0, etc.
         """
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -219,13 +266,15 @@ class TestShortOptionWithEquals:
         """
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                "verbose",
-                short="v",
-                is_flag=True,
-                falsey_flag_values=("foo"),
-                truthy_flag_values=("bar"),
-            ),
+            options={
+                "verbose": OptionSpec(
+                    "verbose",
+                    short=frozenset({"v"}),
+                    is_flag=True,
+                    falsey_flag_values=frozenset({"foo"}),
+                    truthy_flag_values=frozenset({"bar"}),
+                )
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -246,7 +295,9 @@ class TestShortOptionWithEquals:
         """
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("verbose", short="v", is_flag=True),
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(
             spec,
@@ -271,7 +322,10 @@ class TestShortOptionWithEquals:
         """
         args = ["-v=invalid"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
         with pytest.raises(InvalidFlagValueError):
@@ -292,12 +346,14 @@ class TestCombinedShortOptionsWithEquals:
         args = ["-abco=file.txt"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", short="a", arity=0),
-                OptionSpec("b", short="b", arity=0),
-                OptionSpec("c", short="c", arity=0),
-                OptionSpec("output", short="o", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "a": OptionSpec("a", short=frozenset({"a"}), arity=Arity(0, 0)),
+                "b": OptionSpec("b", short=frozenset({"b"}), arity=Arity(0, 0)),
+                "c": OptionSpec("c", short=frozenset({"c"}), arity=Arity(0, 0)),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -320,7 +376,12 @@ class TestShortOptionWithoutEquals:
         """
         args = ["-o", "file.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("output", short="o", arity=EXACTLY_ONE_ARITY)
+            name="cmd",
+            options={
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -336,7 +397,12 @@ class TestShortOptionWithoutEquals:
         """
         args = ["-v"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", arity=ZERO_ARITY)
+            name="cmd",
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -352,7 +418,12 @@ class TestShortOptionWithoutEquals:
         """
         args = ["-f", "file1.txt", "file2.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", short="f", arity=Arity(0, None))
+            name="cmd",
+            options={
+                "files": OptionSpec(
+                    "files", short=frozenset({"f"}), arity=Arity(0, None)
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -368,7 +439,12 @@ class TestShortOptionWithoutEquals:
         """
         args = ["-f"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("files", short="f", arity=ONE_OR_MORE_ARITY)
+            name="cmd",
+            options={
+                "files": OptionSpec(
+                    "files", short=frozenset({"f"}), arity=ONE_OR_MORE_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientOptionValuesError):
@@ -388,7 +464,12 @@ class TestShortOptionWithoutEqualsValueInArg:
         """
         args = ["-ofile.txt"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("output", short="o", arity=EXACTLY_ONE_ARITY)
+            name="cmd",
+            options={
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -404,7 +485,12 @@ class TestShortOptionWithoutEqualsValueInArg:
         """
         args = ["-vfoo"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", arity=ZERO_ARITY)
+            name="cmd",
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec)
         with pytest.raises(OptionDoesNotAcceptValueError):
@@ -424,7 +510,10 @@ class TestShortOptionWithoutEqualsFlagValue:
         """
         args = ["-v", "false"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=False)
         result = parser.parse(args)
@@ -440,7 +529,10 @@ class TestShortOptionWithoutEqualsFlagValue:
         """
         args = ["-vfalse"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=False)
         with pytest.raises(FlagWithValueError):
@@ -456,7 +548,10 @@ class TestShortOptionWithoutEqualsFlagValue:
         Examples: -v true, -v false, -v 1, -v 0
         """
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -478,7 +573,10 @@ class TestShortOptionWithoutEqualsFlagValue:
         Examples: -vtrue, -vfalse, -v1, -v0
         """
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -500,13 +598,15 @@ class TestShortOptionWithoutEqualsFlagValue:
         """
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                "verbose",
-                short="v",
-                is_flag=True,
-                falsey_flag_values=("foo"),
-                truthy_flag_values=("bar"),
-            ),
+            options={
+                "verbose": OptionSpec(
+                    "verbose",
+                    short=frozenset({"v"}),
+                    is_flag=True,
+                    falsey_flag_values=frozenset({"foo"}),
+                    truthy_flag_values=frozenset({"bar"}),
+                )
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -526,13 +626,15 @@ class TestShortOptionWithoutEqualsFlagValue:
         """
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec(
-                "verbose",
-                short="v",
-                is_flag=True,
-                falsey_flag_values=("foo"),
-                truthy_flag_values=("bar"),
-            ),
+            options={
+                "verbose": OptionSpec(
+                    "verbose",
+                    short=frozenset({"v"}),
+                    is_flag=True,
+                    falsey_flag_values=frozenset({"foo"}),
+                    truthy_flag_values=frozenset({"bar"}),
+                )
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
 
@@ -552,7 +654,9 @@ class TestShortOptionWithoutEqualsFlagValue:
         """
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("verbose", short="v", is_flag=True),
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(
             spec,
@@ -577,7 +681,9 @@ class TestShortOptionWithoutEqualsFlagValue:
         """
         spec = CommandSpec(
             name="cmd",
-            options=OptionSpec("verbose", short="v", is_flag=True),
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(
             spec,
@@ -603,7 +709,10 @@ class TestShortOptionWithoutEqualsFlagValue:
         """
         args = ["-v", "invalid"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
         result = parser.parse(args)
@@ -619,7 +728,10 @@ class TestShortOptionWithoutEqualsFlagValue:
         """
         args = ["-vinvalid"]
         spec = CommandSpec(
-            name="cmd", options=OptionSpec("verbose", short="v", is_flag=True)
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", short=frozenset({"v"}), is_flag=True)
+            },
         )
         parser = Parser(spec, allow_equals_for_flags=True)
         with pytest.raises(InvalidFlagValueError):
@@ -640,11 +752,11 @@ class TestCombinedShortOptionsWithoutEquals:
         args = ["-abc"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", short="a", arity=0),
-                OptionSpec("b", short="b", arity=0),
-                OptionSpec("c", short="c", arity=0),
-            ],
+            options={
+                "a": OptionSpec("a", short=frozenset({"a"}), arity=Arity(0, 0)),
+                "b": OptionSpec("b", short=frozenset({"b"}), arity=Arity(0, 0)),
+                "c": OptionSpec("c", short=frozenset({"c"}), arity=Arity(0, 0)),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -664,11 +776,11 @@ class TestCombinedShortOptionsWithoutEquals:
         args = ["-abc"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", short="a", arity=ZERO_ARITY),
-                OptionSpec("b", short="b", arity=EXACTLY_ONE_ARITY),
-                OptionSpec("c", short="c", arity=ZERO_ARITY),
-            ],
+            options={
+                "a": OptionSpec("a", short=frozenset({"a"}), arity=ZERO_ARITY),
+                "b": OptionSpec("b", short=frozenset({"b"}), arity=EXACTLY_ONE_ARITY),
+                "c": OptionSpec("c", short=frozenset({"c"}), arity=ZERO_ARITY),
+            },
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientOptionValuesError):
@@ -685,11 +797,13 @@ class TestCombinedShortOptionsWithoutEquals:
         args = ["-abo", "file.txt"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", short="a", arity=0),
-                OptionSpec("b", short="b", arity=0),
-                OptionSpec("output", short="o", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "a": OptionSpec("a", short=frozenset({"a"}), arity=Arity(0, 0)),
+                "b": OptionSpec("b", short=frozenset({"b"}), arity=Arity(0, 0)),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -708,11 +822,13 @@ class TestCombinedShortOptionsWithoutEquals:
         args = ["-abofile.txt"]
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("a", short="a", arity=0),
-                OptionSpec("b", short="b", arity=0),
-                OptionSpec("output", short="o", arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "a": OptionSpec("a", short=frozenset({"a"}), arity=Arity(0, 0)),
+                "b": OptionSpec("b", short=frozenset({"b"}), arity=Arity(0, 0)),
+                "output": OptionSpec(
+                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)

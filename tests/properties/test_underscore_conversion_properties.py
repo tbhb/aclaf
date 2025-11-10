@@ -116,7 +116,11 @@ class TestConversionEquivalenceProperties:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=[name], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({name}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -149,7 +153,11 @@ class TestConversionEquivalenceProperties:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=[name], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({name}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -180,7 +188,11 @@ class TestConversionEquivalenceProperties:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=[name], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({name}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=False)
 
@@ -215,7 +227,11 @@ class TestConversionWithCaseInsensitivity:
 
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=[normalized], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({normalized}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(
             spec,
@@ -249,7 +265,11 @@ class TestConversionCommutativity:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=[name], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({name}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
 
         parser1 = Parser(spec, convert_underscores_to_dashes=True)
@@ -283,14 +303,14 @@ class TestConversionWithNegation:
         # built from normalized option names when convert_underscores_to_dashes=True
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "opt": OptionSpec(
                     "opt",
-                    long=[name],
-                    negation_words=["no"],
+                    long=frozenset({name}),
+                    negation_words=frozenset({"no"}),
                     arity=ZERO_ARITY,
                 )
-            ],
+            },
         )
         # Spec construction should succeed
         assert spec is not None
@@ -308,14 +328,14 @@ class TestConversionWithNegation:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "opt": OptionSpec(
                     "opt",
-                    long=[name],
-                    negation_words=["no"],
+                    long=frozenset({name}),
+                    negation_words=frozenset({"no"}),
                     arity=ZERO_ARITY,
                 )
-            ],
+            },
         )
         # Spec construction should succeed
         assert spec is not None

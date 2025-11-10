@@ -33,15 +33,15 @@ class TestDockerRunCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    positionals=[
-                        PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
+                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -66,15 +66,15 @@ class TestDockerRunCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    positionals=[
-                        PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
+                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -99,16 +99,22 @@ class TestDockerRunCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[PositionalSpec("image", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -134,13 +140,15 @@ class TestDockerRunCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    options=[OptionSpec("rm", arity=ZERO_ARITY)],
-                    positionals=[PositionalSpec("image", arity=EXACTLY_ONE_ARITY)],
+                    options={"rm": OptionSpec("rm", arity=ZERO_ARITY)},
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -164,20 +172,22 @@ class TestDockerRunCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    options=[
-                        OptionSpec(
+                    options={
+                        "env": OptionSpec(
                             "env",
-                            short=["e"],
+                            short=frozenset({"e"}),
                             arity=EXACTLY_ONE_ARITY,
                             accumulation_mode=AccumulationMode.COLLECT,
                         )
-                    ],
-                    positionals=[PositionalSpec("image", arity=EXACTLY_ONE_ARITY)],
+                    },
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -203,26 +213,30 @@ class TestDockerRunCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                        OptionSpec("rm", arity=ZERO_ARITY),
-                        OptionSpec(
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                        "rm": OptionSpec("rm", arity=ZERO_ARITY),
+                        "env": OptionSpec(
                             "env",
-                            short=["e"],
+                            short=frozenset({"e"}),
                             arity=EXACTLY_ONE_ARITY,
                             accumulation_mode=AccumulationMode.COLLECT,
                         ),
-                    ],
-                    positionals=[
-                        PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    },
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
+                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -257,15 +271,17 @@ class TestDockerExecCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "exec": CommandSpec(
                     name="exec",
-                    positionals=[
-                        PositionalSpec("container", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
-                    ],
+                    positionals={
+                        "container": PositionalSpec(
+                            "container", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "command": PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -290,19 +306,25 @@ class TestDockerExecCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "exec": CommandSpec(
                     name="exec",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("container", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
-                    ],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "container": PositionalSpec(
+                            "container", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "command": PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -333,15 +355,19 @@ class TestDockerPsCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "ps": CommandSpec(
                     name="ps",
-                    options=[
-                        OptionSpec("all", short=["a"], arity=ZERO_ARITY),
-                        OptionSpec("quiet", short=["q"], arity=ZERO_ARITY),
-                    ],
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        ),
+                        "quiet": OptionSpec(
+                            "quiet", short=frozenset({"q"}), arity=ZERO_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -364,12 +390,16 @@ class TestDockerPsCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "ps": CommandSpec(
                     name="ps",
-                    options=[OptionSpec("all", short=["a"], arity=ZERO_ARITY)],
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        )
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -393,15 +423,19 @@ class TestDockerPsCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "ps": CommandSpec(
                     name="ps",
-                    options=[
-                        OptionSpec("all", short=["a"], arity=ZERO_ARITY),
-                        OptionSpec("quiet", short=["q"], arity=ZERO_ARITY),
-                    ],
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        ),
+                        "quiet": OptionSpec(
+                            "quiet", short=frozenset({"q"}), arity=ZERO_ARITY
+                        ),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -429,12 +463,14 @@ class TestDockerBuildCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "build": CommandSpec(
                     name="build",
-                    positionals=[PositionalSpec("context", arity=EXACTLY_ONE_ARITY)],
+                    positionals={
+                        "context": PositionalSpec("context", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -458,13 +494,19 @@ class TestDockerBuildCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "build": CommandSpec(
                     name="build",
-                    options=[OptionSpec("tag", short=["t"], arity=EXACTLY_ONE_ARITY)],
-                    positionals=[PositionalSpec("context", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "tag": OptionSpec(
+                            "tag", short=frozenset({"t"}), arity=EXACTLY_ONE_ARITY
+                        )
+                    },
+                    positionals={
+                        "context": PositionalSpec("context", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -490,16 +532,22 @@ class TestDockerBuildCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "build": CommandSpec(
                     name="build",
-                    options=[
-                        OptionSpec("file", short=["f"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("tag", short=["t"], arity=EXACTLY_ONE_ARITY),
-                    ],
-                    positionals=[PositionalSpec("context", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "file": OptionSpec(
+                            "file", short=frozenset({"f"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                        "tag": OptionSpec(
+                            "tag", short=frozenset({"t"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
+                    positionals={
+                        "context": PositionalSpec("context", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -528,19 +576,19 @@ class TestDockerVolumeCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "volume": CommandSpec(
                     name="volume",
-                    subcommands=[
-                        CommandSpec(
+                    subcommands={
+                        "create": CommandSpec(
                             name="create",
-                            positionals=[
-                                PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)
-                            ],
+                            positionals={
+                                "name": PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)
+                            },
                         ),
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -567,14 +615,14 @@ class TestDockerVolumeCommand:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "volume": CommandSpec(
                     name="volume",
-                    subcommands=[
-                        CommandSpec(name="ls", aliases=("list",)),
-                    ],
+                    subcommands={
+                        "ls": CommandSpec(name="ls", aliases=frozenset({"list"})),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -605,39 +653,53 @@ class TestComplexDockerScenarios:
         """
         spec = CommandSpec(
             name="docker",
-            options=[OptionSpec("version", arity=ZERO_ARITY)],
-            subcommands=[
-                CommandSpec(
+            options={"version": OptionSpec("version", arity=ZERO_ARITY)},
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                        OptionSpec("rm", arity=ZERO_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    ],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                        "rm": OptionSpec("rm", arity=ZERO_ARITY),
+                    },
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
+                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
+                    },
                 ),
-                CommandSpec(
+                "ps": CommandSpec(
                     name="ps",
-                    options=[
-                        OptionSpec("all", short=["a"], arity=ZERO_ARITY),
-                        OptionSpec("quiet", short=["q"], arity=ZERO_ARITY),
-                    ],
+                    options={
+                        "all": OptionSpec(
+                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
+                        ),
+                        "quiet": OptionSpec(
+                            "quiet", short=frozenset({"q"}), arity=ZERO_ARITY
+                        ),
+                    },
                 ),
-                CommandSpec(
+                "exec": CommandSpec(
                     name="exec",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[
-                        PositionalSpec("container", arity=EXACTLY_ONE_ARITY),
-                        PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
-                    ],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "container": PositionalSpec(
+                            "container", arity=EXACTLY_ONE_ARITY
+                        ),
+                        "command": PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -671,20 +733,22 @@ class TestComplexDockerScenarios:
         """
         spec = CommandSpec(
             name="docker",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "run": CommandSpec(
                     name="run",
-                    options=[
-                        OptionSpec(
+                    options={
+                        "publish": OptionSpec(
                             "publish",
-                            short=["p"],
+                            short=frozenset({"p"}),
                             arity=EXACTLY_ONE_ARITY,
                             accumulation_mode=AccumulationMode.COLLECT,
                         ),
-                    ],
-                    positionals=[PositionalSpec("image", arity=EXACTLY_ONE_ARITY)],
+                    },
+                    positionals={
+                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 

@@ -64,7 +64,8 @@ class TestSinglePositional:
         """Single positional with arity (1,1) and one arg."""
         args = ["file.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)]
+            name="cmd",
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -74,7 +75,8 @@ class TestSinglePositional:
         """Single positional with arity (1,1) and multiple args should only take one."""
         args = ["file1.txt", "file2.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)]
+            name="cmd",
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -85,7 +87,8 @@ class TestSinglePositional:
         """Single positional with arity (1,1) and no args should raise error."""
         args: list[str] = []
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)]
+            name="cmd",
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientPositionalArgumentsError) as exc_info:
@@ -98,7 +101,8 @@ class TestSinglePositional:
         """Single positional with arity (1, None) and one arg."""
         args = ["file.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)]
+            name="cmd",
+            positionals={"files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -108,7 +112,8 @@ class TestSinglePositional:
         """Single positional with arity (1, None) and multiple args."""
         args = ["file1.txt", "file2.txt", "file3.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)]
+            name="cmd",
+            positionals={"files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -122,7 +127,8 @@ class TestSinglePositional:
         """Single positional with arity (1, None) and no args should raise error."""
         args: list[str] = []
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)]
+            name="cmd",
+            positionals={"files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)},
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientPositionalArgumentsError):
@@ -132,7 +138,8 @@ class TestSinglePositional:
         """Single positional with arity (0, None) and no args."""
         args: list[str] = []
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)]
+            name="cmd",
+            positionals={"files": PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -142,7 +149,8 @@ class TestSinglePositional:
         """Single positional with arity (0, None) and multiple args."""
         args = ["file1.txt", "file2.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)]
+            name="cmd",
+            positionals={"files": PositionalSpec("files", arity=ZERO_OR_MORE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -152,7 +160,8 @@ class TestSinglePositional:
         """Single positional with arity (0, 1) and no args."""
         args: list[str] = []
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("file", arity=ZERO_OR_ONE_ARITY)]
+            name="cmd",
+            positionals={"file": PositionalSpec("file", arity=ZERO_OR_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -162,7 +171,8 @@ class TestSinglePositional:
         """Single positional with arity (0, 1) and one arg."""
         args = ["file.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("file", arity=ZERO_OR_ONE_ARITY)]
+            name="cmd",
+            positionals={"file": PositionalSpec("file", arity=ZERO_OR_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -172,7 +182,8 @@ class TestSinglePositional:
         """Single positional with arity (0, 1) and multiple args takes one."""
         args = ["file1.txt", "file2.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("file", arity=ZERO_OR_ONE_ARITY)]
+            name="cmd",
+            positionals={"file": PositionalSpec("file", arity=ZERO_OR_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -182,7 +193,8 @@ class TestSinglePositional:
         """Single positional with arity (2, 2) and exactly two args."""
         args = ["file1.txt", "file2.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("files", arity=Arity(2, 2))]
+            name="cmd",
+            positionals={"files": PositionalSpec("files", arity=Arity(2, 2))},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -192,7 +204,8 @@ class TestSinglePositional:
         """Single positional with arity (2, 2) and only one arg should raise error."""
         args = ["file1.txt"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("files", arity=Arity(2, 2))]
+            name="cmd",
+            positionals={"files": PositionalSpec("files", arity=Arity(2, 2))},
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientPositionalArgumentsError) as exc_info:
@@ -203,7 +216,8 @@ class TestSinglePositional:
     def test_range_arity(self):
         """Single positional with range arity (1, 3)."""
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("files", arity=Arity(1, 3))]
+            name="cmd",
+            positionals={"files": PositionalSpec("files", arity=Arity(1, 3))},
         )
         parser = Parser(spec)
 
@@ -240,10 +254,10 @@ class TestMultiplePositionals:
         args = ["source.txt", "dest.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "source": PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
+                "dest": PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -255,10 +269,10 @@ class TestMultiplePositionals:
         args = ["source.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "source": PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
+                "dest": PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         with pytest.raises(InsufficientPositionalArgumentsError) as exc_info:
@@ -270,10 +284,10 @@ class TestMultiplePositionals:
         args = ["file1.txt", "file2.txt", "dest.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("sources", arity=ZERO_OR_MORE_ARITY),
-                PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "sources": PositionalSpec("sources", arity=ZERO_OR_MORE_ARITY),
+                "dest": PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -286,10 +300,10 @@ class TestMultiplePositionals:
         args = ["dest.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("sources", arity=ZERO_OR_MORE_ARITY),
-                PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "sources": PositionalSpec("sources", arity=ZERO_OR_MORE_ARITY),
+                "dest": PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -301,10 +315,12 @@ class TestMultiplePositionals:
         args = ["source.txt", "file1.txt", "file2.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("destinations", arity=ZERO_OR_MORE_ARITY),
-            ],
+            positionals={
+                "source": PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
+                "destinations": PositionalSpec(
+                    "destinations", arity=ZERO_OR_MORE_ARITY
+                ),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -316,11 +332,11 @@ class TestMultiplePositionals:
         args = ["cmd.txt", "file1.txt", "file2.txt", "output.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("command", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("files", arity=ONE_OR_MORE_ARITY),
-                PositionalSpec("output", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "command": PositionalSpec("command", arity=EXACTLY_ONE_ARITY),
+                "files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY),
+                "output": PositionalSpec("output", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -333,11 +349,11 @@ class TestMultiplePositionals:
         args = ["first.txt", "mid1.txt", "mid2.txt", "last.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("first", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("middle", arity=ZERO_OR_MORE_ARITY),
-                PositionalSpec("last", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "first": PositionalSpec("first", arity=EXACTLY_ONE_ARITY),
+                "middle": PositionalSpec("middle", arity=ZERO_OR_MORE_ARITY),
+                "last": PositionalSpec("last", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -350,11 +366,11 @@ class TestMultiplePositionals:
         args = ["file1.txt", "file2.txt"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("optional", arity=ZERO_OR_MORE_ARITY),
-                PositionalSpec("required1", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("required2", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "optional": PositionalSpec("optional", arity=ZERO_OR_MORE_ARITY),
+                "required1": PositionalSpec("required1", arity=EXACTLY_ONE_ARITY),
+                "required2": PositionalSpec("required2", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -367,10 +383,10 @@ class TestMultiplePositionals:
         args = ["a", "b", "c", "d", "e"]
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("first", arity=Arity(1, 2)),
-                PositionalSpec("second", arity=Arity(1, 2)),
-            ],
+            positionals={
+                "first": PositionalSpec("first", arity=Arity(1, 2)),
+                "second": PositionalSpec("second", arity=Arity(1, 2)),
+            },
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -381,10 +397,10 @@ class TestMultiplePositionals:
         """Two optional positionals."""
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("first", arity=ZERO_OR_ONE_ARITY),
-                PositionalSpec("second", arity=ZERO_OR_ONE_ARITY),
-            ],
+            positionals={
+                "first": PositionalSpec("first", arity=ZERO_OR_ONE_ARITY),
+                "second": PositionalSpec("second", arity=ZERO_OR_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -413,8 +429,8 @@ class TestPositionalsWithOptions:
         args = ["--verbose", "file.txt"]
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", is_flag=True)],
-            positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)],
+            options={"verbose": OptionSpec("verbose", is_flag=True)},
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)
@@ -426,7 +442,8 @@ class TestPositionalsWithOptions:
         """Args after -- should be in extra_args, not positionals."""
         args = ["file.txt", "--", "--not-an-option"]
         spec = CommandSpec(
-            name="cmd", positionals=[PositionalSpec("file", arity=EXACTLY_ONE_ARITY)]
+            name="cmd",
+            positionals={"file": PositionalSpec("file", arity=EXACTLY_ONE_ARITY)},
         )
         parser = Parser(spec)
         result = parser.parse(args)

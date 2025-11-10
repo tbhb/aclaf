@@ -114,11 +114,15 @@ def simple_parser():
     """Create a parser with basic options for testing."""
     spec = CommandSpec(
         name="cmd",
-        options=[
-            OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-            OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            OptionSpec("input", short=["i"], arity=EXACTLY_ONE_ARITY),
-        ],
+        options={
+            "verbose": OptionSpec("verbose", short=frozenset({"v"}), arity=ZERO_ARITY),
+            "output": OptionSpec(
+                "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+            ),
+            "input": OptionSpec(
+                "input", short=frozenset({"i"}), arity=EXACTLY_ONE_ARITY
+            ),
+        },
     )
     return Parser(spec)
 
@@ -128,11 +132,13 @@ def parser_with_positionals():
     """Create a parser with positionals for testing."""
     spec = CommandSpec(
         name="cmd",
-        options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-        positionals=[
-            PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
-            PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
-        ],
+        options={
+            "verbose": OptionSpec("verbose", short=frozenset({"v"}), arity=ZERO_ARITY)
+        },
+        positionals={
+            "source": PositionalSpec("source", arity=EXACTLY_ONE_ARITY),
+            "dest": PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
+        },
     )
     return Parser(spec)
 
@@ -142,19 +148,27 @@ def parser_with_subcommands():
     """Create a parser with subcommands for testing."""
     spec = CommandSpec(
         name="cmd",
-        subcommands=[
-            CommandSpec(
+        subcommands={
+            "add": CommandSpec(
                 name="add",
-                options=[OptionSpec("force", short=["f"], arity=ZERO_ARITY)],
-                positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+                options={
+                    "force": OptionSpec(
+                        "force", short=frozenset({"f"}), arity=ZERO_ARITY
+                    )
+                },
+                positionals={"files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)},
             ),
-            CommandSpec(
+            "remove": CommandSpec(
                 name="remove",
-                aliases=("rm",),
-                options=[OptionSpec("recursive", short=["r"], arity=ZERO_ARITY)],
-                positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+                aliases=frozenset({"rm"}),
+                options={
+                    "recursive": OptionSpec(
+                        "recursive", short=frozenset({"r"}), arity=ZERO_ARITY
+                    )
+                },
+                positionals={"files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)},
             ),
-        ],
+        },
     )
     return Parser(spec)
 
@@ -164,30 +178,38 @@ def complex_command_spec():
     """Create a complex command spec with options, positionals, and subcommands."""
     return CommandSpec(
         name="tool",
-        options=[
-            OptionSpec("verbose", short=["v"], arity=ZERO_ARITY),
-            OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-            OptionSpec("files", short=["f"], arity=ONE_OR_MORE_ARITY),
-        ],
-        positionals=[
-            PositionalSpec("input", arity=EXACTLY_ONE_ARITY),
-            PositionalSpec("extras", arity=ZERO_OR_MORE_ARITY),
-        ],
-        subcommands=[
-            CommandSpec(
+        options={
+            "verbose": OptionSpec("verbose", short=frozenset({"v"}), arity=ZERO_ARITY),
+            "output": OptionSpec(
+                "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+            ),
+            "files": OptionSpec(
+                "files", short=frozenset({"f"}), arity=ONE_OR_MORE_ARITY
+            ),
+        },
+        positionals={
+            "input": PositionalSpec("input", arity=EXACTLY_ONE_ARITY),
+            "extras": PositionalSpec("extras", arity=ZERO_OR_MORE_ARITY),
+        },
+        subcommands={
+            "process": CommandSpec(
                 name="process",
-                aliases=("proc",),
-                options=[
-                    OptionSpec("threads", short=["t"], arity=EXACTLY_ONE_ARITY),
-                ],
+                aliases=frozenset({"proc"}),
+                options={
+                    "threads": OptionSpec(
+                        "threads", short=frozenset({"t"}), arity=EXACTLY_ONE_ARITY
+                    ),
+                },
             ),
-            CommandSpec(
+            "analyze": CommandSpec(
                 name="analyze",
-                options=[
-                    OptionSpec("depth", short=["d"], arity=EXACTLY_ONE_ARITY),
-                ],
+                options={
+                    "depth": OptionSpec(
+                        "depth", short=frozenset({"d"}), arity=EXACTLY_ONE_ARITY
+                    ),
+                },
             ),
-        ],
+        },
     )
 
 

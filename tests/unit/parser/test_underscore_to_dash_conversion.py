@@ -27,7 +27,11 @@ class TestBasicConversion:
         """User can specify --my_option for spec with --my-option."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my-option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -40,7 +44,11 @@ class TestBasicConversion:
         """User can specify --my-option for spec with --my_option."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my_option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my_option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -53,7 +61,11 @@ class TestBasicConversion:
         """Dashes in both spec and input work as expected."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my-option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -65,7 +77,11 @@ class TestBasicConversion:
         """With conversion disabled, underscores and dashes must match exactly."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my-option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=False)
 
@@ -81,7 +97,11 @@ class TestBasicConversion:
         """Conversion is enabled by default."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my-option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec)  # Use default
 
@@ -95,9 +115,13 @@ class TestBasicConversion:
         """Multiple underscores are all converted to dashes."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", long=["my-long-option-name"], arity=EXACTLY_ONE_ARITY)
-            ],
+            options={
+                "opt": OptionSpec(
+                    "opt",
+                    long=frozenset({"my-long-option-name"}),
+                    arity=EXACTLY_ONE_ARITY,
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -108,7 +132,11 @@ class TestBasicConversion:
         """Multiple consecutive underscores convert to multiple dashes."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my--option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my--option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -119,9 +147,11 @@ class TestBasicConversion:
         """Input with both underscores and dashes gets all underscores converted."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", long=["my-option-name"], arity=EXACTLY_ONE_ARITY)
-            ],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option-name"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -133,7 +163,11 @@ class TestBasicConversion:
         """Conversion preserves case."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["MyOption"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"MyOption"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -149,7 +183,11 @@ class TestConversionInteractions:
         """Conversion works with case-insensitive matching."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my-option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(
             spec,
@@ -165,7 +203,11 @@ class TestConversionInteractions:
         """Conversion + case insensitive works in both directions."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["MY_OPTION"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"MY_OPTION"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(
             spec,
@@ -180,7 +222,11 @@ class TestConversionInteractions:
         """Conversion works with abbreviation matching."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["verbose-mode"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"verbose-mode"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(
             spec,
@@ -197,14 +243,14 @@ class TestConversionInteractions:
         """Negation works when spec has dashes and user types underscores."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "force": OptionSpec(
                     "force",
-                    long=["force-push"],
-                    negation_words=["no"],
+                    long=frozenset({"force-push"}),
+                    negation_words=frozenset({"no"}),
                     arity=ZERO_ARITY,
                 )
-            ],
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -215,14 +261,14 @@ class TestConversionInteractions:
         """Negation works when spec has underscores and user types dashes."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "force": OptionSpec(
                     "force",
-                    long=["force_push"],
-                    negation_words=["no"],
+                    long=frozenset({"force_push"}),
+                    negation_words=frozenset({"no"}),
                     arity=ZERO_ARITY,
                 )
-            ],
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -234,7 +280,11 @@ class TestConversionInteractions:
         """Conversion works with --option=value syntax."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my-option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -245,9 +295,14 @@ class TestConversionInteractions:
         """Short options are not affected by conversion (no separators)."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", short=["o"], long=["option"], arity=EXACTLY_ONE_ARITY)
-            ],
+            options={
+                "opt": OptionSpec(
+                    "opt",
+                    short=frozenset({"o"}),
+                    long=frozenset({"option"}),
+                    arity=EXACTLY_ONE_ARITY,
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -258,13 +313,13 @@ class TestConversionInteractions:
         """Conversion works with option aliases."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "opt": OptionSpec(
                     "opt",
-                    long=["my-option", "my-opt"],
+                    long=frozenset({"my-option", "my-opt"}),
                     arity=EXACTLY_ONE_ARITY,
                 )
-            ],
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -277,12 +332,16 @@ class TestConversionInteractions:
         """Conversion works within subcommand options."""
         spec = CommandSpec(
             name="git",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "commit": CommandSpec(
                     name="commit",
-                    options=[OptionSpec("all", long=["all-changes"], arity=ZERO_ARITY)],
+                    options={
+                        "all": OptionSpec(
+                            "all", long=frozenset({"all-changes"}), arity=ZERO_ARITY
+                        )
+                    },
                 )
-            ],
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -294,14 +353,14 @@ class TestConversionInteractions:
         """Conversion works with accumulation modes."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    long=["verbose-mode"],
+                    long=frozenset({"verbose-mode"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 )
-            ],
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -316,9 +375,11 @@ class TestConversionEdgeCases:
         """Option spec with mixed separators requires exact normalized match."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt", long=["my-option_name"], arity=EXACTLY_ONE_ARITY)
-            ],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option_name"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -333,7 +394,11 @@ class TestConversionEdgeCases:
         long_name = "this-is-a-very-long-option-name-with-many-dashes-for-testing"
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=[long_name], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({long_name}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -346,7 +411,11 @@ class TestConversionEdgeCases:
         """Two character long options work with conversion (minimum length)."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["ab"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"ab"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -357,7 +426,11 @@ class TestConversionEdgeCases:
         """Conversion works with empty option values."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("opt", long=["my-option"], arity=EXACTLY_ONE_ARITY)],
+            options={
+                "opt": OptionSpec(
+                    "opt", long=frozenset({"my-option"}), arity=EXACTLY_ONE_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -368,11 +441,17 @@ class TestConversionEdgeCases:
         """Multiple options with different separator styles all work."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("opt1", long=["first-option"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("opt2", long=["second_option"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("opt3", long=["third-option"], arity=EXACTLY_ONE_ARITY),
-            ],
+            options={
+                "opt1": OptionSpec(
+                    "opt1", long=frozenset({"first-option"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "opt2": OptionSpec(
+                    "opt2", long=frozenset({"second_option"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "opt3": OptionSpec(
+                    "opt3", long=frozenset({"third-option"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -398,7 +477,11 @@ class TestConversionWithFlags:
         """Conversion works with zero-arity flag options."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("verbose", long=["verbose-mode"], arity=ZERO_ARITY)],
+            options={
+                "verbose": OptionSpec(
+                    "verbose", long=frozenset({"verbose-mode"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -409,7 +492,11 @@ class TestConversionWithFlags:
         """Conversion works with --flag=value syntax for boolean flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[OptionSpec("force", long=["force-push"], arity=ZERO_ARITY)],
+            options={
+                "force": OptionSpec(
+                    "force", long=frozenset({"force-push"}), arity=ZERO_ARITY
+                )
+            },
         )
         parser = Parser(
             spec,
@@ -424,14 +511,14 @@ class TestConversionWithFlags:
         """Conversion works with negated flags."""
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "colors": OptionSpec(
                     "colors",
-                    long=["use-colors"],
-                    negation_words=["no"],
+                    long=frozenset({"use-colors"}),
+                    negation_words=frozenset({"no"}),
                     arity=ZERO_ARITY,
                 )
-            ],
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -446,23 +533,23 @@ class TestConversionNested:
         """Conversion works in deeply nested subcommands."""
         spec = CommandSpec(
             name="tool",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "config": CommandSpec(
                     name="config",
-                    subcommands=[
-                        CommandSpec(
+                    subcommands={
+                        "set": CommandSpec(
                             name="set",
-                            options=[
-                                OptionSpec(
+                            options={
+                                "opt": OptionSpec(
                                     "opt",
-                                    long=["my-option"],
+                                    long=frozenset({"my-option"}),
                                     arity=EXACTLY_ONE_ARITY,
                                 )
-                            ],
+                            },
                         )
-                    ],
+                    },
                 )
-            ],
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 
@@ -475,17 +562,23 @@ class TestConversionNested:
         """Conversion applies to both parent and subcommand options."""
         spec = CommandSpec(
             name="app",
-            options=[
-                OptionSpec("config", long=["config-file"], arity=EXACTLY_ONE_ARITY)
-            ],
-            subcommands=[
-                CommandSpec(
-                    name="run",
-                    options=[
-                        OptionSpec("verbose", long=["verbose-mode"], arity=ZERO_ARITY)
-                    ],
+            options={
+                "config": OptionSpec(
+                    "config", long=frozenset({"config-file"}), arity=EXACTLY_ONE_ARITY
                 )
-            ],
+            },
+            subcommands={
+                "run": CommandSpec(
+                    name="run",
+                    options={
+                        "verbose": OptionSpec(
+                            "verbose",
+                            long=frozenset({"verbose-mode"}),
+                            arity=ZERO_ARITY,
+                        )
+                    },
+                )
+            },
         )
         parser = Parser(spec, convert_underscores_to_dashes=True)
 

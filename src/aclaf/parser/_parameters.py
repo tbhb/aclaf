@@ -1,36 +1,38 @@
 import re
 import warnings
-from typing import TYPE_CHECKING, override
+from typing import override
 
-from ._utils import normalize_frozen_str_set
 from .types import AccumulationMode, Arity
-
-if TYPE_CHECKING:
-    from collections.abc import Sequence
 
 LONG_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z-_]*[a-zA-Z0-9]$")
 SHORT_NAME_REGEX = re.compile(r"^[a-zA-Z0-9]$")
 
+# Default arity for options and positionals
+_DEFAULT_ARITY = Arity(1, 1)
 
-def _validate_arity(value: int | Arity | tuple[int, int] | None) -> Arity:
-    if value is None:
-        return Arity(1, 1)
-    if isinstance(value, Arity):
-        normalized = value
-    elif isinstance(value, tuple):
-        normalized = Arity(value[0], value[1])
-    else:
-        normalized = Arity(value, value)
-    if normalized.min < 0:
+
+def _validate_arity(value: Arity) -> Arity:
+    """Validate an Arity object.
+
+    Args:
+        value: The Arity object to validate.
+
+    Returns:
+        The validated Arity object.
+
+    Raises:
+        ValueError: If arity constraints are violated.
+    """
+    if value.min < 0:
         msg = "Minimum arity must not be negative."
         raise ValueError(msg)
-    if normalized.max is not None and normalized.max < 0:
+    if value.max is not None and value.max < 0:
         msg = "Maximum arity must not be negative."
         raise ValueError(msg)
-    if normalized.max is not None and normalized.min > normalized.max:
+    if value.max is not None and value.min > value.max:
         msg = "Minimum arity must be less than maximum arity."
         raise ValueError(msg)
-    return normalized
+    return value
 
 
 class OptionSpec:
@@ -63,14 +65,14 @@ class OptionSpec:
         self,
         name: str,
         *,
-        long: "str | Sequence[str] | None" = None,
-        short: "str | Sequence[str] | None" = None,
-        arity: int | Arity | tuple[int, int] | None = None,
+        long: frozenset[str] | None = None,
+        short: frozenset[str] | None = None,
+        arity: Arity = _DEFAULT_ARITY,
         accumulation_mode: AccumulationMode = AccumulationMode.LAST_WINS,
         is_flag: bool = False,
-        falsey_flag_values: "str | Sequence[str] | None" = None,
-        truthy_flag_values: "str | Sequence[str] | None" = None,
-        negation_words: "str | Sequence[str] | None" = None,
+        falsey_flag_values: frozenset[str] | None = None,
+        truthy_flag_values: frozenset[str] | None = None,
+        negation_words: frozenset[str] | None = None,
         const_value: str | None = None,
         flatten_values: bool | None = None,
     ) -> None:
@@ -79,23 +81,23 @@ class OptionSpec:
         Args:
             name: The canonical option name (without dashes). Must be alphanumeric
                 with optional dashes/underscores (not at start/end).
-            long: Long form option name(s). If `None` and name has `>1` character,
-                uses name as the long form. Can be a single string or sequence.
-            short: Short form option name(s). If `None` and name has `1` character,
-                uses name as the short form. Must be single alphanumeric characters.
-            arity: Number of values the option accepts. Can be an int,
-                [`Arity`][aclaf.parser.Arity] tuple, or `(min, max)` tuple.
-                Default is `Arity(1, 1)`. Flags typically use `Arity(0, 0)`.
+            long: Frozenset of long-form option names. If empty and name has >1
+                character, uses name as the long form. Default: empty frozenset.
+            short: Frozenset of short-form option names. If empty and name has 1
+                character, uses name as the short form. Must be single alphanumeric
+                characters. Default: empty frozenset.
+            arity: Number of values the option accepts as an Arity object.
+                Default: `Arity(1, 1)`. Flags typically use `Arity(0, 0)`.
             accumulation_mode: How to handle repeated option occurrences.
                 Default is [`LAST_WINS`][aclaf.parser.AccumulationMode.LAST_WINS].
             is_flag: Whether this is a boolean flag option. Flags have special
                 behavior for value coercion and default arity of `0`.
-            falsey_flag_values: Values that set the flag to `False` when using
-                `--flag=value` syntax (requires `allow_equals_for_flags`).
-            truthy_flag_values: Values that set the flag to `True` when using
-                `--flag=value` syntax (requires `allow_equals_for_flags`).
-            negation_words: Prefix words for negation (e.g., `no` allows
-                `--no-verbose`). Only applies to flags.
+            falsey_flag_values: Frozenset of values that set the flag to `False`
+                when using `--flag=value` syntax (requires `allow_equals_for_flags`).
+            truthy_flag_values: Frozenset of values that set the flag to `True`
+                when using `--flag=value` syntax (requires `allow_equals_for_flags`).
+            negation_words: Frozenset of prefix words for negation (e.g., `no`
+                allows `--no-verbose`). Only applies to flags. Default: empty frozenset.
             const_value: Constant value to use when the option is specified
                 without an explicit value.
             flatten_values: When `True` and `accumulation_mode` is
@@ -113,8 +115,12 @@ class OptionSpec:
                 name format, overlapping flag values, etc.).
         """
         self._name: str = self._validate_option_name(name)
-        self._long: frozenset[str] = self._validate_long_names(self._name, long)
-        self._short: frozenset[str] = self._validate_short_names(self._name, short)
+        self._long: frozenset[str] = self._validate_long_names(
+            self._name, long or frozenset()
+        )
+        self._short: frozenset[str] = self._validate_short_names(
+            self._name, short or frozenset()
+        )
         self._arity: Arity = _validate_arity(arity)
         self._accumulation_mode: AccumulationMode = accumulation_mode
         self._is_flag: bool = is_flag
@@ -124,7 +130,7 @@ class OptionSpec:
             falsey_flag_values, truthy_flag_values
         )
         self._negation_words: frozenset[str] | None = self._validate_negation_words(
-            negation_words
+            negation_words or frozenset()
         )
         self._const_value: str | None = const_value
         self._flatten_values: bool | None = flatten_values
@@ -240,15 +246,10 @@ class OptionSpec:
         return value
 
     @staticmethod
-    def _validate_long_names(
-        option_name: str, value: "str | Sequence[str] | None"
-    ) -> frozenset[str]:
-        if value is None and len(option_name) > 1:
+    def _validate_long_names(option_name: str, value: frozenset[str]) -> frozenset[str]:
+        if not value and len(option_name) > 1:
             return frozenset((option_name,))
-        if value is None:
-            return frozenset()
-        normalized = normalize_frozen_str_set(value)
-        for name in normalized:
+        for name in value:
             if len(name) < 2:  # noqa: PLR2004
                 msg = f"Long option name '{name}' must have at least two characters."
                 raise ValueError(msg)
@@ -259,18 +260,15 @@ class OptionSpec:
                     " underscores except for the first and last characters."
                 )
                 raise ValueError(msg)
-        return normalized
+        return value
 
     @staticmethod
     def _validate_short_names(
-        option_name: str, value: "str | Sequence[str] | None"
+        option_name: str, value: frozenset[str]
     ) -> frozenset[str]:
-        if value is None and len(option_name) == 1:
+        if not value and len(option_name) == 1:
             return frozenset((option_name,))
-        if value is None:
-            return frozenset()
-        normalized = normalize_frozen_str_set(value)
-        for name in normalized:
+        for name in value:
             if len(name) != 1:
                 msg = f"Short option name '{name}' must be exactly one character."
                 raise ValueError(msg)
@@ -280,48 +278,35 @@ class OptionSpec:
                     " character."
                 )
                 raise ValueError(msg)
-        return normalized
+        return value
 
     @staticmethod
     def _validate_flag_values(
-        falsey_values: "str | Sequence[str] | None",
-        truthy_values: "str | Sequence[str] | None",
+        falsey_values: frozenset[str] | None,
+        truthy_values: frozenset[str] | None,
     ) -> tuple[frozenset[str] | None, frozenset[str] | None]:
-        truthy = (
-            normalize_frozen_str_set(truthy_values)
-            if truthy_values is not None
-            else None
-        )
-        falsey = (
-            normalize_frozen_str_set(falsey_values)
-            if falsey_values is not None
-            else None
-        )
-        if truthy is not None and falsey is not None:
-            intersection = truthy.intersection(falsey)
+        if truthy_values is not None and falsey_values is not None:
+            intersection = truthy_values.intersection(falsey_values)
             if intersection:
                 msg = (
                     f"Flag option truthy and falsey values must not overlap: "
                     f"{', '.join(intersection)}"
                 )
                 raise ValueError(msg)
-        return falsey, truthy
+        return falsey_values, truthy_values
 
     @staticmethod
     def _validate_negation_words(
-        value: "str | Sequence[str] | None",
+        value: frozenset[str],
     ) -> frozenset[str]:
-        if value is None:
-            return frozenset()
-        normalized = normalize_frozen_str_set(value)
-        for name in normalized:
+        for name in value:
             if len(name) < 1:
                 msg = "Negation word must have at least one character."
                 raise ValueError(msg)
             if re.search(r"\s", name):
                 msg = f"Negation word '{name}' must not contain whitespace."
                 raise ValueError(msg)
-        return normalized
+        return value
 
 
 class PositionalSpec:
@@ -337,17 +322,14 @@ class PositionalSpec:
 
     __slots__: tuple[str, ...] = ("_arity", "_name")
 
-    def __init__(
-        self, name: str, *, arity: int | Arity | tuple[int, int] | None
-    ) -> None:
+    def __init__(self, name: str, *, arity: Arity = _DEFAULT_ARITY) -> None:
         """Initialize a positional argument specification.
 
         Args:
             name: The parameter name for this positional. Used to identify
                 the positional in the parse result.
-            arity: Number of values this positional accepts. Can be an int,
-                [`Arity`][aclaf.parser.Arity] tuple, or `(min, max)` tuple.
-                Default is `Arity(1, 1)`.
+            arity: Number of values this positional accepts as an Arity object.
+                Default: `Arity(1, 1)`.
 
         Raises:
             ValueError: If the arity is invalid (e.g., negative values).

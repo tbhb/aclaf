@@ -36,38 +36,50 @@ class TestMultiLevelSubcommands:
         """
         spec = CommandSpec(
             name="cloud",
-            options=[OptionSpec("verbose", short=["v"], arity=ZERO_ARITY)],
-            subcommands=[
-                CommandSpec(
+            options={
+                "verbose": OptionSpec(
+                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
+                )
+            },
+            subcommands={
+                "compute": CommandSpec(
                     name="compute",
-                    options=[
-                        OptionSpec("region", short=["r"], arity=EXACTLY_ONE_ARITY)
-                    ],
-                    subcommands=[
-                        CommandSpec(
+                    options={
+                        "region": OptionSpec(
+                            "region", short=frozenset({"r"}), arity=EXACTLY_ONE_ARITY
+                        )
+                    },
+                    subcommands={
+                        "instances": CommandSpec(
                             name="instances",
-                            options=[
-                                OptionSpec("zone", short=["z"], arity=EXACTLY_ONE_ARITY)
-                            ],
-                            subcommands=[
-                                CommandSpec(
+                            options={
+                                "zone": OptionSpec(
+                                    "zone",
+                                    short=frozenset({"z"}),
+                                    arity=EXACTLY_ONE_ARITY,
+                                )
+                            },
+                            subcommands={
+                                "create": CommandSpec(
                                     name="create",
-                                    options=[
-                                        OptionSpec(
+                                    options={
+                                        "machine-type": OptionSpec(
                                             "machine-type",
-                                            short=["m"],
+                                            short=frozenset({"m"}),
                                             arity=EXACTLY_ONE_ARITY,
                                         ),
-                                    ],
-                                    positionals=[
-                                        PositionalSpec("name", arity=EXACTLY_ONE_ARITY)
-                                    ],
+                                    },
+                                    positionals={
+                                        "name": PositionalSpec(
+                                            "name", arity=EXACTLY_ONE_ARITY
+                                        )
+                                    },
                                 ),
-                            ],
+                            },
                         ),
-                    ],
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -127,26 +139,34 @@ class TestOptionsPositionalsSubcommands:
         """
         spec = CommandSpec(
             name="tool",
-            options=[
-                OptionSpec(
+            options={
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 ),
-                OptionSpec("config", short=["c"], arity=EXACTLY_ONE_ARITY),
-            ],
-            positionals=[PositionalSpec("input", arity=EXACTLY_ONE_ARITY)],
-            subcommands=[
-                CommandSpec(
-                    name="process",
-                    options=[
-                        OptionSpec("threads", short=["t"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("output", short=["o"], arity=EXACTLY_ONE_ARITY),
-                    ],
-                    positionals=[PositionalSpec("files", arity=ONE_OR_MORE_ARITY)],
+                "config": OptionSpec(
+                    "config", short=frozenset({"c"}), arity=EXACTLY_ONE_ARITY
                 ),
-            ],
+            },
+            positionals={"input": PositionalSpec("input", arity=EXACTLY_ONE_ARITY)},
+            subcommands={
+                "process": CommandSpec(
+                    name="process",
+                    options={
+                        "threads": OptionSpec(
+                            "threads", short=frozenset({"t"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                        "output": OptionSpec(
+                            "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
+                        ),
+                    },
+                    positionals={
+                        "files": PositionalSpec("files", arity=ONE_OR_MORE_ARITY)
+                    },
+                ),
+            },
         )
         parser = Parser(spec)
 
@@ -196,11 +216,11 @@ class TestOptionsPositionalsSubcommands:
         """
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("required", arity=EXACTLY_ONE_ARITY),
-                PositionalSpec("optional", arity=ZERO_OR_MORE_ARITY),
-                PositionalSpec("multiple", arity=Arity(2, 4)),
-            ],
+            positionals={
+                "required": PositionalSpec("required", arity=EXACTLY_ONE_ARITY),
+                "optional": PositionalSpec("optional", arity=ZERO_OR_MORE_ARITY),
+                "multiple": PositionalSpec("multiple", arity=Arity(2, 4)),
+            },
         )
         parser = Parser(spec)
 
@@ -232,14 +252,14 @@ class TestAccumulationWithComplexOptions:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec(
+            options={
+                "include": OptionSpec(
                     "include",
-                    short=["I"],
+                    short=frozenset({"I"}),
                     arity=ONE_OR_MORE_ARITY,
                     accumulation_mode=AccumulationMode.COLLECT,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -282,32 +302,32 @@ class TestAccumulationWithComplexOptions:
         """
         spec = CommandSpec(
             name="compiler",
-            options=[
-                OptionSpec(
+            options={
+                "define": OptionSpec(
                     "define",
-                    short=["D"],
+                    short=frozenset({"D"}),
                     arity=EXACTLY_ONE_ARITY,
                     accumulation_mode=AccumulationMode.COLLECT,
                 ),
-                OptionSpec(
+                "include": OptionSpec(
                     "include",
-                    short=["I"],
+                    short=frozenset({"I"}),
                     arity=EXACTLY_ONE_ARITY,
                     accumulation_mode=AccumulationMode.COLLECT,
                 ),
-                OptionSpec(
+                "verbose": OptionSpec(
                     "verbose",
-                    short=["v"],
+                    short=frozenset({"v"}),
                     arity=ZERO_ARITY,
                     accumulation_mode=AccumulationMode.COUNT,
                 ),
-                OptionSpec(
+                "optimization": OptionSpec(
                     "optimization",
-                    short=["O"],
+                    short=frozenset({"O"}),
                     arity=EXACTLY_ONE_ARITY,
                     accumulation_mode=AccumulationMode.LAST_WINS,
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -355,16 +375,20 @@ class TestTrailingArgsInComplexScenarios:
         """
         spec = CommandSpec(
             name="kubectl",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "exec": CommandSpec(
                     name="exec",
-                    options=[
-                        OptionSpec("interactive", short=["i"], arity=ZERO_ARITY),
-                        OptionSpec("tty", short=["t"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[PositionalSpec("pod", arity=EXACTLY_ONE_ARITY)],
+                    options={
+                        "interactive": OptionSpec(
+                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
+                        ),
+                        "tty": OptionSpec(
+                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={"pod": PositionalSpec("pod", arity=EXACTLY_ONE_ARITY)},
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -398,9 +422,9 @@ class TestComplexArityPatterns:
         """
         spec = CommandSpec(
             name="cmd",
-            options=[
-                OptionSpec("files", short=["f"], arity=Arity(2, 5)),
-            ],
+            options={
+                "files": OptionSpec("files", short=frozenset({"f"}), arity=Arity(2, 5)),
+            },
         )
         parser = Parser(spec)
 
@@ -433,10 +457,10 @@ class TestComplexArityPatterns:
         """
         spec = CommandSpec(
             name="cmd",
-            positionals=[
-                PositionalSpec("sources", arity=ONE_OR_MORE_ARITY),
-                PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
-            ],
+            positionals={
+                "sources": PositionalSpec("sources", arity=ONE_OR_MORE_ARITY),
+                "dest": PositionalSpec("dest", arity=EXACTLY_ONE_ARITY),
+            },
         )
         parser = Parser(spec)
 
@@ -465,12 +489,20 @@ class TestRealWorldBuildTool:
         """
         spec = CommandSpec(
             name="build",
-            options=[
-                OptionSpec("file", short=["f"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("jobs", short=["j"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("keep-going", short=["k"], arity=ZERO_ARITY),
-            ],
-            positionals=[PositionalSpec("targets", arity=ZERO_OR_MORE_ARITY)],
+            options={
+                "file": OptionSpec(
+                    "file", short=frozenset({"f"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "jobs": OptionSpec(
+                    "jobs", short=frozenset({"j"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "keep-going": OptionSpec(
+                    "keep-going", short=frozenset({"k"}), arity=ZERO_ARITY
+                ),
+            },
+            positionals={
+                "targets": PositionalSpec("targets", arity=ZERO_OR_MORE_ARITY)
+            },
         )
         parser = Parser(spec)
 
@@ -503,17 +535,23 @@ class TestPackageManagerPatterns:
         """
         spec = CommandSpec(
             name="pkg",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "install": CommandSpec(
                     name="install",
-                    aliases=("i", "add"),
-                    options=[
-                        OptionSpec("save-dev", short=["D"], arity=ZERO_ARITY),
-                        OptionSpec("global", short=["g"], arity=ZERO_ARITY),
-                    ],
-                    positionals=[PositionalSpec("packages", arity=ZERO_OR_MORE_ARITY)],
+                    aliases=frozenset({"i", "add"}),
+                    options={
+                        "save-dev": OptionSpec(
+                            "save-dev", short=frozenset({"D"}), arity=ZERO_ARITY
+                        ),
+                        "global": OptionSpec(
+                            "global", short=frozenset({"g"}), arity=ZERO_ARITY
+                        ),
+                    },
+                    positionals={
+                        "packages": PositionalSpec("packages", arity=ZERO_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec, allow_aliases=True)
 
@@ -543,17 +581,25 @@ class TestPackageManagerPatterns:
         """
         spec = CommandSpec(
             name="pip",
-            subcommands=[
-                CommandSpec(
+            subcommands={
+                "install": CommandSpec(
                     name="install",
-                    options=[
-                        OptionSpec("requirement", short=["r"], arity=EXACTLY_ONE_ARITY),
-                        OptionSpec("upgrade", short=["U"], arity=ZERO_ARITY),
-                        OptionSpec("user", arity=ZERO_ARITY),
-                    ],
-                    positionals=[PositionalSpec("packages", arity=ZERO_OR_MORE_ARITY)],
+                    options={
+                        "requirement": OptionSpec(
+                            "requirement",
+                            short=frozenset({"r"}),
+                            arity=EXACTLY_ONE_ARITY,
+                        ),
+                        "upgrade": OptionSpec(
+                            "upgrade", short=frozenset({"U"}), arity=ZERO_ARITY
+                        ),
+                        "user": OptionSpec("user", arity=ZERO_ARITY),
+                    },
+                    positionals={
+                        "packages": PositionalSpec("packages", arity=ZERO_OR_MORE_ARITY)
+                    },
                 ),
-            ],
+            },
         )
         parser = Parser(spec)
 
@@ -586,13 +632,23 @@ class TestDatabaseCLIPatterns:
         """
         spec = CommandSpec(
             name="db",
-            options=[
-                OptionSpec("host", short=["h"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("port", short=["p"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("username", short=["U"], arity=EXACTLY_ONE_ARITY),
-                OptionSpec("database", short=["d"], arity=EXACTLY_ONE_ARITY),
-            ],
-            positionals=[PositionalSpec("command", arity=ZERO_OR_MORE_ARITY)],
+            options={
+                "host": OptionSpec(
+                    "host", short=frozenset({"h"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "port": OptionSpec(
+                    "port", short=frozenset({"p"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "username": OptionSpec(
+                    "username", short=frozenset({"U"}), arity=EXACTLY_ONE_ARITY
+                ),
+                "database": OptionSpec(
+                    "database", short=frozenset({"d"}), arity=EXACTLY_ONE_ARITY
+                ),
+            },
+            positionals={
+                "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY)
+            },
         )
         parser = Parser(spec)
 
