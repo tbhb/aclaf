@@ -6,7 +6,7 @@ Specification types for defining command structure and behavior. This page docum
 
 <!-- vale off -->
 
-::: Aclaf.parser
+::: aclaf.parser
     options:
       members:
       - CommandSpec

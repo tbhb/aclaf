@@ -6,7 +6,7 @@ The main parser API for processing command-line arguments. This page documents t
 
 <!-- vale off -->
 
-::: Aclaf.parser
+::: aclaf.parser
     options:
       members:
       - Parser

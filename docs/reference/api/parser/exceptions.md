@@ -8,7 +8,7 @@ Exception types raised during parsing and specification validation. This page do
 
 ## Base exceptions
 
-::: Aclaf.parser
+::: aclaf.parser
     options:
       heading_level: 3
       summary: false
@@ -19,7 +19,7 @@ Exception types raised during parsing and specification validation. This page do
 
 ## Option exceptions
 
-::: Aclaf.parser
+::: aclaf.parser
     options:
       heading_level: 3
       summary: false
@@ -34,7 +34,7 @@ Exception types raised during parsing and specification validation. This page do
 
 ## Exceptions for subcommands
 
-::: Aclaf.parser
+::: aclaf.parser
     options:
       heading_level: 3
       summary: false
@@ -44,7 +44,7 @@ Exception types raised during parsing and specification validation. This page do
 
 ## Exceptions for positionals
 
-::: Aclaf.parser
+::: aclaf.parser
     options:
       heading_level: 3
       summary: false
