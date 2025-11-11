@@ -18,6 +18,7 @@ Both individual flag behavior and flag interactions are tested.
 """
 
 import pytest
+from hypothesis import given, strategies as st
 
 from aclaf.parser import (
     CommandSpec,
@@ -30,6 +31,7 @@ from aclaf.parser.exceptions import (
     AmbiguousSubcommandError,
     FlagWithValueError,
     InvalidFlagValueError,
+    ParserConfigurationError,
     UnexpectedPositionalArgumentError,
     UnknownOptionError,
     UnknownSubcommandError,
@@ -544,6 +546,43 @@ class TestMinimumAbbreviationLength:
         result = parser.parse(["--v"])
         assert result.options["verbose"].value is True
 
+    def test_minimum_abbreviation_length_validation_zero_raises_error(self):
+        """Zero minimum abbreviation length raises ParserConfigurationError."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"minimum_abbreviation_length must be at least 1.*got 0",
+        ):
+            _ = Parser(spec, minimum_abbreviation_length=0)
+
+    def test_minimum_abbreviation_length_validation_negative_raises_error(self):
+        """Negative minimum abbreviation length raises ParserConfigurationError."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"minimum_abbreviation_length must be at least 1.*got -1",
+        ):
+            _ = Parser(spec, minimum_abbreviation_length=-1)
+
+    def test_minimum_abbreviation_length_validation_large_negative_raises_error(self):
+        """Large negative abbreviation length raises ParserConfigurationError."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"minimum_abbreviation_length must be at least 1.*got -100",
+        ):
+            _ = Parser(spec, minimum_abbreviation_length=-100)
+
+    def test_minimum_abbreviation_length_validation_valid_values(self):
+        """Valid minimum abbreviation length values are accepted."""
+        spec = CommandSpec(name="cmd")
+
+        # Test a range of valid values
+        for valid_value in [1, 2, 3, 5, 10, 100]:
+            parser = Parser(spec, minimum_abbreviation_length=valid_value)
+            # If we get here without exception, validation passed
+            assert parser.config.minimum_abbreviation_length == valid_value
+
 
 class TestStrictOptionsBeforePositionals:
     """Test the strict_options_before_positionals configuration flag."""
@@ -763,3 +802,426 @@ class TestConfigurationFlagInteractions:
         result = parser.parse(["--ver", "file.txt"])
         assert result.options["verbose"].value is True
         assert result.positionals["file"].value == "file.txt"
+
+
+class TestConfigurationValidationTruthyValues:
+    """Test truthy_flag_values configuration validation."""
+
+    def test_truthy_none_uses_defaults(self):
+        """None for truthy values uses defaults."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, truthy_flag_values=None)
+        assert parser.config.truthy_flag_values is None
+
+    def test_truthy_single_value_valid(self):
+        """Single truthy value is valid."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, truthy_flag_values=("enabled",))
+        assert parser.config.truthy_flag_values == ("enabled",)
+
+    def test_truthy_multiple_values_valid(self):
+        """Multiple truthy values are valid."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, truthy_flag_values=("true", "yes", "1"))
+        assert parser.config.truthy_flag_values == ("true", "yes", "1")
+
+    def test_truthy_empty_tuple_raises_error(self):
+        """Empty truthy tuple raises error."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"truthy_flag_values must not be empty",
+        ):
+            _ = Parser(spec, truthy_flag_values=())
+
+    def test_truthy_empty_string_first_raises_error(self):
+        """Empty string at start raises error with correct index."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"truthy_flag_values must contain only non-empty strings.*index 0",
+        ):
+            _ = Parser(spec, truthy_flag_values=("", "yes"))
+
+    def test_truthy_empty_string_middle_raises_error(self):
+        """Empty string in middle raises error with correct index."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"truthy_flag_values must contain only non-empty strings.*index 1",
+        ):
+            _ = Parser(spec, truthy_flag_values=("yes", "", "true"))
+
+    def test_truthy_empty_string_last_raises_error(self):
+        """Empty string at end raises error with correct index."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"truthy_flag_values must contain only non-empty strings.*index 2",
+        ):
+            _ = Parser(spec, truthy_flag_values=("yes", "true", ""))
+
+    def test_truthy_whitespace_only_allowed(self):
+        """Whitespace-only string is allowed (edge case)."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, truthy_flag_values=("  ", "yes"))
+        assert parser.config.truthy_flag_values == ("  ", "yes")
+
+    def test_truthy_duplicates_allowed(self):
+        """Duplicate values are allowed (harmless)."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, truthy_flag_values=("yes", "true", "yes"))
+        assert parser.config.truthy_flag_values == ("yes", "true", "yes")
+
+    def test_truthy_case_variants_allowed(self):
+        """Multiple case variants are allowed."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, truthy_flag_values=("true", "TRUE", "True"))
+        assert parser.config.truthy_flag_values == ("true", "TRUE", "True")
+
+
+class TestConfigurationValidationFalseyValues:
+    """Test falsey_flag_values configuration validation."""
+
+    def test_falsey_none_uses_defaults(self):
+        """None for falsey values uses defaults."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, falsey_flag_values=None)
+        assert parser.config.falsey_flag_values is None
+
+    def test_falsey_single_value_valid(self):
+        """Single falsey value is valid."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, falsey_flag_values=("disabled",))
+        assert parser.config.falsey_flag_values == ("disabled",)
+
+    def test_falsey_multiple_values_valid(self):
+        """Multiple falsey values are valid."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, falsey_flag_values=("false", "no", "0"))
+        assert parser.config.falsey_flag_values == ("false", "no", "0")
+
+    def test_falsey_empty_tuple_raises_error(self):
+        """Empty falsey tuple raises error."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"falsey_flag_values must not be empty",
+        ):
+            _ = Parser(spec, falsey_flag_values=())
+
+    def test_falsey_empty_string_first_raises_error(self):
+        """Empty string at start raises error with correct index."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"falsey_flag_values must contain only non-empty strings.*index 0",
+        ):
+            _ = Parser(spec, falsey_flag_values=("", "no"))
+
+    def test_falsey_empty_string_middle_raises_error(self):
+        """Empty string in middle raises error with correct index."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"falsey_flag_values must contain only non-empty strings.*index 1",
+        ):
+            _ = Parser(spec, falsey_flag_values=("no", "", "false"))
+
+    def test_falsey_empty_string_last_raises_error(self):
+        """Empty string at end raises error with correct index."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"falsey_flag_values must contain only non-empty strings.*index 2",
+        ):
+            _ = Parser(spec, falsey_flag_values=("no", "false", ""))
+
+    def test_falsey_whitespace_only_allowed(self):
+        """Whitespace-only string is allowed (edge case)."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, falsey_flag_values=("  ", "no"))
+        assert parser.config.falsey_flag_values == ("  ", "no")
+
+    def test_falsey_duplicates_allowed(self):
+        """Duplicate values are allowed (harmless)."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, falsey_flag_values=("no", "false", "no"))
+        assert parser.config.falsey_flag_values == ("no", "false", "no")
+
+    def test_falsey_case_variants_allowed(self):
+        """Multiple case variants are allowed."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, falsey_flag_values=("false", "FALSE", "False"))
+        assert parser.config.falsey_flag_values == ("false", "FALSE", "False")
+
+
+class TestConfigurationValidationFlagValuesOverlap:
+    """Test truthy/falsey overlap validation."""
+
+    def test_no_overlap_both_specified(self):
+        """No overlap when both explicitly set."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(
+            spec,
+            truthy_flag_values=("true", "yes", "1"),
+            falsey_flag_values=("false", "no", "0"),
+        )
+        assert parser.config.truthy_flag_values == ("true", "yes", "1")
+        assert parser.config.falsey_flag_values == ("false", "no", "0")
+
+    def test_both_none_skips_overlap_check(self):
+        """Both None skips overlap validation."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(
+            spec,
+            truthy_flag_values=None,
+            falsey_flag_values=None,
+        )
+        assert parser.config.truthy_flag_values is None
+        assert parser.config.falsey_flag_values is None
+
+    def test_truthy_none_skips_overlap_check(self):
+        """Truthy None skips overlap validation."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(
+            spec,
+            truthy_flag_values=None,
+            falsey_flag_values=("custom",),
+        )
+        assert parser.config.truthy_flag_values is None
+        assert parser.config.falsey_flag_values == ("custom",)
+
+    def test_falsey_none_skips_overlap_check(self):
+        """Falsey None skips overlap validation."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(
+            spec,
+            truthy_flag_values=("custom",),
+            falsey_flag_values=None,
+        )
+        assert parser.config.truthy_flag_values == ("custom",)
+        assert parser.config.falsey_flag_values is None
+
+    def test_single_overlap_raises_error(self):
+        """Single overlapping value raises error."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"truthy_flag_values and falsey_flag_values must not overlap.*'yes'",
+        ):
+            _ = Parser(
+                spec,
+                truthy_flag_values=("yes", "true"),
+                falsey_flag_values=("no", "yes"),
+            )
+
+    def test_multiple_overlaps_raise_error(self):
+        """Multiple overlapping values raise error with all listed."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=(
+                r"truthy_flag_values and falsey_flag_values must not "
+                r"overlap.*'1'.*'yes'"
+            ),
+        ):
+            _ = Parser(
+                spec,
+                truthy_flag_values=("yes", "true", "1"),
+                falsey_flag_values=("no", "yes", "1"),
+            )
+
+    def test_case_sensitive_no_overlap(self):
+        """Different case is not considered overlap."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(
+            spec,
+            truthy_flag_values=("YES", "TRUE"),
+            falsey_flag_values=("yes", "true"),
+        )
+        # No error - "YES" != "yes", "TRUE" != "true"
+        assert parser.config.truthy_flag_values == ("YES", "TRUE")
+        assert parser.config.falsey_flag_values == ("yes", "true")
+
+    def test_exact_duplicate_raises_error(self):
+        """Exact string in both sets raises error."""
+        spec = CommandSpec(name="cmd")
+        with pytest.raises(
+            ParserConfigurationError,
+            match=r"truthy_flag_values and falsey_flag_values must not overlap.*'yes'",
+        ):
+            _ = Parser(
+                spec,
+                truthy_flag_values=("yes",),
+                falsey_flag_values=("yes",),
+            )
+
+
+class TestConfigurationValidationEdgeCases:
+    """Test edge cases in configuration validation."""
+
+    def test_very_large_minimum_abbreviation_length(self):
+        """Very large abbreviation length is allowed."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, minimum_abbreviation_length=1000)
+        assert parser.config.minimum_abbreviation_length == 1000
+
+    def test_all_boolean_flags_true(self):
+        """All boolean flags can be True."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(
+            spec,
+            allow_abbreviated_options=True,
+            allow_abbreviated_subcommands=True,
+            allow_equals_for_flags=True,
+            allow_aliases=True,
+            allow_negative_numbers=True,
+            case_insensitive_flags=True,
+            case_insensitive_options=True,
+            case_insensitive_subcommands=True,
+            convert_underscores_to_dashes=True,
+            flatten_option_values=True,
+            strict_options_before_positionals=True,
+        )
+        assert parser.config.allow_abbreviated_options is True
+        assert parser.config.allow_abbreviated_subcommands is True
+        assert parser.config.allow_equals_for_flags is True
+        assert parser.config.allow_aliases is True
+        assert parser.config.allow_negative_numbers is True
+        assert parser.config.case_insensitive_flags is True
+        assert parser.config.case_insensitive_options is True
+        assert parser.config.case_insensitive_subcommands is True
+        assert parser.config.convert_underscores_to_dashes is True
+        assert parser.config.flatten_option_values is True
+        assert parser.config.strict_options_before_positionals is True
+
+    def test_all_boolean_flags_false(self):
+        """All boolean flags can be False."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(
+            spec,
+            allow_abbreviated_options=False,
+            allow_abbreviated_subcommands=False,
+            allow_equals_for_flags=False,
+            allow_aliases=False,
+            allow_negative_numbers=False,
+            case_insensitive_flags=False,
+            case_insensitive_options=False,
+            case_insensitive_subcommands=False,
+            convert_underscores_to_dashes=False,
+            flatten_option_values=False,
+            strict_options_before_positionals=False,
+        )
+        assert parser.config.allow_abbreviated_options is False
+        assert parser.config.allow_abbreviated_subcommands is False
+        assert parser.config.allow_equals_for_flags is False
+        assert parser.config.allow_aliases is False
+        assert parser.config.allow_negative_numbers is False
+        assert parser.config.case_insensitive_flags is False
+        assert parser.config.case_insensitive_options is False
+        assert parser.config.case_insensitive_subcommands is False
+        assert parser.config.convert_underscores_to_dashes is False
+        assert parser.config.flatten_option_values is False
+        assert parser.config.strict_options_before_positionals is False
+
+    def test_ignored_configuration_combination(self):
+        """Ignored configuration doesn't raise error."""
+        spec = CommandSpec(name="cmd")
+        # abbreviation_length ignored when abbreviations disabled
+        parser = Parser(
+            spec,
+            allow_abbreviated_options=False,
+            minimum_abbreviation_length=10,
+        )
+        assert parser.config.allow_abbreviated_options is False
+        assert parser.config.minimum_abbreviation_length == 10
+
+
+class TestConfigurationValidationPropertyBased:
+    """Property-based tests for configuration validation."""
+
+    @given(
+        truthy=st.one_of(
+            st.none(),
+            st.lists(st.text(min_size=1, max_size=20), min_size=1, max_size=10).map(
+                tuple
+            ),
+        ),
+        falsey=st.one_of(
+            st.none(),
+            st.lists(st.text(min_size=1, max_size=20), min_size=1, max_size=10).map(
+                tuple
+            ),
+        ),
+    )
+    def test_property_no_overlap_if_both_specified(
+        self, truthy: tuple[str, ...] | None, falsey: tuple[str, ...] | None
+    ) -> None:
+        """Property: If both truthy and falsey are specified, they must not overlap."""
+        spec = CommandSpec(name="cmd")
+
+        if truthy is not None and falsey is not None:
+            truthy_set = set(truthy)
+            falsey_set = set(falsey)
+            overlap = truthy_set & falsey_set
+
+            if overlap:
+                with pytest.raises(ParserConfigurationError):
+                    _ = Parser(
+                        spec,
+                        truthy_flag_values=truthy,
+                        falsey_flag_values=falsey,
+                    )
+            else:
+                parser = Parser(
+                    spec,
+                    truthy_flag_values=truthy,
+                    falsey_flag_values=falsey,
+                )
+                assert parser.config.truthy_flag_values == truthy
+                assert parser.config.falsey_flag_values == falsey
+        else:
+            # At least one is None - should always succeed
+            parser = Parser(
+                spec,
+                truthy_flag_values=truthy,
+                falsey_flag_values=falsey,
+            )
+            assert parser.config.truthy_flag_values == truthy
+            assert parser.config.falsey_flag_values == falsey
+
+    @given(
+        values=st.lists(st.text(min_size=1, max_size=20), min_size=1, max_size=10).map(
+            tuple
+        )
+    )
+    def test_property_truthy_non_empty_strings_always_valid(
+        self, values: tuple[str, ...]
+    ) -> None:
+        """Property: Truthy values with non-empty strings are always valid."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, truthy_flag_values=values)
+        assert parser.config.truthy_flag_values == values
+
+    @given(
+        values=st.lists(st.text(min_size=1, max_size=20), min_size=1, max_size=10).map(
+            tuple
+        )
+    )
+    def test_property_falsey_non_empty_strings_always_valid(
+        self, values: tuple[str, ...]
+    ) -> None:
+        """Property: Falsey values with non-empty strings are always valid."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, falsey_flag_values=values)
+        assert parser.config.falsey_flag_values == values
+
+    @given(min_length=st.integers(min_value=1, max_value=1000))
+    def test_property_minimum_abbreviation_length_positive_always_valid(
+        self, min_length: int
+    ) -> None:
+        """Property: Any positive minimum abbreviation length is valid."""
+        spec = CommandSpec(name="cmd")
+        parser = Parser(spec, minimum_abbreviation_length=min_length)
+        assert parser.config.minimum_abbreviation_length == min_length

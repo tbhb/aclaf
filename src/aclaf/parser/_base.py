@@ -1,7 +1,12 @@
-import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, override
+from dataclasses import dataclass, field, replace
+from typing import TYPE_CHECKING, Unpack, override
+
+from aclaf.parser._configuration import (
+    DEFAULT_PARSER_CONFIGURATION,
+    ParserConfiguration,
+    ParserConfigurationInput,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -121,98 +126,28 @@ class BaseParser(ABC):
     case sensitivity, and option/positional ordering.
     """
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         spec: "CommandSpec",
-        *,
-        allow_abbreviated_subcommands: bool = False,
-        allow_abbreviated_options: bool = False,
-        allow_equals_for_flags: bool = False,
-        allow_aliases: bool = True,
-        allow_negative_numbers: bool = False,
-        case_insensitive_flags: bool = False,
-        case_insensitive_options: bool = False,
-        case_insensitive_subcommands: bool = False,
-        convert_underscores_to_dashes: bool = True,
-        flatten_option_values: bool = False,
-        minimum_abbreviation_length: int = 3,
-        negative_number_pattern: str | None = None,
-        strict_options_before_positionals: bool = False,
-        truthy_flag_values: tuple[str, ...] | None = None,
-        falsey_flag_values: tuple[str, ...] | None = None,
+        config: ParserConfiguration | None = None,
+        **overrides: Unpack[ParserConfigurationInput],
     ) -> None:
         """Initialize a parser with a command specification and configuration.
 
         Args:
             spec: The [`CommandSpec`][aclaf.parser.CommandSpec] defining the
                 command structure, options, positionals, and subcommands.
-            allow_abbreviated_subcommands: Enable prefix matching for subcommand
-                names (e.g., `sta` matches `start`). Default: `False`.
-            allow_abbreviated_options: Enable prefix matching for option names
-                (e.g., `--verb` matches `--verbose`). Default: `False`.
-            allow_equals_for_flags: Allow `--flag=value` syntax for flag options
-                that accept explicit true/false values. Default: `False`.
-            allow_aliases: Enable command and option aliases. Default: `True`.
-            allow_negative_numbers: Enable parsing of negative numbers (e.g., `-1`,
-                `-3.14`, `-1e5`). When enabled, arguments starting with `-` followed by
-                a digit are treated as negative numbers if no matching short option
-                exists. Options take precedence over negative number interpretation.
-                Default: `False`.
-            case_insensitive_flags: Ignore case when matching boolean flags.
-                Default: `False`.
-            case_insensitive_options: Ignore case when matching option names.
-                Default: `False`.
-            case_insensitive_subcommands: Ignore case when matching subcommand
-                names. Default: `False`.
-            convert_underscores_to_dashes: Convert underscores to dashes in
-                option names during matching (`--foo_bar` matches `--foo-bar`).
-                Default: `True`.
-            flatten_option_values: Global default for value flattening in
-                [`COLLECT`][aclaf.parser.AccumulationMode.COLLECT] mode. When
-                `True`, values from multiple option occurrences are flattened
-                into a single tuple instead of nested tuples. Can be overridden by
-                [`CommandSpec.flatten_option_values`][aclaf.parser.CommandSpec.flatten_option_values]
-                or
-                [`OptionSpec.flatten_values`][aclaf.parser.OptionSpec.flatten_values].
-                Default: `False`.
-            minimum_abbreviation_length: Minimum characters required for
-                abbreviation matching. Default: `3`.
-            negative_number_pattern: Custom regex pattern for negative number
-                detection. If `None`, uses `DEFAULT_NEGATIVE_NUMBER_PATTERN`. Only
-                used when `allow_negative_numbers` is `True`. The pattern is validated
-                for safety (no ReDoS vulnerabilities). Default: `None`.
-            strict_options_before_positionals: POSIX-style mode where options
-                must appear before positionals. After the first positional,
-                all remaining arguments are treated as positionals. Default: `False`
-                (GNU-style, options can appear anywhere).
-            truthy_flag_values: Custom values that set flags to `True` when using
-                `--flag=value` syntax. Default: `None` (uses builtin defaults).
-            falsey_flag_values: Custom values that set flags to `False` when using
-                `--flag=value` syntax. Default: `None` (uses builtin defaults).
+            config: Configuration settings for the parser. If `None`, uses
+                [`DEFAULT_PARSER_CONFIGURATION`][aclaf.parser.DEFAULT_PARSER_CONFIGURATION].
+            **overrides: Individual configuration options to override the
+                provided `config`. These correspond to the attributes of
+                [`ParserConfiguration`][aclaf.parser.ParserConfiguration].
         """
         self._spec: CommandSpec = spec
 
-        self._allow_abbreviated_subcommands: bool = allow_abbreviated_subcommands
-        self._allow_abbreviated_options: bool = allow_abbreviated_options
-        self._allow_aliases: bool = allow_aliases
-        self._allow_equals_for_flags: bool = allow_equals_for_flags
-        self._allow_negative_numbers: bool = allow_negative_numbers
-        self._case_insensitive_flags: bool = case_insensitive_flags
-        self._case_insensitive_options: bool = case_insensitive_options
-        self._case_insensitive_subcommands: bool = case_insensitive_subcommands
-        self._convert_underscores_to_dashes: bool = convert_underscores_to_dashes
-        self._flatten_option_values: bool = flatten_option_values
-        self._minimum_abbreviation_length: int = minimum_abbreviation_length
-        self._strict_options_before_positionals: bool = (
-            strict_options_before_positionals
-        )
-        self._truthy_flag_values: tuple[str, ...] | None = truthy_flag_values
-        self._falsey_flag_values: tuple[str, ...] | None = falsey_flag_values
-
-        # Validate and store negative number pattern
-        if negative_number_pattern is not None:
-            self._validate_negative_number_pattern(negative_number_pattern)
-        self._negative_number_pattern: str | None = negative_number_pattern
+        config = config or DEFAULT_PARSER_CONFIGURATION
+        config = replace(config, **overrides) if overrides else config
+        self._config: ParserConfiguration = config
 
     @property
     def spec(self) -> "CommandSpec":
@@ -220,118 +155,9 @@ class BaseParser(ABC):
         return self._spec
 
     @property
-    def allow_abbreviated_subcommands(self) -> bool:
-        """Whether subcommand abbreviation is enabled."""
-        return self._allow_abbreviated_subcommands
-
-    @property
-    def allow_abbreviated_options(self) -> bool:
-        """Whether option abbreviation is enabled."""
-        return self._allow_abbreviated_options
-
-    @property
-    def allow_aliases(self) -> bool:
-        """Whether command and option aliases are enabled."""
-        return self._allow_aliases
-
-    @property
-    def allow_equals_for_flags(self) -> bool:
-        """Whether `--flag=value` syntax is allowed for boolean flags."""
-        return self._allow_equals_for_flags
-
-    @property
-    def case_insensitive_flags(self) -> bool:
-        """Whether flag matching is case-insensitive."""
-        return self._case_insensitive_flags
-
-    @property
-    def case_insensitive_options(self) -> bool:
-        """Whether option matching is case-insensitive."""
-        return self._case_insensitive_options
-
-    @property
-    def case_insensitive_subcommands(self) -> bool:
-        """Whether subcommand matching is case-insensitive."""
-        return self._case_insensitive_subcommands
-
-    @property
-    def convert_underscores_to_dashes(self) -> bool:
-        """Whether underscores are converted to dashes during matching."""
-        return self._convert_underscores_to_dashes
-
-    @property
-    def flatten_option_values(self) -> bool:
-        """Global default for value flattening in COLLECT mode.
-
-        When `True`, values from multiple option occurrences are flattened into
-        a single tuple instead of nested tuples. Can be overridden per-command
-        or per-option.
-        """
-        return self._flatten_option_values
-
-    @property
-    def minimum_abbreviation_length(self) -> int:
-        """Minimum character length required for abbreviation matching."""
-        return self._minimum_abbreviation_length
-
-    @property
-    def strict_options_before_positionals(self) -> bool:
-        """Whether POSIX-style strict option ordering is enforced."""
-        return self._strict_options_before_positionals
-
-    @property
-    def truthy_flag_values(self) -> tuple[str, ...] | None:
-        """Custom values treated as `True` for flag options."""
-        return self._truthy_flag_values
-
-    @property
-    def falsey_flag_values(self) -> tuple[str, ...] | None:
-        """Custom values treated as `False` for flag options."""
-        return self._falsey_flag_values
-
-    @property
-    def allow_negative_numbers(self) -> bool:
-        """Whether negative number parsing is enabled."""
-        return self._allow_negative_numbers
-
-    @property
-    def negative_number_pattern(self) -> str | None:
-        """Custom regex pattern for negative number detection."""
-        return self._negative_number_pattern
-
-    @staticmethod
-    def _validate_negative_number_pattern(pattern: str) -> None:
-        """Validate negative number pattern for safety.
-
-        Checks:
-            - Pattern compiles successfully
-            - Pattern doesn't match empty string
-            - No catastrophic backtracking patterns (basic ReDoS check)
-
-        Args:
-            pattern: The regex pattern to validate.
-
-        Raises:
-            ValueError: If pattern is unsafe or invalid.
-        """
-        # Compile check
-        try:
-            compiled = re.compile(pattern)
-        except re.error as e:
-            msg = f"Invalid regex pattern: {e}"
-            raise ValueError(msg) from e
-
-        # Empty string check
-        if compiled.match(""):
-            msg = "Pattern must not match empty string"
-            raise ValueError(msg)
-
-        # Basic ReDoS check (not exhaustive, but catches common cases)
-        # Flag nested quantifiers like (a+)+ or (a*)*
-        nested_quantifiers = re.compile(r"\([^)]*[+*][^)]*\)[+*]")
-        if nested_quantifiers.search(pattern):
-            msg = "Pattern contains nested quantifiers which may cause ReDoS"
-            raise ValueError(msg)
+    def config(self) -> ParserConfiguration:
+        """The parser configuration for this parser."""
+        return self._config
 
     @abstractmethod
     def parse(self, args: "Sequence[str]") -> "ParseResult":

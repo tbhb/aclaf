@@ -462,7 +462,10 @@ class _ParsingContext:
     def _should_treat_as_positional(self) -> bool:
         """Check if option-like arg should be treated as positional."""
         # Strict mode: after positionals started, everything is positional
-        if self.positionals_started and self.parser._strict_options_before_positionals:  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+        if (
+            self.positionals_started
+            and self.parser.config.strict_options_before_positionals
+        ):
             return True
 
         # No options defined: everything is positional after first positional
@@ -471,7 +474,7 @@ class _ParsingContext:
     def _is_negative_number(self, arg: str) -> bool:
         """Check if arg is a negative number in value context."""
         return (
-            self.parser._allow_negative_numbers  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
+            self.parser.config.allow_negative_numbers
             and self.parser._is_negative_number(arg)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
             and self.parser._in_value_consuming_context(self.current_spec)  # pyright: ignore[reportPrivateUsage]  # noqa: SLF001
         )
@@ -480,10 +483,10 @@ class _ParsingContext:
         """Try to resolve arg as a subcommand."""
         return self.current_spec.resolve_subcommand(
             arg,
-            allow_aliases=self.parser.allow_aliases,
-            allow_abbreviations=self.parser.allow_abbreviated_subcommands,
-            case_insensitive=self.parser.case_insensitive_subcommands,
-            minimum_abbreviation_length=self.parser.minimum_abbreviation_length,
+            allow_aliases=self.parser.config.allow_aliases,
+            allow_abbreviations=self.parser.config.allow_abbreviated_subcommands,
+            case_insensitive=self.parser.config.case_insensitive_subcommands,
+            minimum_abbreviation_length=self.parser.config.minimum_abbreviation_length,
         )
 
     def _should_raise_unknown_subcommand(self) -> bool:
@@ -622,10 +625,10 @@ class Parser(BaseParser):
         """
         return current_spec.resolve_subcommand(
             arg,
-            allow_aliases=self.allow_aliases,
-            allow_abbreviations=self.allow_abbreviated_subcommands,
-            case_insensitive=self.case_insensitive_subcommands,
-            minimum_abbreviation_length=self.minimum_abbreviation_length,
+            allow_aliases=self.config.allow_aliases,
+            allow_abbreviations=self.config.allow_abbreviated_subcommands,
+            case_insensitive=self.config.case_insensitive_subcommands,
+            minimum_abbreviation_length=self.config.minimum_abbreviation_length,
         )
 
     def _resolve_long_option(
@@ -645,10 +648,10 @@ class Parser(BaseParser):
         """
         return current_spec.resolve_option(
             option_name,
-            allow_abbreviations=self.allow_abbreviated_options,
-            case_insensitive=self.case_insensitive_options,
-            convert_underscores=self.convert_underscores_to_dashes,
-            minimum_abbreviation_length=self.minimum_abbreviation_length,
+            allow_abbreviations=self.config.allow_abbreviated_options,
+            case_insensitive=self.config.case_insensitive_options,
+            convert_underscores=self.config.convert_underscores_to_dashes,
+            minimum_abbreviation_length=self.config.minimum_abbreviation_length,
         )
 
     def _parse_long_option(  # noqa: PLR0912 - Complex long option parsing logic
@@ -666,17 +669,17 @@ class Parser(BaseParser):
 
         match (option_spec.is_flag, option_spec.arity, inline_value, bool(next_args)):
             # Flag with value and flag values not allowed
-            case (True, _, str(), _) if not self.allow_equals_for_flags:
+            case (True, _, str(), _) if not self.config.allow_equals_for_flags:
                 raise FlagWithValueError(option_spec.name, option_spec)
 
             # Flag with inline value and flag values allowed
-            case (True, _, str(), _) if self.allow_equals_for_flags:
+            case (True, _, str(), _) if self.config.allow_equals_for_flags:
                 parsed_option, consumed = self._parse_flag_with_value(
                     option_spec, option_name, inline_value, next_args
                 )
 
             # Flag with value from next_args and flag values allowed
-            case (True, _, None, True) if self.allow_equals_for_flags:
+            case (True, _, None, True) if self.config.allow_equals_for_flags:
                 parsed_option, consumed = self._parse_flag_with_value(
                     option_spec, option_name, inline_value, next_args
                 )
@@ -735,7 +738,7 @@ class Parser(BaseParser):
             case (False, arity, str() as val, _) if _is_zero_arity(arity):
                 # Zero-arity non-flag options with values
                 # If allow_equals_for_flags is enabled, treat as flag value
-                if self.allow_equals_for_flags and val:
+                if self.config.allow_equals_for_flags and val:
                     parsed_option, consumed = self._parse_flag_with_value(
                         option_spec, option_name, val, next_args
                     )
@@ -1022,19 +1025,19 @@ class Parser(BaseParser):
             FlagWithValueError: If flag has inline value and flag values not allowed
         """
         # Flag with inline value when allowed
-        if inline_value is not None and self.allow_equals_for_flags:
+        if inline_value is not None and self.config.allow_equals_for_flags:
             return self._parse_flag_with_value(
                 option_spec, option_name, inline_value, next_args
             )
 
         # Flag from next_args when allowed
-        if inline_value is None and next_args and self.allow_equals_for_flags:
+        if inline_value is None and next_args and self.config.allow_equals_for_flags:
             return self._parse_flag_with_value(
                 option_spec, option_name, None, next_args
             )
 
         # Flag with inline value when not allowed
-        if inline_value is not None and not self.allow_equals_for_flags:
+        if inline_value is not None and not self.config.allow_equals_for_flags:
             raise FlagWithValueError(option_spec.name, option_spec)
 
         # Flag with const_value
@@ -1074,7 +1077,7 @@ class Parser(BaseParser):
             OptionDoesNotAcceptValueError: If inline value provided when not allowed
         """
         # With inline value and flag values allowed
-        if inline_value is not None and self.allow_equals_for_flags:
+        if inline_value is not None and self.config.allow_equals_for_flags:
             return self._parse_flag_with_value(
                 option_spec, option_name, inline_value, next_args
             )
@@ -1216,9 +1219,9 @@ class Parser(BaseParser):
         parser = _ShortOptionSpecParser(
             arg_without_dash=arg_without_dash,
             current_spec=current_spec,
-            allow_abbreviated_options=self.allow_abbreviated_options,
-            case_insensitive_flags=self.case_insensitive_flags,
-            allow_equals_for_flags=self.allow_equals_for_flags,
+            allow_abbreviated_options=self.config.allow_abbreviated_options,
+            case_insensitive_flags=self.config.case_insensitive_flags,
+            allow_equals_for_flags=self.config.allow_equals_for_flags,
         )
         return parser.parse()
 
@@ -1231,12 +1234,12 @@ class Parser(BaseParser):
     ) -> tuple[ParsedOption, int]:
         truthy = frozenset(
             option_spec.truthy_flag_values
-            or self.truthy_flag_values
+            or self.config.truthy_flag_values
             or DEFAULT_TRUTHY_VALUES
         )
         falsey = frozenset(
             option_spec.falsey_flag_values
-            or self.falsey_flag_values
+            or self.config.falsey_flag_values
             or DEFAULT_FALSEY_VALUES
         )
 
@@ -1331,7 +1334,7 @@ class Parser(BaseParser):
             current_value = next_args[consumed]
             if current_value.startswith("-") and current_value != "-":
                 # If negative numbers enabled and matches pattern, consume as value
-                if self._allow_negative_numbers and self._is_negative_number(
+                if self.config.allow_negative_numbers and self._is_negative_number(
                     current_value
                 ):
                     # Continue to consume as value
@@ -1352,7 +1355,8 @@ class Parser(BaseParser):
                     arg.startswith("-")
                     and arg != "-"
                     and not (
-                        self._allow_negative_numbers and self._is_negative_number(arg)
+                        self.config.allow_negative_numbers
+                        and self._is_negative_number(arg)
                     )
                 ):
                     break
@@ -1459,7 +1463,7 @@ class Parser(BaseParser):
         # Check for unexpected leftover positionals only in strict mode
         # In strict mode, options after positionals are treated as positionals
         # and should raise an error if they don't fit the spec
-        if remaining_positionals and self._strict_options_before_positionals:
+        if remaining_positionals and self.config.strict_options_before_positionals:
             raise UnexpectedPositionalArgumentError(
                 remaining_positionals[0], current_spec.name
             )
@@ -1567,7 +1571,7 @@ class Parser(BaseParser):
         Returns:
             True if argument matches the negative number pattern.
         """
-        pattern = self._negative_number_pattern or DEFAULT_NEGATIVE_NUMBER_PATTERN
+        pattern = self.config.negative_number_pattern or DEFAULT_NEGATIVE_NUMBER_PATTERN
         return bool(re.match(pattern, arg))
 
     def _in_value_consuming_context(
@@ -1642,7 +1646,7 @@ def _resolve_flatten_setting(
         return command_spec.flatten_option_values
 
     # Fall back to parser-level default
-    return parser.flatten_option_values
+    return parser.config.flatten_option_values
 
 
 def _should_flatten_option(

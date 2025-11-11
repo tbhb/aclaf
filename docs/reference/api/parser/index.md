@@ -10,6 +10,7 @@ The main parser API for processing command-line arguments. This page documents t
     options:
       members:
       - Parser
+      - ParserConfiguration
       - BaseParser
       - ParseResult
       - ParsedOption

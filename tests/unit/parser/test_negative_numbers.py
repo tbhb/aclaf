@@ -12,7 +12,7 @@ from aclaf.parser import (
     Parser,
     PositionalSpec,
 )
-from aclaf.parser.exceptions import UnknownOptionError
+from aclaf.parser.exceptions import ParserConfigurationError, UnknownOptionError
 from aclaf.parser.types import (
     EXACTLY_ONE_ARITY,
     ZERO_ARITY,
@@ -198,10 +198,10 @@ class TestNegativeNumberCustomPattern:
         assert result.positionals["value"].value == "-.5"
 
     def test_custom_pattern_validation_invalid_regex(self):
-        """Invalid regex pattern raises ValueError."""
+        """Invalid regex pattern raises ParserConfigurationError."""
         spec = CommandSpec(name="cmd")
 
-        with pytest.raises(ValueError, match="Invalid regex pattern"):
+        with pytest.raises(ParserConfigurationError, match="Invalid regex pattern"):
             _ = Parser(
                 spec,
                 allow_negative_numbers=True,
@@ -209,10 +209,12 @@ class TestNegativeNumberCustomPattern:
             )
 
     def test_custom_pattern_validation_matches_empty(self):
-        """Pattern matching empty string raises ValueError."""
+        """Pattern matching empty string raises ParserConfigurationError."""
         spec = CommandSpec(name="cmd")
 
-        with pytest.raises(ValueError, match="must not match empty string"):
+        with pytest.raises(
+            ParserConfigurationError, match="must not match empty string"
+        ):
             _ = Parser(
                 spec,
                 allow_negative_numbers=True,
@@ -220,10 +222,10 @@ class TestNegativeNumberCustomPattern:
             )
 
     def test_custom_pattern_validation_nested_quantifiers(self):
-        """Pattern with nested quantifiers raises ValueError."""
+        """Pattern with nested quantifiers raises ParserConfigurationError."""
         spec = CommandSpec(name="cmd")
 
-        with pytest.raises(ValueError, match="nested quantifiers"):
+        with pytest.raises(ParserConfigurationError, match="nested quantifiers"):
             _ = Parser(
                 spec,
                 allow_negative_numbers=True,
