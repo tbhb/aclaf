@@ -105,8 +105,7 @@ class Parser(BaseParser):
             UnknownSubcommandError: If an unknown subcommand is encountered
             Various validation errors: If argument validation fails
         """
-        # === STATE INITIALIZATION ===
-        # Initialize parsing state variables for single-pass, left-to-right parsing
+        # region State initialization
         current_spec = root_spec
         position = 0
         options: dict[str, ParsedOption] = {}
@@ -114,25 +113,26 @@ class Parser(BaseParser):
         positionals_started = False
         trailing_mode = False
         trailing_args: list[str] = []
+        # endregion
 
         try:
-            # === MAIN PARSING LOOP ===
-            # Single-pass left-to-right parsing with dispatch based on arg structure
+            # region Main parsing loop
             while position < len(args):
                 arg = args[position]
 
-                # Handle trailing arguments after --
+                # region Trailing arguments
                 if trailing_mode:
                     trailing_args.append(arg)
                     position += 1
+                # endregion
 
-                # Handle double-dash separator
-                # Everything after -- is treated as trailing arguments (not options)
+                # region Double-dash separator
                 elif arg == "--":
                     trailing_mode = True
                     position += 1
+                # endregion
 
-                # Handle long options (--option or --option=value)
+                # region Long options
                 elif arg.startswith("--"):
                     # Check if should treat as positional (strict mode or no options)
                     should_treat_as_positional = (
@@ -342,9 +342,9 @@ class Parser(BaseParser):
                         )
                         options[accumulated_option.name] = accumulated_option
                         position += 1 + consumed
+                # endregion
 
-                # Handle short options or negative numbers
-                # Short options can be combined: -abc, -o value, -o=value
+                # region Short options
                 elif arg.startswith("-") and arg != "-":
                     # Check for negative number (e.g., -5, -3.14)
                     # Only treat as value if we're in a context that accepts positionals
@@ -756,9 +756,9 @@ class Parser(BaseParser):
                                 accumulated_dict[accumulated.name] = accumulated
                                 options[accumulated.name] = accumulated
                             position += 1 + next_args_consumed
+                # endregion
 
-                # Handle subcommands and positional arguments
-                # Try subcommand resolution first, then treat as positional
+                # region Subcommands and positionals
                 else:
                     # Try to resolve as subcommand
                     subcommand_resolution = current_spec.resolve_subcommand(
@@ -817,10 +817,10 @@ class Parser(BaseParser):
                     positionals += (arg,)
                     position += 1
                     positionals_started = True
+                # endregion
+            # endregion
 
-            # === BUILD FINAL PARSE RESULT ===
-            # Apply value flattening, group positionals, and construct ParseResult
-            # Apply value flattening to options that need it
+            # region Build final result
             flattened_options: dict[str, ParsedOption] = {}
             for option_name, parsed_option in options.items():
                 option_spec = current_spec.options[option_name]
@@ -842,9 +842,12 @@ class Parser(BaseParser):
                 positionals=grouped_positionals_final,
                 extra_args=tuple(trailing_args),
             )
+            # endregion
 
         except _SubcommandParsedError as e:
             return e.result
+
+    # region Positional argument handling
 
     def _group_positionals(
         self,
@@ -934,6 +937,10 @@ class Parser(BaseParser):
 
         return grouped_positionals
 
+    # endregion
+
+    # region Option resolution
+
     def _resolve_long_option(
         self, option_name: str, current_spec: "CommandSpec"
     ) -> tuple[str, "OptionSpec"]:
@@ -956,6 +963,10 @@ class Parser(BaseParser):
             convert_underscores=self.config.convert_underscores_to_dashes,
             minimum_abbreviation_length=self.config.minimum_abbreviation_length,
         )
+
+    # endregion
+
+    # region Option value parsing
 
     def _parse_flag_with_value(
         self,
@@ -1146,6 +1157,10 @@ class Parser(BaseParser):
             name=option_spec.name, alias=option_name, value=parsed_value
         ), consumed
 
+    # endregion
+
+    # region Option accumulation
+
     def _accumulate_option(  # noqa: PLR0912 - Complex accumulation logic for different modes
         self, old: ParsedOption | None, new: ParsedOption, current_spec: "CommandSpec"
     ):
@@ -1230,6 +1245,10 @@ class Parser(BaseParser):
                 raise AssertionError(msg)
         return accumulated_option
 
+    # endregion
+
+    # region Utility methods
+
     @staticmethod
     def _arity_accepts_values(arity: "Arity") -> bool:
         return (
@@ -1273,8 +1292,10 @@ class Parser(BaseParser):
         pattern = self.config.negative_number_pattern or DEFAULT_NEGATIVE_NUMBER_PATTERN
         return bool(re.match(pattern, arg))
 
+    # endregion
 
-# Helper functions for arity checking
+
+# region Module-level helper functions
 
 
 def _is_zero_arity(arity: "Arity | None") -> bool:
@@ -1398,3 +1419,6 @@ def _flatten_option_value(
         value=flattened,
         alias=parsed_option.alias,
     )
+
+
+# endregion
