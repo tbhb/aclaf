@@ -364,16 +364,387 @@ class Parser(BaseParser):
                             positionals += (arg,)
                             position += 1
                         else:
-                            # Parse as short option(s)
-                            parsed_options, consumed = self._parse_short_options(
-                                arg[1:],
-                                args[position + 1 :],
-                                current_spec,
+                            # Parse as short option(s) - inlined
+                            arg_without_dash = arg[1:]
+                            next_args = args[position + 1 :]
+
+                            # === CHARACTER-BY-CHARACTER PARSING ===
+                            # Extract option specs and inline value
+                            char_position = 0
+                            option_specs: list[tuple[str, OptionSpec]] = []
+                            inline_value: str | None = None
+                            inline_value_from_equals = False
+                            last_option_spec: OptionSpec | None = None
+
+                            while (
+                                char_position < len(arg_without_dash)
+                                and inline_value is None
+                            ):
+                                char = arg_without_dash[char_position]
+
+                                # Check for equals sign
+                                if char == "=":
+                                    char_position += 1
+                                    inline_value = arg_without_dash[char_position:]
+                                    inline_value_from_equals = True
+                                    continue
+
+                                # Try to resolve as an option
+                                try:
+                                    option_name, option_spec = (
+                                        current_spec.resolve_option(
+                                            char,
+                                            allow_abbreviations=self.config.allow_abbreviated_options,
+                                            case_insensitive=self.config.case_insensitive_flags,
+                                        )
+                                    )
+                                except UnknownOptionError:
+                                    # Handle unknown option character
+                                    # If first character, it's unknown
+                                    if char_position == 0:
+                                        raise UnknownOptionError(
+                                            char,
+                                            tuple(current_spec.options.keys()),
+                                        ) from None
+
+                                    # Check if previous option needs a value
+                                    if (
+                                        last_option_spec
+                                        and last_option_spec.arity
+                                        and last_option_spec.arity.min > 0
+                                    ):
+                                        inline_value = arg_without_dash[char_position:]
+                                        continue
+
+                                    # Check if this looks like an inline value attempt
+                                    if (
+                                        last_option_spec
+                                        and last_option_spec.arity == ZERO_ARITY
+                                        and (len(arg_without_dash) - char_position) > 2  # noqa: PLR2004
+                                    ):
+                                        # ZERO_ARITY option but value provided
+                                        raise OptionDoesNotAcceptValueError(
+                                            option_specs[-1][0],
+                                            last_option_spec,
+                                        ) from None
+
+                                    # Unknown option character
+                                    raise UnknownOptionError(
+                                        char,
+                                        tuple(current_spec.options.keys()),
+                                    ) from None
+
+                                # Successfully resolved option
+                                option_specs.append((option_name, option_spec))
+                                last_option_spec = option_spec
+                                char_position += 1
+
+                                # Check for zero-arity option followed by =
+                                if (
+                                    option_spec.arity == ZERO_ARITY
+                                    and char_position < len(arg_without_dash)
+                                    and arg_without_dash[char_position] == "="
+                                ):
+                                    # Found zero-arity followed by =
+                                    # Check if this is allowed by configuration
+                                    if not self.config.allow_equals_for_flags:
+                                        raise OptionDoesNotAcceptValueError(
+                                            option_name, option_spec
+                                        )
+                                    # Start inline value
+                                    inline_value = arg_without_dash[char_position + 1 :]
+                                    inline_value_from_equals = True
+                                    continue
+
+                                # Check if this option requires values
+                                if (
+                                    not option_spec.is_flag
+                                    and option_spec.arity.min > 0
+                                    and char_position < len(arg_without_dash)
+                                ):
+                                    # Handle value-required option
+                                    next_char = arg_without_dash[char_position]
+
+                                    # Explicit = means inline value
+                                    if next_char == "=":
+                                        inline_value = arg_without_dash[
+                                            char_position + 1 :
+                                        ]
+                                        inline_value_from_equals = True
+                                        continue
+
+                                    # Check if next char is a known option
+                                    try:
+                                        _ = current_spec.resolve_option(
+                                            next_char,
+                                            allow_abbreviations=self.config.allow_abbreviated_options,
+                                            case_insensitive=self.config.case_insensitive_flags,
+                                        )
+                                        is_known_option = True
+                                    except UnknownOptionError:
+                                        is_known_option = False
+
+                                    # If known option + not first + one char
+                                    # remaining -> insufficient values error
+                                    remaining_chars = (
+                                        len(arg_without_dash) - char_position
+                                    )
+                                    has_previous_options = len(option_specs) > 1
+                                    if (
+                                        is_known_option
+                                        and has_previous_options
+                                        and remaining_chars == 1
+                                    ):
+                                        raise InsufficientOptionValuesError(
+                                            option_name, option_spec
+                                        )
+
+                                    # Remaining characters are the inline value
+                                    inline_value = arg_without_dash[char_position:]
+
+                            # === END CHARACTER PARSING ===
+
+                            # === PARSE EXTRACTED SHORT OPTIONS ===
+                            # Inlined from _parse_extracted_short_options
+                            parsed_options_list: list[ParsedOption] = []
+                            next_args_consumed = 0
+
+                            for spec_index, (option_name, option_spec) in enumerate(
+                                option_specs
+                            ):
+                                is_last = spec_index == len(option_specs) - 1
+
+                                if not is_last:
+                                    # Inner option - inlined
+                                    # Flag with const_value
+                                    if (
+                                        option_spec.is_flag
+                                        and option_spec.const_value is not None
+                                    ):
+                                        parsed_option_inner = ParsedOption(
+                                            name=option_spec.name,
+                                            alias=option_name,
+                                            value=option_spec.const_value,
+                                        )
+                                    # Flag without const_value
+                                    elif option_spec.is_flag:
+                                        parsed_option_inner = ParsedOption(
+                                            name=option_spec.name,
+                                            alias=option_name,
+                                            value=True,
+                                        )
+                                    else:
+                                        arity = option_spec.arity or ZERO_OR_MORE_ARITY
+
+                                        # Zero arity with const_value
+                                        if (
+                                            _is_zero_arity(arity)
+                                            and option_spec.const_value is not None
+                                        ):
+                                            parsed_option_inner = ParsedOption(
+                                                name=option_spec.name,
+                                                alias=option_name,
+                                                value=option_spec.const_value,
+                                            )
+                                        # Zero arity without const_value
+                                        elif _is_zero_arity(arity):
+                                            parsed_option_inner = ParsedOption(
+                                                name=option_spec.name,
+                                                alias=option_name,
+                                                value=True,
+                                            )
+                                        # Requires values (error case)
+                                        elif arity.min > 0:
+                                            raise InsufficientOptionValuesError(
+                                                option_spec.name, option_spec
+                                            )
+                                        else:
+                                            # Unreachable
+                                            msg = (
+                                                f"Unreachable: option "
+                                                f"{option_spec.name!r} has unexpected "
+                                                f"configuration (arity.min={arity.min})"
+                                            )
+                                            raise AssertionError(msg)
+
+                                    parsed_options_list.append(parsed_option_inner)
+                                else:
+                                    # Last option - inlined
+                                    # Flag options
+                                    if option_spec.is_flag:
+                                        # Inlined from _parse_last_short_option_flag
+                                        # Flag with inline value when allowed
+                                        if (
+                                            inline_value is not None
+                                            and self.config.allow_equals_for_flags
+                                        ):
+                                            last_parsed_option, last_consumed = (
+                                                self._parse_flag_with_value(
+                                                    option_spec,
+                                                    option_name,
+                                                    inline_value,
+                                                    next_args,
+                                                )
+                                            )
+                                        # Flag from next_args when allowed
+                                        elif (
+                                            inline_value is None
+                                            and next_args
+                                            and self.config.allow_equals_for_flags
+                                        ):
+                                            last_parsed_option, last_consumed = (
+                                                self._parse_flag_with_value(
+                                                    option_spec,
+                                                    option_name,
+                                                    None,
+                                                    next_args,
+                                                )
+                                            )
+                                        # Flag with inline value when not allowed
+                                        elif (
+                                            inline_value is not None
+                                            and not self.config.allow_equals_for_flags
+                                        ):
+                                            raise FlagWithValueError(
+                                                option_spec.name, option_spec
+                                            )
+                                        # Flag with const_value
+                                        elif option_spec.const_value is not None:
+                                            last_parsed_option, last_consumed = (
+                                                ParsedOption(
+                                                    name=option_spec.name,
+                                                    alias=option_name,
+                                                    value=option_spec.const_value,
+                                                ),
+                                                0,
+                                            )
+                                        # Simple flag
+                                        else:
+                                            last_parsed_option, last_consumed = (
+                                                ParsedOption(
+                                                    name=option_spec.name,
+                                                    alias=option_name,
+                                                    value=True,
+                                                ),
+                                                0,
+                                            )
+                                    else:
+                                        # Zero-arity non-flag options
+                                        arity = option_spec.arity or ZERO_OR_MORE_ARITY
+                                        if _is_zero_arity(arity):
+                                            # Inlined zero-arity handler
+                                            # With inline value + flag values allowed
+                                            if (
+                                                inline_value is not None
+                                                and self.config.allow_equals_for_flags
+                                            ):
+                                                last_parsed_option, last_consumed = (
+                                                    self._parse_flag_with_value(
+                                                        option_spec,
+                                                        option_name,
+                                                        inline_value,
+                                                        next_args,
+                                                    )
+                                                )
+                                            # Inline value without flag values
+                                            elif inline_value is not None:
+                                                raise OptionDoesNotAcceptValueError(
+                                                    option_spec.name, option_spec
+                                                )
+                                            # Without inline value and with const_value
+                                            elif option_spec.const_value is not None:
+                                                last_parsed_option, last_consumed = (
+                                                    ParsedOption(
+                                                        name=option_spec.name,
+                                                        alias=option_name,
+                                                        value=option_spec.const_value,
+                                                    ),
+                                                    0,
+                                                )
+                                            # No inline value, no const_value
+                                            else:
+                                                last_parsed_option, last_consumed = (
+                                                    ParsedOption(
+                                                        name=option_spec.name,
+                                                        alias=option_name,
+                                                        value=True,
+                                                    ),
+                                                    0,
+                                                )
+                                        # Value-consuming options
+                                        # Inline value from = syntax
+                                        elif (
+                                            inline_value is not None
+                                            and inline_value_from_equals
+                                        ):
+                                            if arity.min > 1:
+                                                raise InsufficientOptionValuesError(
+                                                    option_spec.name, option_spec
+                                                )
+                                            last_parsed_option = (
+                                                self._parse_option_from_inline_value(
+                                                    option_spec,
+                                                    option_name,
+                                                    inline_value,
+                                                )
+                                            )
+                                            last_consumed = 0
+                                        # Inline value (not =) + unbounded arity
+                                        elif (
+                                            inline_value is not None
+                                            and not inline_value_from_equals
+                                            and arity.max is None
+                                        ):
+                                            last_parsed_option, last_consumed = (
+                                                self._parse_option_values_from_args(
+                                                    option_spec,
+                                                    option_name,
+                                                    next_args,
+                                                    current_spec,
+                                                    inline_start_value=inline_value,
+                                                )
+                                            )
+                                        # Inline value (not from =) without next_args
+                                        elif (
+                                            inline_value is not None
+                                            and not inline_value_from_equals
+                                        ):
+                                            if arity.min > 1:
+                                                raise InsufficientOptionValuesError(
+                                                    option_spec.name, option_spec
+                                                )
+                                            last_parsed_option = (
+                                                self._parse_option_from_inline_value(
+                                                    option_spec,
+                                                    option_name,
+                                                    inline_value,
+                                                )
+                                            )
+                                            last_consumed = 0
+                                        # No inline value - consume next_args
+                                        else:
+                                            last_parsed_option, last_consumed = (
+                                                self._parse_option_values_from_args(
+                                                    option_spec,
+                                                    option_name,
+                                                    next_args,
+                                                    current_spec,
+                                                )
+                                            )
+
+                                    parsed_options_list.append(last_parsed_option)
+                                    next_args_consumed += last_consumed
+
+                            # === ACCUMULATE SHORT OPTIONS ===
+                            accumulated_options = self._accumulate_short_options(
+                                parsed_options_list,
                                 MappingProxyType(options),
+                                current_spec,
                             )
-                            for parsed_option in parsed_options:
+
+                            for parsed_option in accumulated_options:
                                 options[parsed_option.name] = parsed_option
-                            position += 1 + consumed
+                            position += 1 + next_args_consumed
 
                 # Handle subcommand or positional
                 else:
@@ -477,482 +848,6 @@ class Parser(BaseParser):
             convert_underscores=self.config.convert_underscores_to_dashes,
             minimum_abbreviation_length=self.config.minimum_abbreviation_length,
         )
-
-    def _parse_short_options(  # noqa: PLR0915 - Monolithic character parser by design
-        self,
-        arg_without_dash: str,
-        next_args: "Sequence[str]",
-        current_spec: "CommandSpec",
-        options: MappingProxyType[str, ParsedOption],
-    ) -> tuple[tuple[ParsedOption, ...], int]:
-        """Parse combined short options like -abc or -xvalue.
-
-        Args:
-            arg_without_dash: Short option string without leading dash
-            next_args: Remaining arguments after this short option
-            current_spec: Current command specification
-            options: Previously parsed options for accumulation
-
-        Returns:
-            Tuple of (parsed and accumulated options, next_args consumed)
-        """
-        # === CHARACTER-BY-CHARACTER PARSING (inlined from _ShortOptionSpecParser) ===
-        # Extract option specs and inline value from combined short option string
-        position = 0
-        option_specs: list[tuple[str, OptionSpec]] = []
-        inline_value: str | None = None
-        inline_value_from_equals = False
-        last_option_spec: OptionSpec | None = None
-
-        while position < len(arg_without_dash) and inline_value is None:
-            char = arg_without_dash[position]
-
-            # Check for equals sign
-            if char == "=":
-                position += 1
-                inline_value = arg_without_dash[position:]
-                inline_value_from_equals = True
-                continue
-
-            # Try to resolve as an option
-            try:
-                option_name, option_spec = current_spec.resolve_option(
-                    char,
-                    allow_abbreviations=self.config.allow_abbreviated_options,
-                    case_insensitive=self.config.case_insensitive_flags,
-                )
-            except UnknownOptionError:
-                # Handle unknown option character
-                # If this is the first character, it's definitely unknown
-                if position == 0:
-                    raise UnknownOptionError(
-                        char,
-                        tuple(current_spec.options.keys()),
-                    ) from None
-
-                # Check if previous option needs a value
-                if (
-                    last_option_spec
-                    and last_option_spec.arity
-                    and last_option_spec.arity.min > 0
-                ):
-                    inline_value = arg_without_dash[position:]
-                    continue
-
-                # Check if this looks like an inline value attempt
-                if (
-                    last_option_spec
-                    and last_option_spec.arity == ZERO_ARITY
-                    and (len(arg_without_dash) - position) > 2  # noqa: PLR2004
-                ):
-                    # Previous option was ZERO_ARITY but user tried to provide value
-                    raise OptionDoesNotAcceptValueError(
-                        option_specs[-1][0],
-                        last_option_spec,
-                    ) from None
-
-                # Unknown option character
-                raise UnknownOptionError(
-                    char,
-                    tuple(current_spec.options.keys()),
-                ) from None
-
-            # Successfully resolved option
-            option_specs.append((option_name, option_spec))
-            last_option_spec = option_spec
-            position += 1
-
-            # Check for zero-arity option followed by =
-            if (
-                option_spec.arity == ZERO_ARITY
-                and position < len(arg_without_dash)
-                and arg_without_dash[position] == "="
-            ):
-                # Found zero-arity followed by =
-                # Check if this is allowed by configuration
-                if not self.config.allow_equals_for_flags:
-                    raise OptionDoesNotAcceptValueError(option_name, option_spec)
-                # Start inline value
-                inline_value = arg_without_dash[position + 1 :]
-                inline_value_from_equals = True
-                continue
-
-            # Check if this option requires values
-            if (
-                not option_spec.is_flag
-                and option_spec.arity.min > 0
-                and position < len(arg_without_dash)
-            ):
-                # Handle value-required option
-                next_char = arg_without_dash[position]
-
-                # Explicit = means inline value
-                if next_char == "=":
-                    inline_value = arg_without_dash[position + 1 :]
-                    inline_value_from_equals = True
-                    continue
-
-                # Check if next char is a known option
-                try:
-                    _ = current_spec.resolve_option(
-                        next_char,
-                        allow_abbreviations=self.config.allow_abbreviated_options,
-                        case_insensitive=self.config.case_insensitive_flags,
-                    )
-                    is_known_option = True
-                except UnknownOptionError:
-                    is_known_option = False
-
-                # If known option AND not first option AND only one char remaining
-                # -> error (insufficient values)
-                remaining_chars = len(arg_without_dash) - position
-                has_previous_options = len(option_specs) > 1
-                if is_known_option and has_previous_options and remaining_chars == 1:
-                    raise InsufficientOptionValuesError(option_name, option_spec)
-
-                # Remaining characters are the inline value
-                inline_value = arg_without_dash[position:]
-
-        # === END CHARACTER PARSING ===
-
-        # Parse each option (delegation)
-        parsed_options, next_args_consumed = self._parse_extracted_short_options(
-            option_specs,
-            inline_value,
-            inline_value_from_equals,
-            next_args,
-            current_spec,
-        )
-
-        # Accumulate combined flags (delegation)
-        accumulated_options = self._accumulate_short_options(
-            parsed_options, options, current_spec
-        )
-
-        return accumulated_options, next_args_consumed
-
-    def _parse_extracted_short_options(
-        self,
-        option_specs: list[tuple[str, "OptionSpec"]],
-        inline_value: str | None,
-        inline_value_from_equals: bool,  # noqa: FBT001 - Clear in context
-        next_args: "Sequence[str]",
-        current_spec: "CommandSpec",
-    ) -> tuple[list[ParsedOption], int]:
-        """Parse a list of extracted short option specs into ParsedOptions.
-
-        Args:
-            option_specs: List of `(option_name, option_spec)` tuples
-            inline_value: Inline value from combined option (e.g., `value`
-                from `-xvalue`)
-            inline_value_from_equals: Whether inline value came from `=`
-                syntax
-            next_args: Remaining arguments
-            current_spec: Current command specification
-
-        Returns:
-            Tuple of `(parsed options list, next_args consumed count)`
-        """
-        parsed_options: list[ParsedOption] = []
-        next_args_consumed = 0
-
-        for index, (option_name, option_spec) in enumerate(option_specs):
-            is_last = index == len(option_specs) - 1
-
-            if not is_last:
-                # Inner option (simpler logic)
-                parsed_option = self._parse_inner_short_option(option_name, option_spec)
-                parsed_options.append(parsed_option)
-            else:
-                # Last option (more complex - can consume values)
-                parsed_option, consumed = self._parse_last_short_option(
-                    option_name,
-                    option_spec,
-                    inline_value,
-                    inline_value_from_equals,
-                    next_args,
-                    current_spec,
-                )
-                parsed_options.append(parsed_option)
-                next_args_consumed += consumed
-
-        return parsed_options, next_args_consumed
-
-    def _parse_inner_short_option(
-        self,
-        option_name: str,
-        option_spec: "OptionSpec",
-    ) -> ParsedOption:
-        """Parse a short option that is not the last in a combined string.
-
-        Inner options can only be flags or zero-arity options since they
-        cannot consume values.
-
-        Args:
-            option_name: The single-character option name
-            option_spec: The option specification
-
-        Returns:
-            Parsed option with appropriate value
-
-        Raises:
-            InsufficientOptionValuesError: If option requires values
-        """
-        # Flag with const_value
-        if option_spec.is_flag and option_spec.const_value is not None:
-            return ParsedOption(
-                name=option_spec.name,
-                alias=option_name,
-                value=option_spec.const_value,
-            )
-
-        # Flag without const_value
-        if option_spec.is_flag:
-            return ParsedOption(
-                name=option_spec.name,
-                alias=option_name,
-                value=True,
-            )
-
-        arity = option_spec.arity or ZERO_OR_MORE_ARITY
-
-        # Zero arity with const_value
-        if _is_zero_arity(arity) and option_spec.const_value is not None:
-            return ParsedOption(
-                name=option_spec.name,
-                alias=option_name,
-                value=option_spec.const_value,
-            )
-
-        # Zero arity without const_value
-        if _is_zero_arity(arity):
-            return ParsedOption(
-                name=option_spec.name,
-                alias=option_name,
-                value=True,
-            )
-
-        # Requires values (error case)
-        if arity.min > 0:
-            raise InsufficientOptionValuesError(option_spec.name, option_spec)
-
-        # Unreachable: all valid option configurations should be handled above
-        msg = (
-            f"Unreachable: option {option_spec.name!r} has unexpected "
-            f"configuration (arity.min={arity.min})"
-        )
-        raise AssertionError(msg)
-
-    def _parse_last_short_option(  # noqa: PLR0913 - Refactored helper
-        self,
-        option_name: str,
-        option_spec: "OptionSpec",
-        inline_value: str | None,
-        inline_value_from_equals: bool,  # noqa: FBT001 - Clear in context
-        next_args: "Sequence[str]",
-        current_spec: "CommandSpec",
-    ) -> tuple[ParsedOption, int]:
-        """Parse the last short option in a combined string.
-
-        The last option can consume values from inline or next_args.
-
-        Args:
-            option_name: The single-character option name
-            option_spec: The option specification
-            inline_value: Inline value if present
-            inline_value_from_equals: Whether inline value came from =
-            next_args: Remaining arguments
-            current_spec: Current command specification
-
-        Returns:
-            Tuple of (parsed option, next_args consumed)
-        """
-        # Flag options
-        if option_spec.is_flag:
-            return self._parse_last_short_option_flag(
-                option_name, option_spec, inline_value, next_args
-            )
-
-        # Zero-arity non-flag options
-        arity = option_spec.arity or ZERO_OR_MORE_ARITY
-        if _is_zero_arity(arity):
-            return self._parse_last_short_option_zero_arity(
-                option_name, option_spec, inline_value, next_args
-            )
-
-        # Value-consuming options
-        return self._parse_last_short_option_with_values(
-            option_name,
-            option_spec,
-            inline_value,
-            inline_value_from_equals,
-            next_args,
-            current_spec,
-        )
-
-    def _parse_last_short_option_flag(
-        self,
-        option_name: str,
-        option_spec: "OptionSpec",
-        inline_value: str | None,
-        next_args: "Sequence[str]",
-    ) -> tuple[ParsedOption, int]:
-        """Parse a flag as the last short option.
-
-        Args:
-            option_name: The single-character option name
-            option_spec: The option specification (must be a flag)
-            inline_value: Inline value if present
-            next_args: Remaining arguments
-
-        Returns:
-            Tuple of (parsed option, next_args consumed)
-
-        Raises:
-            FlagWithValueError: If flag has inline value and flag values not allowed
-        """
-        # Flag with inline value when allowed
-        if inline_value is not None and self.config.allow_equals_for_flags:
-            return self._parse_flag_with_value(
-                option_spec, option_name, inline_value, next_args
-            )
-
-        # Flag from next_args when allowed
-        if inline_value is None and next_args and self.config.allow_equals_for_flags:
-            return self._parse_flag_with_value(
-                option_spec, option_name, None, next_args
-            )
-
-        # Flag with inline value when not allowed
-        if inline_value is not None and not self.config.allow_equals_for_flags:
-            raise FlagWithValueError(option_spec.name, option_spec)
-
-        # Flag with const_value
-        if option_spec.const_value is not None:
-            return ParsedOption(
-                name=option_spec.name,
-                alias=option_name,
-                value=option_spec.const_value,
-            ), 0
-
-        # Simple flag
-        return ParsedOption(
-            name=option_spec.name,
-            alias=option_name,
-            value=True,
-        ), 0
-
-    def _parse_last_short_option_zero_arity(
-        self,
-        option_name: str,
-        option_spec: "OptionSpec",
-        inline_value: str | None,
-        next_args: "Sequence[str]",
-    ) -> tuple[ParsedOption, int]:
-        """Parse a zero-arity option as the last short option.
-
-        Args:
-            option_name: The single-character option name
-            option_spec: The option specification (must have zero arity)
-            inline_value: Inline value if present
-            next_args: Remaining arguments
-
-        Returns:
-            Tuple of (parsed option, next_args consumed)
-
-        Raises:
-            OptionDoesNotAcceptValueError: If inline value provided when not allowed
-        """
-        # With inline value and flag values allowed
-        if inline_value is not None and self.config.allow_equals_for_flags:
-            return self._parse_flag_with_value(
-                option_spec, option_name, inline_value, next_args
-            )
-
-        # With inline value and flag values not allowed
-        if inline_value is not None:
-            raise OptionDoesNotAcceptValueError(option_spec.name, option_spec)
-
-        # Without inline value and with const_value
-        if option_spec.const_value is not None:
-            return ParsedOption(
-                name=option_spec.name,
-                alias=option_name,
-                value=option_spec.const_value,
-            ), 0
-
-        # Without inline value and without const_value
-        return ParsedOption(
-            name=option_spec.name,
-            alias=option_name,
-            value=True,
-        ), 0
-
-    def _parse_last_short_option_with_values(  # noqa: PLR0913 - Refactored helper
-        self,
-        option_name: str,
-        option_spec: "OptionSpec",
-        inline_value: str | None,
-        inline_value_from_equals: bool,  # noqa: FBT001 - Clear in context
-        next_args: "Sequence[str]",
-        current_spec: "CommandSpec",
-    ) -> tuple[ParsedOption, int]:
-        """Parse a value-consuming option as the last short option.
-
-        Args:
-            option_name: The single-character option name
-            option_spec: The option specification
-            inline_value: Inline value if present
-            inline_value_from_equals: Whether inline value came from =
-            next_args: Remaining arguments
-            current_spec: Current command specification
-
-        Returns:
-            Tuple of (parsed option, next_args consumed)
-
-        Raises:
-            InsufficientOptionValuesError: If not enough values provided
-        """
-        arity = option_spec.arity or ZERO_OR_MORE_ARITY
-
-        # Inline value from = syntax (only use inline, don't consume next_args)
-        if inline_value is not None and inline_value_from_equals:
-            if arity.min > 1:
-                raise InsufficientOptionValuesError(option_spec.name, option_spec)
-            parsed_option = self._parse_option_from_inline_value(
-                option_spec, option_name, inline_value
-            )
-            return parsed_option, 0
-
-        # Inline value (not from =) with unbounded arity - continue from next_args
-        if (
-            inline_value is not None
-            and not inline_value_from_equals
-            and arity.max is None
-        ):
-            parsed_option, consumed = self._parse_option_values_from_args(
-                option_spec,
-                option_name,
-                next_args,
-                current_spec,
-                inline_start_value=inline_value,
-            )
-            return parsed_option, consumed
-
-        # Inline value (not from =) without next_args
-        if inline_value is not None and not inline_value_from_equals:
-            if arity.min > 1:
-                raise InsufficientOptionValuesError(option_spec.name, option_spec)
-            parsed_option = self._parse_option_from_inline_value(
-                option_spec, option_name, inline_value
-            )
-            return parsed_option, 0
-
-        # No inline value - consume from next_args
-        parsed_option, consumed = self._parse_option_values_from_args(
-            option_spec, option_name, next_args, current_spec
-        )
-        return parsed_option, consumed
 
     def _accumulate_short_options(
         self,
