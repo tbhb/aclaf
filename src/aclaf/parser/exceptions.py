@@ -72,6 +72,33 @@ class SpecValidationError(AclafError):
     """
 
 
+class ParserConfigurationError(AclafError):
+    """Exception raised for invalid parser configuration settings.
+
+    This exception is raised during parser construction when configuration
+    parameters contain invalid values that violate validation rules. These
+    errors indicate programming mistakes in parser configuration and should
+    be caught during development and testing.
+
+    Info: When Raised
+        - During [`Parser`][aclaf.parser.Parser] initialization with invalid
+          configuration parameters
+        - During [`ParserConfiguration`][aclaf.parser.ParserConfiguration]
+          initialization with invalid values
+        - When configuration validation rules are violated
+
+    Examples:
+        >>> from aclaf.parser import CommandSpec, Parser
+        >>> spec = CommandSpec(name="myapp")
+        >>> try:
+        ...     # Invalid minimum_abbreviation_length will raise error
+        ...     parser = Parser(spec, minimum_abbreviation_length=0)
+        ... except ParserConfigurationError as e:
+        ...     print(f"Configuration error: {e}")
+        Configuration error: minimum_abbreviation_length must be at least 1, got 0.
+    """
+
+
 class ParseError(AclafError):
     """Base exception for all parsing errors.
 

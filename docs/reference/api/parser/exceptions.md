@@ -14,6 +14,7 @@ Exception types raised during parsing and specification validation. This page do
       summary: false
       members:
       - ParseError
+      - ParserConfigurationError
       - SpecValidationError
       - OptionError
 

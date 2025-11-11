@@ -49,6 +49,12 @@ lint: install
   uv run --frozen basedpyright
   pnpm exec biome check .
 
+lint-python: install
+  uv run --frozen codespell -w
+  uv run --frozen ruff check .
+  uv run --frozen ruff format --check .
+  uv run --frozen basedpyright
+
 # Lint documentation
 lint-docs: install
   yamllint --strict mkdocs.yml

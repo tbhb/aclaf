@@ -15,7 +15,7 @@ from hypothesis import given, strategies as st
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
 from aclaf.parser.constants import DEFAULT_NEGATIVE_NUMBER_PATTERN
-from aclaf.parser.exceptions import UnknownOptionError
+from aclaf.parser.exceptions import ParserConfigurationError, UnknownOptionError
 from aclaf.parser.types import EXACTLY_ONE_ARITY, ZERO_OR_MORE_ARITY, Arity
 
 if TYPE_CHECKING:
@@ -131,10 +131,10 @@ class TestNegativeNumberProperties:
         """Property: Invalid regex patterns are rejected."""
         spec = CommandSpec(name="cmd")
 
-        # Invalid patterns should raise ValueError during parser construction
-        # Use hypothesis to fuzz pattern inputs
-        # Suppress FutureWarning for patterns like '[[' that trigger regex warnings
-        with warnings.catch_warnings(), suppress(ValueError):
+        # Invalid patterns should raise ParserConfigurationError during
+        # parser construction. Use hypothesis to fuzz pattern inputs.
+        # Suppress FutureWarning for patterns like '[[' that trigger warnings.
+        with warnings.catch_warnings(), suppress(ParserConfigurationError):
             warnings.simplefilter("ignore", FutureWarning)
             parser = Parser(
                 spec,

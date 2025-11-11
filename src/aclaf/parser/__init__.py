@@ -1,5 +1,15 @@
-from ._base import BaseParser, ParsedOption, ParsedPositional, ParseResult
+from ._base import (
+    BaseParser,
+    ParsedOption,
+    ParsedPositional,
+    ParseResult,
+)
 from ._command import CommandSpec
+from ._configuration import (
+    DEFAULT_PARSER_CONFIGURATION,
+    ParserConfiguration,
+    ParserConfigurationInput,
+)
 from ._parameters import OptionSpec, PositionalSpec
 from ._parser import Parser
 from .exceptions import (
@@ -13,6 +23,7 @@ from .exceptions import (
     OptionDoesNotAcceptValueError,
     OptionError,
     ParseError,
+    ParserConfigurationError,
     SpecValidationError,
     UnexpectedPositionalArgumentError,
     UnknownOptionError,
@@ -29,6 +40,7 @@ from .types import (
 )
 
 __all__ = [
+    "DEFAULT_PARSER_CONFIGURATION",
     "EXACTLY_ONE_ARITY",
     "ONE_OR_MORE_ARITY",
     "ZERO_ARITY",
@@ -53,6 +65,9 @@ __all__ = [
     "ParsedOption",
     "ParsedPositional",
     "Parser",
+    "ParserConfiguration",
+    "ParserConfigurationError",
+    "ParserConfigurationInput",
     "PositionalSpec",
     "SpecValidationError",
     "UnexpectedPositionalArgumentError",
