@@ -50,8 +50,6 @@ class TestCombinedShortOptionsWithEquals:
         assert result.options["output"].value == "file.txt"
 
 
-
-
 class TestShortOptionWithoutEqualsValueInArg:
     """Test short options with value attached directly (e.g., -ovalue)."""
 

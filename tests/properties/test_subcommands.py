@@ -173,10 +173,7 @@ class TestNestedSubcommandProperties:
         # Create parent with children
         parent_spec = CommandSpec(
             name=parent_name,
-            subcommands={
-                child: CommandSpec(name=child)
-                for child in child_names
-            },
+            subcommands={child: CommandSpec(name=child) for child in child_names},
         )
 
         root_spec = CommandSpec(
@@ -219,16 +216,14 @@ class TestSubcommandOptionInheritanceProperties:
         """
         # Sanitize option names to be valid
         parent_options = [
-            opt.lower().replace("-", "p").replace("_", "x")
-            for opt in parent_options
+            opt.lower().replace("-", "p").replace("_", "x") for opt in parent_options
         ]
         parent_options = [
             opt for opt in parent_options if len(opt) >= 2 and opt.isalpha()
         ]
 
         child_options = [
-            opt.lower().replace("-", "c").replace("_", "y")
-            for opt in child_options
+            opt.lower().replace("-", "c").replace("_", "y") for opt in child_options
         ]
         child_options = [
             opt for opt in child_options if len(opt) >= 2 and opt.isalpha()
@@ -239,15 +234,12 @@ class TestSubcommandOptionInheritanceProperties:
 
         parent_spec = CommandSpec(
             name="parent",
-            options={
-                opt: OptionSpec(opt, is_flag=True) for opt in parent_options
-            },
+            options={opt: OptionSpec(opt, is_flag=True) for opt in parent_options},
             subcommands={
                 "child": CommandSpec(
                     name="child",
                     options={
-                        opt: OptionSpec(opt, is_flag=True)
-                        for opt in child_options
+                        opt: OptionSpec(opt, is_flag=True) for opt in child_options
                     },
                 ),
             },

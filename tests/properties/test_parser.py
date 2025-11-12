@@ -786,10 +786,7 @@ class TestConfigurationInteractionProperties:
         """
         # Use only lowercase names for test, replace underscores/digits
         # Parser regex requires names to match specific patterns
-        options = [
-            opt.lower().replace("_", "x").replace("-", "y")
-            for opt in options
-        ]
+        options = [opt.lower().replace("_", "x").replace("-", "y") for opt in options]
         # Keep only alphabetic names (no digits) to avoid regex validation issues
         options = [opt for opt in options if len(opt) >= 2 and opt.isalpha()]
 
@@ -799,10 +796,7 @@ class TestConfigurationInteractionProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options={
-                opt: OptionSpec(opt, is_flag=True)
-                for opt in options
-            },
+            options={opt: OptionSpec(opt, is_flag=True) for opt in options},
         )
         config = ParserConfiguration(
             case_insensitive_options=case_insensitive,
@@ -937,16 +931,20 @@ class TestConfigurationInteractionProperties:
 
     @given(
         allow_equals=st.booleans(),
-        truthy_values=st.sampled_from([
-            None,
-            ("true", "yes", "1"),
-            ("on", "enabled"),
-        ]),
-        falsey_values=st.sampled_from([
-            None,
-            ("false", "no", "0"),
-            ("off", "disabled"),
-        ]),
+        truthy_values=st.sampled_from(
+            [
+                None,
+                ("true", "yes", "1"),
+                ("on", "enabled"),
+            ]
+        ),
+        falsey_values=st.sampled_from(
+            [
+                None,
+                ("false", "no", "0"),
+                ("off", "disabled"),
+            ]
+        ),
     )
     def test_flag_value_configuration(
         self,
@@ -972,11 +970,7 @@ class TestConfigurationInteractionProperties:
         parser = Parser(spec, config=config)
 
         # Use first truthy value if custom, else default
-        test_value = (
-            truthy_values[0]
-            if truthy_values
-            else "true"
-        )
+        test_value = truthy_values[0] if truthy_values else "true"
         args = [f"--flag={test_value}"]
 
         if allow_equals:
@@ -1126,8 +1120,7 @@ class TestConfigurationInteractionProperties:
         """
         # Use all lowercase, simple names - replace special chars
         pairs = [
-            (opt.lower().replace("_", "x").replace("-", "y"), val)
-            for opt, val in pairs
+            (opt.lower().replace("_", "x").replace("-", "y"), val) for opt, val in pairs
         ]
         # Keep only valid pairs where option name is alphabetic with length >= 2
         pairs = [(opt, val) for opt, val in pairs if len(opt) >= 2 and opt.isalpha()]
@@ -1137,10 +1130,7 @@ class TestConfigurationInteractionProperties:
 
         spec = CommandSpec(
             name="cmd",
-            options={
-                opt: OptionSpec(opt)
-                for opt, _ in pairs
-            },
+            options={opt: OptionSpec(opt) for opt, _ in pairs},
         )
         config = ParserConfiguration(
             case_insensitive_options=True,
