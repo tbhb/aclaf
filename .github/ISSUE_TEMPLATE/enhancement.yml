@@ -1,0 +1,127 @@
+---
+name: Enhancement request
+description: Suggest a new feature or improvement to Aclaf
+title: "[Enhancement]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting an enhancement to Aclaf!
+
+        **Important context about this pre-release project:**
+        - Aclaf is in active pre-1.0 development with rapidly evolving APIs
+        - Breaking changes are acceptable and encouraged when they improve the
+          design
+        - The project is not yet accepting pull requests (see
+          [CONTRIBUTING.md](https://github.com/aclaf/aclaf/blob/main/CONTRIBUTING.md))
+        - Enhancement suggestions help shape the project's direction before the
+          1.0 release
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or limitation
+      description: >-
+        What problem are you trying to solve? What limitation are you
+        experiencing? Describe the use case or scenario that motivated this
+        enhancement request.
+      placeholder: >-
+        When building a CLI with nested subcommands, I need to share
+        configuration between parent and child commands, but currently there's
+        no elegant way to do this...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: >-
+        How would you like to solve this problem? What API or feature would you
+        like to see? Include code examples showing how you'd like to use the
+        proposed feature.
+      placeholder: |
+        Add a context parameter that flows through the command hierarchy:
+
+        ```python
+        @app
+        def main(ctx: Context):
+            ctx.config = load_config()
+
+        @main.command()
+        def subcommand(ctx: Context):
+            # Access parent's context
+            print(ctx.config)
+        ```
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: >-
+        What alternative solutions or workarounds have you considered?
+        Why are they insufficient?
+      placeholder: >-
+        Considered using global variables, but that makes testing difficult and
+        isn't thread-safe...
+    validations:
+      required: false
+
+  - type: dropdown
+    id: breaking-ok
+    attributes:
+      label: Breaking change acceptance
+      description: >-
+        Would this enhancement require breaking changes to existing APIs?
+        Note: Breaking changes are acceptable for pre-1.0 development if they
+        improve the design.
+      options:
+        - "No breaking changes needed"
+        - "Minor breaking changes acceptable"
+        - "Major breaking changes acceptable"
+        - "Not sure"
+    validations:
+      required: false
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use case or real-world example
+      description: >-
+        Describe a real-world scenario where this enhancement would be valuable.
+        What kind of CLI applications would benefit from this feature?
+      placeholder: >-
+        Building a deployment tool that has global configuration (API endpoint,
+        authentication) that all subcommands need to access...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: >-
+        Any other context, examples from other frameworks, or relevant
+        information. Feel free to reference how other CLI frameworks handle
+        this problem.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: >-
+            I have searched existing issues and discussions to ensure this
+            hasn't been suggested already
+          required: true
+        - label: >-
+            I have described the problem or limitation I'm trying to solve
+          required: true
+        - label: I have proposed a concrete solution or API design
+          required: true
