@@ -59,7 +59,7 @@ include = ["src", "tests"]
 
 [tool.codespell]
 skip = "pnpm-lock.yaml,uv.lock,htmlcov,site"
-ignore-words-list = "nd,ue"
+ignore-words-list = "nd,ue,metacharacter,subcmd"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
@@ -81,6 +81,40 @@ asyncio_mode = "auto"
 filterwarnings = ["error"]
 testpaths = ["tests"]
 xfail_strict = true
+markers = [
+  "security: Security-focused tests for injection and validation (deselect with '-m \"not security\"')",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/aclaf"]
+relative_files = true
+omit = [
+    "tests/*",
+    "**/__pycache__/*",
+    "**/site-packages/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@abc.abstractmethod",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.coverage.html]
+directory = "htmlcov"
 
 [tool.hypothesis]
 # Save failing examples to local database for reproducibility

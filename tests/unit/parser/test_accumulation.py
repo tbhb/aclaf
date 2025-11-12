@@ -22,46 +22,11 @@ from aclaf.parser.types import (
 
 
 class TestCollectMode:
-    """Test COLLECT accumulation mode."""
+    """Test COLLECT accumulation mode.
 
-    def test_accumulates_all_values_as_tuple(self):
-        """COLLECT mode collects all values into a tuple."""
-        args = ["--opt", "val1", "--opt", "val2", "--opt", "val3"]
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT),
-            },
-        )
-        parser = Parser(spec)
-        result = parser.parse(args)
-        assert result.options["opt"].value == ("val1", "val2", "val3")
-
-    def test_single_occurrence_returns_tuple(self):
-        """COLLECT with single occurrence returns tuple of one."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["--opt", "value"])
-        assert result.options["opt"].value == ("value",)
-
-    def test_preserves_insertion_order(self):
-        """COLLECT mode preserves insertion order."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.COLLECT)
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["--opt", "first", "--opt", "second", "--opt", "third"])
-        assert result.options["opt"].value == ("first", "second", "third")
+    Basic accumulation, single occurrence, and order preservation are covered by
+    property tests. These tests focus on specific interactions and edge cases.
+    """
 
     def test_works_with_boolean_flags(self):
         """COLLECT mode works with boolean flags."""
@@ -117,70 +82,11 @@ class TestCollectMode:
 
 
 class TestCountMode:
-    """Test COUNT accumulation mode."""
+    """Test COUNT accumulation mode.
 
-    def test_counts_occurrences(self):
-        """COUNT mode counts number of occurrences."""
-        args = ["--flag", "--flag", "--flag"]
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "flag": OptionSpec(
-                    "flag", is_flag=True, accumulation_mode=AccumulationMode.COUNT
-                )
-            },
-        )
-        parser = Parser(spec)
-        result = parser.parse(args)
-        assert result.options["flag"].value == 3
-
-    def test_single_occurrence_returns_one(self):
-        """COUNT with single occurrence returns 1."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "flag": OptionSpec(
-                    "flag", arity=ZERO_ARITY, accumulation_mode=AccumulationMode.COUNT
-                )
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["--flag"])
-        assert result.options["flag"].value == 1
-
-    def test_zero_occurrences_option_absent(self):
-        """COUNT with no occurrences means option not in result."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "flag": OptionSpec(
-                    "flag", arity=ZERO_ARITY, accumulation_mode=AccumulationMode.COUNT
-                )
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse([])
-        assert "flag" not in result.options
-
-    def test_counts_many_occurrences(self):
-        """COUNT mode counts many occurrences."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose",
-                    short=frozenset({"v"}),
-                    arity=ZERO_ARITY,
-                    accumulation_mode=AccumulationMode.COUNT,
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["-v"] * 10)
-        assert result.options["verbose"].value == 10
+    Basic counting behavior (single, zero, many occurrences) is covered by
+    property tests. These tests focus on short flag clustering interactions.
+    """
 
     def test_counts_combined_short_flags(self):
         """COUNT mode works with combined short flags."""
@@ -220,35 +126,13 @@ class TestCountMode:
 
 
 class TestFirstWinsMode:
-    """Test FIRST_WINS accumulation mode."""
+    """Test FIRST_WINS accumulation mode.
 
-    def test_first_wins_basic(self):
-        """FIRST_WINS keeps the first value."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)
-            },
-        )
-        parser = Parser(spec)
+    Basic first-wins behavior (keeping first value) is covered by property tests.
+    These tests focus on interactions with flags, arity, and option forms.
+    """
 
-        result = parser.parse(["--opt", "first", "--opt", "second", "--opt", "third"])
-        assert result.options["opt"].value == "first"
-
-    def test_first_wins_single_occurrence(self):
-        """FIRST_WINS with single occurrence."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.FIRST_WINS)
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["--opt", "only"])
-        assert result.options["opt"].value == "only"
-
-    def test_first_wins_with_flags(self):
+    def test_accumulation_first_wins_with_flags(self):
         """FIRST_WINS works with boolean flags."""
         spec = CommandSpec(
             name="cmd",
@@ -265,7 +149,7 @@ class TestFirstWinsMode:
         result = parser.parse(["--flag", "--flag", "--flag"])
         assert result.options["flag"].value is True
 
-    def test_first_wins_with_multi_value_option(self):
+    def test_accumulation_first_wins_with_multi_value_option(self):
         """FIRST_WINS with options accepting multiple values."""
         spec = CommandSpec(
             name="cmd",
@@ -301,20 +185,11 @@ class TestFirstWinsMode:
 
 
 class TestLastWinsMode:
-    """Test LAST_WINS accumulation mode (default)."""
+    """Test LAST_WINS accumulation mode (default).
 
-    def test_last_wins_basic(self):
-        """LAST_WINS keeps the last value."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["--opt", "first", "--opt", "second", "--opt", "last"])
-        assert result.options["opt"].value == "last"
+    Basic last-wins behavior (keeping last value) is covered by property tests.
+    These tests document the default mode and test specific interactions.
+    """
 
     def test_last_wins_is_default(self):
         """LAST_WINS is the default accumulation mode."""
@@ -326,19 +201,6 @@ class TestLastWinsMode:
 
         result = parser.parse(["--opt", "first", "--opt", "last"])
         assert result.options["opt"].value == "last"
-
-    def test_last_wins_single_occurrence(self):
-        """LAST_WINS with single occurrence."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.LAST_WINS)
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["--opt", "only"])
-        assert result.options["opt"].value == "only"
 
     def test_last_wins_with_flags(self):
         """LAST_WINS works with boolean flags."""
@@ -376,35 +238,11 @@ class TestLastWinsMode:
 
 
 class TestErrorMode:
-    """Test ERROR accumulation mode."""
+    """Test ERROR accumulation mode.
 
-    def test_error_on_duplicate(self):
-        """ERROR mode raises on duplicate occurrence."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR)
-            },
-        )
-        parser = Parser(spec)
-
-        with pytest.raises(OptionCannotBeSpecifiedMultipleTimesError) as exc_info:
-            _ = parser.parse(["--opt", "first", "--opt", "second"])
-
-        assert "opt" in str(exc_info.value).lower()
-
-    def test_error_allows_single_occurrence(self):
-        """ERROR mode allows single occurrence."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "opt": OptionSpec("opt", accumulation_mode=AccumulationMode.ERROR)
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["--opt", "value"])
-        assert result.options["opt"].value == "value"
+    Basic error behavior (raises on duplicate, allows single) is covered by
+    property tests. These tests focus on interactions with flags and option forms.
+    """
 
     def test_error_with_flags(self):
         """ERROR mode works with flags."""
@@ -444,7 +282,7 @@ class TestErrorMode:
 class TestAccumulationModeInteractions:
     """Test interactions between accumulation modes and other features."""
 
-    def test_accumulation_with_const_value(self):
+    def test_accumulation_mode_with_const_value(self):
         """Accumulation modes work with const_value."""
         spec = CommandSpec(
             name="cmd",
@@ -557,23 +395,6 @@ class TestAccumulationEdgeCases:
 
         result = parser.parse([])
         assert "opt" not in result.options
-
-    def test_count_with_zero_arity_only(self):
-        """COUNT mode is typically used with zero-arity flags."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose",
-                    arity=ZERO_ARITY,
-                    accumulation_mode=AccumulationMode.COUNT,
-                )
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["--verbose"] * 5)
-        assert result.options["verbose"].value == 5
 
     def test_error_message_contains_option_name(self):
         """ERROR mode exception includes the option name."""

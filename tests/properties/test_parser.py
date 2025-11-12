@@ -8,15 +8,20 @@ random inputs and verify that certain properties always hold.
 import pytest
 from hypothesis import example, given, strategies as st
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser
+from aclaf.parser import CommandSpec, OptionSpec, Parser, ParserConfiguration
 from aclaf.parser._parameters import (
     _validate_arity,  # pyright: ignore[reportPrivateUsage]
 )
 from aclaf.parser.exceptions import (
+    AmbiguousOptionError,
+    FlagWithValueError,
     InsufficientOptionValuesError,
     OptionCannotBeSpecifiedMultipleTimesError,
+    UnknownOptionError,
 )
 from aclaf.parser.types import AccumulationMode, Arity
+
+from .strategies import option_lists, option_value_pairs
 
 
 class TestAccumulationModeProperties:
@@ -758,3 +763,393 @@ class TestOptionValueConsumptionProperties:
         if isinstance(opt2_values, str):
             opt2_values = (opt2_values,)
         assert opt2_values == tuple(values_for_opt2)
+
+
+class TestConfigurationInteractionProperties:
+    """Test that parser configuration settings interact correctly."""
+
+    @given(
+        case_insensitive=st.booleans(),
+        convert_underscores=st.booleans(),
+        options=option_lists(min_size=2, max_size=8),
+    )
+    def test_case_sensitivity_consistency(
+        self,
+        case_insensitive: bool,  # noqa: FBT001
+        convert_underscores: bool,  # noqa: FBT001
+        options: list[str],
+    ):
+        """Property: case sensitivity applies consistently to all options.
+
+        When case_insensitive_options is enabled, all option name matching
+        should ignore case. When disabled, matching should be case-sensitive.
+        """
+        # Use only lowercase names for test, replace underscores/digits
+        # Parser regex requires names to match specific patterns
+        options = [opt.lower().replace("_", "x").replace("-", "y") for opt in options]
+        # Keep only alphabetic names (no digits) to avoid regex validation issues
+        options = [opt for opt in options if len(opt) >= 2 and opt.isalpha()]
+
+        if len(options) < 2:
+            # Not enough valid options, skip this test
+            return
+
+        spec = CommandSpec(
+            name="cmd",
+            options={opt: OptionSpec(opt, is_flag=True) for opt in options},
+        )
+        config = ParserConfiguration(
+            case_insensitive_options=case_insensitive,
+            convert_underscores_to_dashes=convert_underscores,
+        )
+        parser = Parser(spec, config=config)
+
+        # Try parsing with uppercase versions
+        args = [f"--{opt.upper()}" for opt in options[:2]]
+
+        if case_insensitive:
+            # Should parse successfully
+            result = parser.parse(args)
+            assert len(result.options) == 2
+        else:
+            # Should fail with unknown option
+            with pytest.raises(UnknownOptionError):
+                _ = parser.parse(args)
+
+    @given(
+        abbreviation_enabled=st.booleans(),
+        min_length=st.integers(min_value=1, max_value=5),
+    )
+    def test_abbreviation_configuration_respected(
+        self,
+        abbreviation_enabled: bool,  # noqa: FBT001
+        min_length: int,
+    ):
+        """Property: abbreviation settings are respected consistently.
+
+        When allow_abbreviated_options is enabled, options can be matched
+        by prefix. When disabled, only exact matches should work.
+        """
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", is_flag=True),
+                "version": OptionSpec("version", is_flag=True),
+                "verify": OptionSpec("verify", is_flag=True),
+            },
+        )
+        config = ParserConfiguration(
+            allow_abbreviated_options=abbreviation_enabled,
+            minimum_abbreviation_length=min_length,
+        )
+        parser = Parser(spec, config=config)
+
+        # Try to use abbreviation that meets minimum length
+        abbrev = "ver" if min_length <= 3 else "verbo"
+        args = [f"--{abbrev}"]
+
+        if abbreviation_enabled and len(abbrev) >= min_length:
+            # Should match but may be ambiguous
+            try:
+                result = parser.parse(args)
+                # If successful, an option was matched
+                assert len(result.options) >= 1
+            except AmbiguousOptionError:
+                # Ambiguity is expected and acceptable with abbreviations
+                pass
+        else:
+            # Should fail with unknown option
+            with pytest.raises(UnknownOptionError):
+                _ = parser.parse(args)
+
+    @given(
+        strict_mode=st.booleans(),
+    )
+    def test_strict_options_before_positionals(
+        self,
+        strict_mode: bool,  # noqa: FBT001
+    ):
+        """Property: strict mode controls option/positional ordering.
+
+        In strict POSIX mode, options must come before positionals.
+        In GNU mode, options can appear anywhere.
+        """
+        spec = CommandSpec(
+            name="cmd",
+            options={"flag": OptionSpec("flag", is_flag=True)},
+        )
+        config = ParserConfiguration(
+            strict_options_before_positionals=strict_mode,
+        )
+        parser = Parser(spec, config=config)
+
+        # Option after a positional
+        args = ["positional", "--flag"]
+
+        if strict_mode:
+            # In strict mode, --flag is treated as a positional
+            result = parser.parse(args)
+            assert result.options.get("flag") is None
+            # Both should be extra_args or error
+        else:
+            # In GNU mode, --flag is parsed as an option
+            result = parser.parse(args)
+            assert result.options["flag"].value is True
+
+    @given(
+        allow_negative_numbers=st.booleans(),
+    )
+    def test_negative_number_configuration(
+        self,
+        allow_negative_numbers: bool,  # noqa: FBT001
+    ):
+        """Property: negative number parsing respects configuration.
+
+        When allow_negative_numbers is enabled, numeric strings starting
+        with - should be treated as values, not options.
+        """
+        spec = CommandSpec(
+            name="cmd",
+            options={"opt": OptionSpec("opt")},
+        )
+        config = ParserConfiguration(
+            allow_negative_numbers=allow_negative_numbers,
+        )
+        parser = Parser(spec, config=config)
+
+        args = ["--opt", "-123"]
+
+        if allow_negative_numbers:
+            # Should parse -123 as a value
+            result = parser.parse(args)
+            assert result.options["opt"].value == "-123"
+        else:
+            # Should treat -123 as unknown option or insufficient value
+            # (depending on whether -1 is treated as option -1, -12, -123, etc.)
+            with pytest.raises((UnknownOptionError, InsufficientOptionValuesError)):
+                _ = parser.parse(args)
+
+    @given(
+        allow_equals=st.booleans(),
+        truthy_values=st.sampled_from(
+            [
+                None,
+                ("true", "yes", "1"),
+                ("on", "enabled"),
+            ]
+        ),
+        falsey_values=st.sampled_from(
+            [
+                None,
+                ("false", "no", "0"),
+                ("off", "disabled"),
+            ]
+        ),
+    )
+    def test_flag_value_configuration(
+        self,
+        allow_equals: bool,  # noqa: FBT001
+        truthy_values: tuple[str, ...] | None,
+        falsey_values: tuple[str, ...] | None,
+    ):
+        """Property: flag value configuration is respected.
+
+        When allow_equals_for_flags is enabled, flags can accept explicit
+        true/false values. The configured truthy/falsey values should be
+        recognized.
+        """
+        spec = CommandSpec(
+            name="cmd",
+            options={"flag": OptionSpec("flag", is_flag=True)},
+        )
+        config = ParserConfiguration(
+            allow_equals_for_flags=allow_equals,
+            truthy_flag_values=truthy_values,
+            falsey_flag_values=falsey_values,
+        )
+        parser = Parser(spec, config=config)
+
+        # Use first truthy value if custom, else default
+        test_value = truthy_values[0] if truthy_values else "true"
+        args = [f"--flag={test_value}"]
+
+        if allow_equals:
+            # Should parse successfully
+            result = parser.parse(args)
+            assert result.options["flag"].value is True
+        else:
+            # Should fail - flags don't accept values
+            with pytest.raises(FlagWithValueError):
+                _ = parser.parse(args)
+
+    @given(
+        flatten_values=st.booleans(),
+        occurrence_count=st.integers(min_value=1, max_value=5),
+    )
+    def test_value_flattening_with_collect_mode(
+        self,
+        flatten_values: bool,  # noqa: FBT001
+        occurrence_count: int,
+    ):
+        """Property: value flattening works correctly with COLLECT mode.
+
+        The flatten_values setting should affect how values are collected
+        in COLLECT mode when multiple values per occurrence are present.
+        """
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "opt": OptionSpec(
+                    "opt",
+                    arity=Arity(0, None),  # Unbounded
+                    accumulation_mode=AccumulationMode.COLLECT,
+                    flatten_values=flatten_values,
+                ),
+            },
+        )
+        parser = Parser(spec)
+
+        # Build args with multiple values per occurrence
+        args: list[str] = []
+        for i in range(occurrence_count):
+            args.extend(["--opt", f"val{i}a", f"val{i}b"])
+
+        result = parser.parse(args)
+
+        # Verify the result structure
+        value = result.options["opt"].value
+        assert isinstance(value, tuple)
+
+        # Flattening only affects multiple occurrences with multiple values
+        if flatten_values and occurrence_count > 1:
+            # Should be flat tuple of all values
+            assert all(isinstance(v, str) for v in value)
+
+    @given(
+        convert_underscores=st.booleans(),
+        use_underscores=st.booleans(),
+    )
+    def test_underscore_conversion_consistency(
+        self,
+        convert_underscores: bool,  # noqa: FBT001
+        use_underscores: bool,  # noqa: FBT001
+    ):
+        """Property: underscore conversion applies consistently.
+
+        When convert_underscores_to_dashes is enabled, options with
+        underscores should match specifications with dashes, and vice versa.
+        """
+        # Define option with dashes
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "foo-bar": OptionSpec("foo-bar", is_flag=True),
+            },
+        )
+        config = ParserConfiguration(
+            convert_underscores_to_dashes=convert_underscores,
+        )
+        parser = Parser(spec, config=config)
+
+        # Use underscores in argument
+        args = ["--foo_bar"] if use_underscores else ["--foo-bar"]
+
+        if convert_underscores or not use_underscores:
+            # Should match
+            result = parser.parse(args)
+            assert result.options["foo-bar"].value is True
+        else:
+            # Should not match
+            with pytest.raises(UnknownOptionError):
+                _ = parser.parse(args)
+
+    @given(
+        abbreviation_length=st.integers(min_value=1, max_value=3),
+    )
+    def test_minimum_abbreviation_length(
+        self,
+        abbreviation_length: int,
+    ):
+        """Property: minimum abbreviation length is enforced.
+
+        When abbreviation is enabled, options must match the minimum
+        abbreviation length requirement.
+        """
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "verbose": OptionSpec("verbose", is_flag=True),
+                "version": OptionSpec("version", is_flag=True),
+            },
+        )
+        config = ParserConfiguration(
+            allow_abbreviated_options=True,
+            minimum_abbreviation_length=abbreviation_length,
+        )
+        parser = Parser(spec, config=config)
+
+        # Try abbreviations of various lengths
+        for length in range(1, 4):
+            abbrev = "ver"[:length]
+            args = [f"--{abbrev}"]
+
+            if length >= abbreviation_length:
+                # Should match (may be ambiguous)
+                try:
+                    result = parser.parse(args)
+                    assert len(result.options) >= 1
+                except AmbiguousOptionError:
+                    # Ambiguity is expected and acceptable with abbreviations
+                    pass
+            else:
+                # Should not match - too short
+                with pytest.raises(UnknownOptionError):
+                    _ = parser.parse(args)
+
+    @given(
+        pairs=option_value_pairs(min_size=2, max_size=5),
+    )
+    def test_multiple_configuration_options_interact_correctly(
+        self,
+        pairs: list[tuple[str, str]],
+    ):
+        """Property: multiple configuration settings work together.
+
+        When multiple configuration options are enabled, they should
+        not interfere with each other.
+        """
+        # Use all lowercase, simple names - replace special chars
+        pairs = [
+            (opt.lower().replace("_", "x").replace("-", "y"), val) for opt, val in pairs
+        ]
+        # Keep only valid pairs where option name is alphabetic with length >= 2
+        pairs = [(opt, val) for opt, val in pairs if len(opt) >= 2 and opt.isalpha()]
+        if len(pairs) < 2:
+            # Not enough valid pairs, skip this test
+            return
+
+        spec = CommandSpec(
+            name="cmd",
+            options={opt: OptionSpec(opt) for opt, _ in pairs},
+        )
+        config = ParserConfiguration(
+            case_insensitive_options=True,
+            convert_underscores_to_dashes=True,
+            allow_abbreviated_options=False,  # Disable to avoid ambiguity
+        )
+        parser = Parser(spec, config=config)
+
+        # Build args with uppercase names
+        args: list[str] = []
+        for opt, val in pairs:
+            args.extend([f"--{opt.upper()}", val])
+
+        # Should parse successfully with case-insensitive matching
+        result = parser.parse(args)
+
+        # Verify all options were parsed
+        assert len(result.options) == len(pairs)
+
+        # Verify values match
+        for opt, expected_val in pairs:
+            assert result.options[opt].value == expected_val

@@ -99,7 +99,7 @@ class TestConstValueFlags:
         result = parser.parse(args)
         assert result.options["verbose"].value is True
 
-    def test_accumulation_with_const_value(self):
+    def test_const_value_with_accumulation_mode(self):
         """Multiple occurrences of const_value flag with COLLECT accumulation."""
         args = ["--mode", "--mode", "--mode"]
         spec = CommandSpec(
@@ -236,7 +236,7 @@ class TestFirstWinsAccumulation:
         result = parser.parse(args)
         assert result.options["output"].value == "a"
 
-    def test_first_wins_with_flags(self):
+    def test_advanced_first_wins_with_flags(self):
         """FIRST_WINS mode with flag values."""
         args = ["--verbose", "--verbose"]
         spec = CommandSpec(
@@ -253,7 +253,7 @@ class TestFirstWinsAccumulation:
         result = parser.parse(args)
         assert result.options["verbose"].value is True
 
-    def test_first_wins_with_multi_value_option(self):
+    def test_advanced_first_wins_with_multi_value_option(self):
         """FIRST_WINS mode with multi-value arity."""
         args = ["--files", "a", "b", "--files", "c", "d"]
         spec = CommandSpec(
@@ -275,7 +275,7 @@ class TestFirstWinsAccumulation:
 class TestErrorAccumulation:
     """Tests for ERROR accumulation mode."""
 
-    def test_error_on_duplicate(self):
+    def test_advanced_error_on_duplicate(self):
         """ERROR mode should raise exception on duplicate option."""
         args = ["--output", "file1.txt", "--output", "file2.txt"]
         spec = CommandSpec(
@@ -293,7 +293,7 @@ class TestErrorAccumulation:
             _ = parser.parse(args)
         assert exc_info.value.option_spec.name == "output"
 
-    def test_error_allows_single_occurrence(self):
+    def test_advanced_error_allows_single_occurrence(self):
         """ERROR mode should allow single occurrence."""
         args = ["--output", "file.txt"]
         spec = CommandSpec(
