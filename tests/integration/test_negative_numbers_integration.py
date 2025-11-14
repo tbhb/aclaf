@@ -265,3 +265,79 @@ class TestEdgeCasesInRealScenarios:
 
         result = parser.parse(["--", "-1", "-2", "-3"])
         assert result.extra_args == ("-1", "-2", "-3")
+
+
+class TestComplexNumberCLI:
+    """Test complex numbers in scientific computing scenarios."""
+
+    def test_quantum_simulation_complex_amplitude(self):
+        """Quantum simulation: simulate --amplitude -0.5+0.866j."""
+        spec = CommandSpec(
+            name="quantum",
+            options={"amplitude": OptionSpec("amplitude", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["--amplitude", "-0.5+0.866j"])
+        assert result.options["amplitude"].value == "-0.5+0.866j"
+
+    def test_signal_processing_fft_coefficients(self):
+        """Signal processing: fft --coefficients -3+4j -1-2j 5+0j."""
+        spec = CommandSpec(
+            name="fft",
+            options={
+                "coefficients": OptionSpec("coefficients", arity=ZERO_OR_MORE_ARITY)
+            },
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["--coefficients", "-3+4j", "-1-2j", "5+0j"])
+        assert result.options["coefficients"].value == ("-3+4j", "-1-2j", "5+0j")
+
+    def test_electrical_engineering_impedance(self):
+        """Electrical engineering: analyze --impedance -50+100j."""
+        spec = CommandSpec(
+            name="analyze",
+            options={"impedance": OptionSpec("impedance", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["--impedance", "-50+100j"])
+        assert result.options["impedance"].value == "-50+100j"
+
+    def test_mixed_real_and_complex(self):
+        """Mix of real and complex numbers."""
+        spec = CommandSpec(
+            name="compute",
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-5", "-3+4j", "10", "-2-1j"])
+        assert result.positionals["values"].value == ("-5", "-3+4j", "10", "-2-1j")
+
+    def test_pure_imaginary_positionals(self):
+        """Pure imaginary numbers as positionals."""
+        spec = CommandSpec(
+            name="compute",
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-1j", "-2.5j", "-3.14j"])
+        assert result.positionals["values"].value == ("-1j", "-2.5j", "-3.14j")
+
+    def test_complex_with_scientific_and_real(self):
+        """Complex numbers with scientific notation mixed with real numbers."""
+        spec = CommandSpec(
+            name="compute",
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-1e5+2e3j", "-42", "-2.5E-10-3.14E-5j"])
+        assert result.positionals["values"].value == (
+            "-1e5+2e3j",
+            "-42",
+            "-2.5E-10-3.14E-5j",
+        )

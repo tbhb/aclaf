@@ -4,6 +4,8 @@ This module tests the allow_negative_numbers parser flag and related functionali
 for disambiguating between short options and negative numeric values.
 """
 
+import re
+
 import pytest
 
 from aclaf.parser import (
@@ -12,6 +14,7 @@ from aclaf.parser import (
     Parser,
     PositionalSpec,
 )
+from aclaf.parser.constants import DEFAULT_NEGATIVE_NUMBER_PATTERN
 from aclaf.parser.exceptions import ParserConfigurationError, UnknownOptionError
 from aclaf.parser.types import (
     EXACTLY_ONE_ARITY,
@@ -340,3 +343,169 @@ class TestNegativeNumberEdgeCases:
 
         result = parser.parse(["-1e+5"])
         assert result.positionals["value"].value == "-1e+5"
+
+
+class TestNegativeComplexNumbers:
+    """Tests for negative complex number handling."""
+
+    def test_negative_real_positive_imaginary(self):
+        """Complex number -3+4j as positional."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-3+4j"])
+        assert result.positionals["value"].value == "-3+4j"
+
+    def test_negative_real_negative_imaginary(self):
+        """Complex number -3-4j as positional."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-3-4j"])
+        assert result.positionals["value"].value == "-3-4j"
+
+    def test_negative_pure_imaginary(self):
+        """Pure imaginary -4j as positional."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-4j"])
+        assert result.positionals["value"].value == "-4j"
+
+    def test_complex_with_decimals(self):
+        """Complex with decimal components."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-1.5+2.5j"])
+        assert result.positionals["value"].value == "-1.5+2.5j"
+
+    def test_complex_with_scientific_notation(self):
+        """Complex with scientific notation."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-1e5+2e3j"])
+        assert result.positionals["value"].value == "-1e5+2e3j"
+
+    def test_complex_as_option_value(self):
+        """Complex number as option value."""
+        spec = CommandSpec(
+            name="cmd",
+            options={"value": OptionSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["--value", "-3+4j"])
+        assert result.options["value"].value == "-3+4j"
+
+    def test_multiple_complex_numbers(self):
+        """Multiple complex numbers as positionals."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-3+4j", "-1-2j", "-5j"])
+        assert result.positionals["values"].value == ("-3+4j", "-1-2j", "-5j")
+
+    def test_positive_complex_works_without_flag(self):
+        """Positive complex numbers work without allow_negative_numbers."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=False)
+
+        # Positive complex doesn't start with -, so it's just a normal value
+        result = parser.parse(["3+4j"])
+        assert result.positionals["value"].value == "3+4j"
+
+    def test_complex_disabled_treats_as_option(self):
+        """When disabled, -3+4j treated as option -3 with value."""
+        spec = CommandSpec(
+            name="cmd",
+            options={"3": OptionSpec("3", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=False)
+
+        # -3+4j → option "-3" with inline value "+4j"
+        result = parser.parse(["-3+4j"])
+        assert result.options["3"].value == "+4j"
+
+    def test_negative_zero_imaginary(self):
+        """-0j is valid complex number."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-0j"])
+        assert result.positionals["value"].value == "-0j"
+
+    def test_complex_with_both_scientific_notation(self):
+        """Complex with scientific notation in both parts."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["-2.5E-10-3.14E-5j"])
+        assert result.positionals["value"].value == "-2.5E-10-3.14E-5j"
+
+
+class TestComplexNumberPattern:
+    """Test the pattern itself."""
+
+    def test_pattern_matches_negative_complex(self):
+        """Pattern matches various negative complex formats."""
+        pattern = re.compile(DEFAULT_NEGATIVE_NUMBER_PATTERN)
+
+        # Should match
+        assert pattern.match("-3+4j")
+        assert pattern.match("-3-4j")
+        assert pattern.match("-4j")
+        assert pattern.match("-0j")
+        assert pattern.match("-1.5+2.5j")
+        assert pattern.match("-1e5+2e3j")
+        assert pattern.match("-2.5E-10-3.14E-5j")
+
+    def test_pattern_rejects_invalid_complex(self):
+        """Pattern rejects invalid complex formats."""
+        pattern = re.compile(DEFAULT_NEGATIVE_NUMBER_PATTERN)
+
+        # Should NOT match
+        assert not pattern.match("3+4j")  # Positive real
+        assert not pattern.match("1-3j")  # Positive real
+        assert not pattern.match("-3i")  # Wrong imaginary unit
+        assert not pattern.match("-3+j")  # Missing coefficient
+        assert not pattern.match("-")  # Just minus
+
+    def test_pattern_backwards_compatible(self):
+        """Pattern still matches existing negative number formats."""
+        pattern = re.compile(DEFAULT_NEGATIVE_NUMBER_PATTERN)
+
+        # Existing formats still work
+        assert pattern.match("-1")
+        assert pattern.match("-42")
+        assert pattern.match("-3.14")
+        assert pattern.match("-1e5")
+        assert pattern.match("-2.5E-10")
