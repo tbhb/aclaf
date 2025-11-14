@@ -75,7 +75,7 @@ lint-actions: install
 
 vale:
   vale sync
-  vale docs/
+  vale docs/ CONTRIBUTING.md README.md SECURITY.md
 
 # Run pre-commit hooks
 prek: install

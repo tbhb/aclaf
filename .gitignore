@@ -370,6 +370,7 @@ site/
 
 # Hack to find libcairo
 *.dylib
+research/
 reviews/
 specs/
 temp/

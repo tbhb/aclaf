@@ -1,12 +1,12 @@
 # Contributing to Aclaf
 
-Thank you for your interest in Aclaf! I'm excited that you're considering contributing to this command line application framework for Python.
+Thank you for your interest in Aclaf! I'm excited that you're considering contributing to this command line app framework for Python.
 
 ## Project status
 
-**Important**: Aclaf is currently in pre-1.0 development and is maintained by a single developer. The project is **not yet accepting pull requests** at this time.
+**Important** - Aclaf is currently in pre-1.0 development. A single developer maintains the project and is **not yet accepting pull requests**.
 
-However, your contributions through **issues** and **discussions** are highly valued and welcome. These help shape the project's direction and identify areas for improvement before the initial release.
+Your contributions through **issues** and **discussions** are highly valued and welcome. These help shape the project's direction and identify areas for improvement before the initial release.
 
 ## How you can contribute right now
 
@@ -17,15 +17,15 @@ If you encounter a bug, unexpected behavior, or have identified a potential prob
 **What makes a great bug report:**
 
 - Clear, descriptive title summarizing the issue
-- **Minimum reproducible example**: A minimal, complete code sample that demonstrates the issue (see below)
+- **Reproducible example**: A minimal, complete code sample that demonstrates the issue (see below)
 - Steps to reproduce the problem with the minimal example
 - Expected behavior versus actual behavior
 - Environment details (Python version, operating system, Aclaf version/commit)
 - Stack traces or error messages (if applicable)
 
-**Creating a minimum reproducible example:**
+**Creating a reproducible example:**
 
-A minimum reproducible example (MRE) is crucial for quickly identifying and fixing bugs. A good MRE:
+A reproducible example (MRE) is crucial for quickly identifying and fixing bugs. A good MRE:
 
 - Is **minimal**: Contains only the code necessary to reproduce the issue (remove unrelated features, options, or logic)
 - Is **complete**: Includes all imports, setup, and code needed to run the example without modifications
@@ -43,7 +43,7 @@ def greeter(name: str):
 greeter()
 ```
 
-This is much more helpful than describing the issue without code or providing a large, complex application where the problem is hard to isolate.
+This is much more helpful than describing the issue without code or providing a large, complex app where the problem is hard to isolate.
 
 **Example issue structure:**
 
@@ -51,12 +51,12 @@ This is much more helpful than describing the issue without code or providing a 
 ## Description
 Brief summary of the bug
 
-## Minimum reproducible example
+## Reproducible example
 [paste your minimal, complete code example here]
 
 ## Steps to reproduce
 1. Install Aclaf from commit abc123
-2. Save the above code as `example.py`
+2. Save the preceding code as `example.py`
 3. Run: `python example.py --verbose`
 4. Observe unexpected behavior
 
@@ -74,7 +74,7 @@ The command prints "Verbose: False" even with --verbose flag
 
 ### Start discussions
 
-GitHub Discussions is the place for questions, ideas, and conversations about Aclaf. We welcome discussions on topics like:
+GitHub Discussions is the place for questions, ideas, and conversations about Aclaf. Discussions on topics like these are welcome:
 
 - **Questions**: How something works, clarification on design decisions, usage questions
 - **Ideas**: Suggestions for features, API improvements, or architectural changes
@@ -91,26 +91,26 @@ If you discover a security vulnerability, please report it privately rather than
 **Quick summary:**
 
 - Use [GitHub's private vulnerability reporting](https://github.com/aclaf/aclaf/security/advisories/new), or
-- Email: <security@aclaf.sh>
+- Send email to <security@aclaf.sh>
 
 Security reports should include a description of the vulnerability, reproduction steps, and potential impact.
 
 ## Why no pull requests yet?
 
-During pre-1.0 development, the project is in active flux as core architecture, APIs, and design patterns are being established. I need the freedom to make rapid, breaking changes without coordination overhead or concerns about backwards compatibility.
+During pre-1.0 development, the project is in active flux as I establish core architecture, APIs, and design patterns. I need the freedom to make rapid, breaking changes without coordination overhead or concerns about backwards compatibility.
 
 Accepting pull requests at this stage would create expectations around API stability and migration paths that would slow down development and prevent the project from reaching its quality goals.
 
-## When will pull requests be accepted?
+## When will I accept pull requests?
 
-Pull requests will be welcomed once the project reaches a more stable state, likely around or after the initial 1.0 release. At that point:
+I will welcome pull requests once the project reaches a more stable state, likely around or after the initial 1.0 release. At that point:
 
-- Core APIs will be more stable
-- Contribution guidelines will be expanded with development setup, coding standards, and review processes
+- Core capabilities and public APIs will be more stable
+- I will expand contribution guidelines with development setup, coding standards, and review processes
 - A clearer roadmap will help guide contribution efforts
 - The project will be ready to onboard contributors effectively
 
-You can follow the project's progress by watching the repository or checking release announcements.
+You can follow the project's progress by watching the repository, checking release announcements, and following the [roadmap](https://aclaf.sh/roadmap).
 
 ## Project values and philosophy
 
@@ -118,27 +118,28 @@ Understanding Aclaf's values helps frame useful discussions and issue reports:
 
 ### Modern Python practices
 
-Aclaf supports Python 3.10 and above. The project is developed and tested against Python 3.14 and embraces modern development practices:
+Aclaf supports Python 3.10 and above. I test the project against Python 3.10-3.14 (including free-threaded 3.13 and 3.14) and embrace modern development practices:
 
 - Comprehensive type hints checked during development with basedpyright and in CI with Mypy and Pyright
 - Dataclasses with slots for efficient, immutable value objects
 - Pattern matching (match/case statements) for clear control flow
 - Property-based testing with Hypothesis to discover edge cases
-- Greater than 95% test coverage requirement for all code
+- Mutation testing with mutmut to ensure test effectiveness
+- Greater than 95% test coverage for all code
 
 ### Minimal dependencies
 
-The project maintains an extremely minimal dependency footprint:
+The project maintains a minimal dependency footprint:
 
-- **Single runtime dependency**: Currently only `typing-extensions` for modern typing features
-- **Standard library first**: Functionality is implemented with Python's standard library whenever possible
+- **Single runtime dependency**: Currently only `typing-extensions` for modern typing features and optionally `rich` for console output
+- **Standard library first**: Use Python's standard library to build features whenever possible
 - **Justified dependencies**: Every dependency must have strong justification
 
 This philosophy reduces supply chain risk, simplifies installation, and keeps the framework lightweight.
 
 ### Quality over speed
 
-Quality and correctness are prioritized over shipping quickly:
+The project prioritizes quality and correctness over shipping quickly:
 
 - All code passes strict linting (Ruff and other tools)
 - Zero type errors (basedpyright in strict mode)
@@ -148,13 +149,13 @@ Quality and correctness are prioritized over shipping quickly:
 
 ### Breaking changes are free (for now)
 
-Since the project is unreleased, breaking changes are encouraged when they improve the design, API, or implementation quality. Migration paths and backwards compatibility are not concerns during pre-1.0 development.
+Breaking changes improve the design, API, or implementation quality during pre-release development. Migration paths and backwards compatibility are not concerns during pre-1.0 development.
 
-If you're experimenting with Aclaf before 1.0, expect that things will change. Once 1.0 is released, stability and versioning policies will be established.
+If you're experimenting with Aclaf before 1.0, expect that things will change. The project will establish stability and versioning policies once 1.0 releases.
 
 ## Future contribution model
 
-When pull requests are accepted, the contribution process will follow these general guidelines:
+When I accept pull requests, the contribution process will follow these general guidelines:
 
 ### Development workflow
 
@@ -162,7 +163,7 @@ When pull requests are accepted, the contribution process will follow these gene
 - CI checks must pass (linting, type checking, tests across Python versions and operating systems)
 - Code must follow the project's style guidelines
 - All public APIs must have comprehensive documentation
-- Test coverage must remain above 95%
+- Test coverage must remain over 95%
 - Commit messages must follow conventional commits format
 
 ### Code quality expectations
@@ -175,9 +176,9 @@ When pull requests are accepted, the contribution process will follow these gene
 
 ### Review process
 
-- All changes will be reviewed before merging
+- I will review all changes before merging
 - Feedback will focus on design, correctness, test coverage, and alignment with project values
-- Multiple rounds of review may be necessary for complex changes
+- Complex changes may need many rounds of review
 
 ## Getting familiar with the project
 
@@ -245,14 +246,14 @@ If you have questions about contributing, the project's direction, or anything e
 
 ## Code of conduct
 
-While the project doesn't have a formal code of conduct yet, I expect all interactions to be respectful, constructive, and professional. Harassment, discrimination, or abusive behavior will not be tolerated.
+While the project doesn't have a formal code of conduct yet, I expect all interactions to be respectful, constructive, and professional. I will not tolerate harassment, discrimination, or abusive behavior.
 
 ## Thank you
 
-Your interest in Aclaf is appreciated. Even though pull requests aren't accepted yet, your feedback through issues and discussions helps make the project better. I look forward to welcoming code contributions in the future once the project reaches a more stable state.
+I appreciate your interest in Aclaf. Even though I don't accept pull requests yet, your feedback through issues and discussions helps make the project better. I look forward to welcoming code contributions in the future once the project reaches a more stable state.
 
 ---
 
-*This document will be updated as the project's contribution model evolves. Check back for updates as Aclaf approaches the 1.0 release.*
+*I will update this document as the project's contribution model evolves. Check back for updates as Aclaf approaches the 1.0 release.*
 
 *Last updated: 2025-11-11*

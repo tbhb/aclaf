@@ -22,6 +22,7 @@ theme:
     - content.action.view
     - content.code.annotate
     - content.code.copy
+    - content.footnote.tooltips
     - content.tooltips
     - navigation.footer
     - navigation.indexes
@@ -169,6 +170,8 @@ markdown_extensions:
 nav:
   - Home:
       - index.md
+      - vision.md
+      - roadmap.md
       - license.md
   - Tutorials:
       - tutorials/index.md
