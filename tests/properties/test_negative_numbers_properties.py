@@ -288,3 +288,114 @@ class TestNegativeNumberPatternProperties:
         """Property: Default pattern rejects text not starting with minus."""
         # Should NOT match
         assert not re.match(DEFAULT_NEGATIVE_NUMBER_PATTERN, text)
+
+
+@st.composite
+def negative_complex_numbers(draw: "DrawFn") -> str:
+    """Strategy for negative complex numbers."""
+    # Generate real part (negative)
+    real = draw(
+        st.floats(
+            min_value=-1000.0,
+            max_value=-0.001,
+            allow_nan=False,
+            allow_infinity=False,
+        )
+    )
+
+    # Generate imaginary part (can be positive or negative)
+    imag = draw(
+        st.floats(
+            min_value=-1000.0,
+            max_value=1000.0,
+            allow_nan=False,
+            allow_infinity=False,
+        ).filter(lambda x: x != 0)  # Avoid zero imaginary
+    )
+
+    # Format as complex number string
+    return f"{real:+g}{imag:+g}j"
+
+
+@st.composite
+def negative_pure_imaginary(draw: "DrawFn") -> str:
+    """Strategy for negative pure imaginary numbers (-4j, -2.5j)."""
+    # Generate imaginary coefficient (negative)
+    imag = draw(
+        st.floats(
+            min_value=-1000.0,
+            max_value=-0.001,
+            allow_nan=False,
+            allow_infinity=False,
+        )
+    )
+
+    # Format as pure imaginary
+    return f"{imag}j"
+
+
+class TestComplexNumberProperties:
+    """Property-based tests for complex numbers."""
+
+    @given(negative_complex_numbers())
+    def test_negative_complex_parsed_as_positionals(self, complex_num: str):
+        """Property: All negative complex numbers parse as positional values."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse([complex_num])
+        assert result.positionals["value"].value == complex_num
+
+    @given(negative_complex_numbers())
+    def test_complex_consumed_as_option_value(self, complex_num: str):
+        """Property: Complex numbers consumed as option values."""
+        spec = CommandSpec(
+            name="cmd",
+            options={"value": OptionSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(["--value", complex_num])
+        assert result.options["value"].value == complex_num
+
+    @given(negative_pure_imaginary())
+    def test_pure_imaginary_parsed_as_positionals(self, imag_num: str):
+        """Property: Pure imaginary numbers parse as positional values."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse([imag_num])
+        assert result.positionals["value"].value == imag_num
+
+    @given(st.lists(negative_complex_numbers(), min_size=1, max_size=5))
+    def test_multiple_complex_preserve_order(self, numbers: list[str]):
+        """Property: Multiple complex numbers preserve input order."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result = parser.parse(numbers)
+        assert result.positionals["values"].value == tuple(numbers)
+
+    @given(negative_complex_numbers())
+    def test_complex_parse_is_deterministic(self, complex_num: str):
+        """Property: Parsing same complex number produces same result."""
+        spec = CommandSpec(
+            name="cmd",
+            positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
+        )
+        parser = Parser(spec, allow_negative_numbers=True)
+
+        result1 = parser.parse([complex_num])
+        result2 = parser.parse([complex_num])
+
+        assert result1 == result2
+        assert result1.positionals == result2.positionals
