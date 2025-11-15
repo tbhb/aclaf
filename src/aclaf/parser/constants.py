@@ -1,4 +1,7 @@
+import re
 from typing import Final
+
+COMMAND_NAME_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9-_]*$")
 
 DEFAULT_TRUTHY_VALUES = ("true", "1", "yes", "on")
 DEFAULT_FALSEY_VALUES = ("false", "0", "no", "off")

@@ -72,3 +72,10 @@ ZERO_OR_MORE_ARITY: Final = Arity(0, None)
 
 ZERO_OR_ONE_ARITY: Final = Arity(0, 1)
 """Zero or one value accepted. Used for optional single-value parameters."""
+
+
+ParsedOptionValue = (
+    bool | int | str | tuple[bool, ...] | tuple[str, ...] | tuple[tuple[str, ...], ...]
+)
+ParsedPositionalValue = str | tuple[str, ...]
+ParsedParameterValue = ParsedOptionValue | ParsedPositionalValue

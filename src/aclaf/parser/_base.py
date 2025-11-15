@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from ._command import CommandSpec
+    from .types import ParsedOptionValue, ParsedPositionalValue
 
 
 @dataclass(slots=True, frozen=True, unsafe_hash=True)
@@ -38,14 +39,7 @@ class ParsedOption:
     """
 
     name: str
-    value: (
-        bool
-        | int
-        | str
-        | tuple[bool, ...]
-        | tuple[str, ...]
-        | tuple[tuple[str, ...], ...]
-    )
+    value: "ParsedOptionValue"
     alias: str | None = None
 
     @override
@@ -70,7 +64,7 @@ class ParsedPositional:
     """
 
     name: str
-    value: str | tuple[str, ...]
+    value: "ParsedPositionalValue"
 
     @override
     def __repr__(self) -> str:

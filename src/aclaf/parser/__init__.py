@@ -37,6 +37,9 @@ from .types import (
     ZERO_OR_ONE_ARITY,
     AccumulationMode,
     Arity,
+    ParsedOptionValue,
+    ParsedParameterValue,
+    ParsedPositionalValue,
 )
 
 __all__ = [
@@ -63,7 +66,10 @@ __all__ = [
     "ParseError",
     "ParseResult",
     "ParsedOption",
+    "ParsedOptionValue",
+    "ParsedParameterValue",
     "ParsedPositional",
+    "ParsedPositionalValue",
     "Parser",
     "ParserConfiguration",
     "ParserConfigurationError",

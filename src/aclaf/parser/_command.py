@@ -3,6 +3,7 @@ from functools import cache
 from typing import TYPE_CHECKING
 from typing_extensions import override
 
+from .constants import COMMAND_NAME_REGEX
 from .exceptions import (
     AmbiguousOptionError,
     AmbiguousSubcommandError,
@@ -11,8 +12,6 @@ from .exceptions import (
 
 if TYPE_CHECKING:
     from ._parameters import OptionSpec, PositionalSpec
-
-COMMAND_NAME_REGEX = re.compile(r"^[a-zA-Z][a-zA-Z0-9-_]*$")
 
 
 @cache

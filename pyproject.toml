@@ -28,7 +28,16 @@ classifiers = [
   "Topic :: Utilities",
   "Typing :: Typed",
 ]
-dependencies = ["typing-extensions>=4.15.0"]
+dependencies = [
+  "annotated-types>=0.7.0",
+  "typing-extensions>=4.15.0",
+  "typing-inspection>=0.4.2",
+]
+
+[project.optional-dependencies]
+rich = ["rich>=14.2.0"]
+loguru = ["loguru>=0.7.3"]
+structlog = ["structlog>=25.5.0"]
 
 [dependency-groups]
 dev = [
@@ -169,13 +178,14 @@ select = [
   "UP",    # pyupgrade
 ]
 ignore = [
-  "D100", # Missing docstring in public module
-  "D101", # Missing docstring in public class
-  "D102", # Missing docstring in public method
-  "D103", # Missing docstring in public function
-  "D104", # Missing docstring in public package
-  "D105", # Missing docstring in magic method
-  "D107", # Missing docstring in __init__
+  "D100",  # Missing docstring in public module
+  "D101",  # Missing docstring in public class
+  "D102",  # Missing docstring in public method
+  "D103",  # Missing docstring in public function
+  "D104",  # Missing docstring in public package
+  "D105",  # Missing docstring in magic method
+  "D107",  # Missing docstring in __init__
+  "TD003",
 ]
 pydocstyle = { convention = "google" }
 
@@ -193,3 +203,4 @@ ignore-variadic-names = true
 [tool.ruff.lint.per-file-ignores]
 "**/__main__.py" = ["D100"]
 "**/tests/**" = ["D", "PLR2004", "S101"]
+"examples/**" = ["T201"]                 # Allow print in examples
