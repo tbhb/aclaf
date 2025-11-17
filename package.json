@@ -10,7 +10,7 @@
   "packageManager": "pnpm@10.20.0",
   "type": "module",
   "devDependencies": {
-    "@biomejs/biome": "2.3.5",
+    "@biomejs/biome": "2.3.6",
     "markdownlint-cli2": "0.18.1",
     "wrangler": "4.47.0"
   },
