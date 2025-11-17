@@ -1,9 +1,11 @@
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
-if TYPE_CHECKING:
-    from ._base import BaseConsole
+
+@runtime_checkable
+class Console(Protocol):
+    def print(self, *objects: object, sep: str = " ", end: str = "\n") -> None: ...
 
 
 @runtime_checkable
 class SupportsConsole(Protocol):
-    def __console__(self, console: "BaseConsole") -> None: ...
+    def __console__(self, console: "Console") -> None: ...

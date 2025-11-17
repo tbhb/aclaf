@@ -1,9 +1,3 @@
-"""Tests for combined short option flags.
-
-This module tests parsing of combined short options like -abc, -vvv, and combinations
-of flags with value-accepting options.
-"""
-
 import pytest
 
 from aclaf.parser import (
@@ -26,10 +20,7 @@ from aclaf.parser.types import (
 
 
 class TestBasicCombinedFlags:
-    """Test basic combined flag parsing."""
-
-    def test_two_flags_combined(self):
-        """Two flags can be combined."""
+    def test_two_flags_bundled_together(self):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -45,27 +36,7 @@ class TestBasicCombinedFlags:
         assert result.options["verbose"].value is True
         assert result.options["quiet"].value is True
 
-    def test_three_flags_combined(self):
-        """Three flags can be combined."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
-                ),
-                "quiet": OptionSpec("quiet", short=frozenset({"q"}), arity=ZERO_ARITY),
-                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["-vqf"])
-        assert result.options["verbose"].value is True
-        assert result.options["quiet"].value is True
-        assert result.options["force"].value is True
-
-    def test_many_flags_combined(self):
-        """Many flags can be combined."""
+    def test_many_flags_bundled_together(self):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -82,8 +53,7 @@ class TestBasicCombinedFlags:
         for opt in ["a", "b", "c", "d", "e"]:
             assert result.options[opt].value is True
 
-    def test_combined_flags_order_irrelevant(self):
-        """Order of combined flags doesn't matter."""
+    def test_bundled_flags_order_irrelevant(self):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -105,10 +75,17 @@ class TestBasicCombinedFlags:
 
 
 class TestCombinedFlagsWithValues:
-    """Test combined flags where last option accepts a value."""
-
-    def test_combined_with_value_space_form(self):
-        """Combined flags with value in next argument."""
+    @pytest.mark.parametrize(
+        ("args", "expected_output"),
+        [
+            (["-vo", "file.txt"], "file.txt"),
+            (["-vo=file.txt"], "file.txt"),
+            (["-vofile.txt"], "file.txt"),
+        ],
+    )
+    def test_bundled_flags_with_value_taking_option(
+        self, args: list[str], expected_output: str
+    ):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -122,50 +99,11 @@ class TestCombinedFlagsWithValues:
         )
         parser = Parser(spec)
 
-        result = parser.parse(["-vo", "file.txt"])
+        result = parser.parse(args)
         assert result.options["verbose"].value is True
-        assert result.options["output"].value == "file.txt"
+        assert result.options["output"].value == expected_output
 
-    def test_combined_with_value_equals_form(self):
-        """Combined flags with value using equals syntax."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
-                ),
-                "output": OptionSpec(
-                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["-vo=file.txt"])
-        assert result.options["verbose"].value is True
-        assert result.options["output"].value == "file.txt"
-
-    def test_combined_with_inline_value(self):
-        """Combined flags with inline value (no space/equals)."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
-                ),
-                "output": OptionSpec(
-                    "output", short=frozenset({"o"}), arity=EXACTLY_ONE_ARITY
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["-vofile.txt"])
-        assert result.options["verbose"].value is True
-        assert result.options["output"].value == "file.txt"
-
-    def test_multiple_flags_before_value_option(self):
-        """Multiple flags can precede a value-accepting option."""
+    def test_multiple_flags_before_value_taking_option(self):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -185,8 +123,7 @@ class TestCombinedFlagsWithValues:
         assert result.options["force"].value is True
         assert result.options["output"].value == "file.txt"
 
-    def test_value_option_must_be_last(self):
-        """Value-accepting option must be last in combination."""
+    def test_value_taking_option_consumes_following_character_as_value(self):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -206,11 +143,31 @@ class TestCombinedFlagsWithValues:
         assert "verbose" not in result.options
 
 
+class TestCombinedShortOptionsWithoutEquals:
+    def test_value_taking_option_in_middle_of_bundle_raises_error(self):
+        args = ["-abc"]
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "a": OptionSpec("a", short=frozenset({"a"}), arity=ZERO_ARITY),
+                "b": OptionSpec("b", short=frozenset({"b"}), arity=EXACTLY_ONE_ARITY),
+                "c": OptionSpec("c", short=frozenset({"c"}), arity=ZERO_ARITY),
+            },
+        )
+        parser = Parser(spec)
+        with pytest.raises(InsufficientOptionValuesError):
+            _ = parser.parse(args)
+
+
 class TestCombinedFlagsWithMultipleValues:
-    """Test combined flags where last option accepts multiple values."""
-
-    def test_combined_with_one_or_more_values(self):
-        """Combined flags with one-or-more arity."""
+    @pytest.mark.parametrize(
+        "args",
+        [
+            ["-vf", "file1.txt", "file2.txt"],
+            ["-vffile1.txt", "file2.txt"],
+        ],
+    )
+    def test_bundled_flags_with_variadic_option(self, args: list[str]):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -224,35 +181,13 @@ class TestCombinedFlagsWithMultipleValues:
         )
         parser = Parser(spec)
 
-        result = parser.parse(["-vf", "file1.txt", "file2.txt"])
-        assert result.options["verbose"].value is True
-        assert result.options["files"].value == ("file1.txt", "file2.txt")
-
-    def test_combined_with_multiple_values_inline(self):
-        """Combined flags with inline start of multiple values."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
-                ),
-                "files": OptionSpec(
-                    "files", short=frozenset({"f"}), arity=ONE_OR_MORE_ARITY
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["-vffile1.txt", "file2.txt"])
+        result = parser.parse(args)
         assert result.options["verbose"].value is True
         assert result.options["files"].value == ("file1.txt", "file2.txt")
 
 
 class TestCombinedFlagsErrorCases:
-    """Test error cases with combined flags."""
-
-    def test_unknown_flag_in_combination(self):
-        """Unknown flag in combination raises error."""
+    def test_unknown_flag_in_bundle_raises_error(self):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -268,39 +203,7 @@ class TestCombinedFlagsErrorCases:
 
         assert "x" in str(exc_info.value).lower()
 
-    def test_unknown_flag_at_start(self):
-        """Unknown flag at start of combination raises error."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        with pytest.raises(UnknownOptionError):
-            _ = parser.parse(["-xv"])
-
-    def test_unknown_flag_in_middle(self):
-        """Unknown flag in middle of combination raises error."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
-                ),
-                "force": OptionSpec("force", short=frozenset({"f"}), arity=ZERO_ARITY),
-            },
-        )
-        parser = Parser(spec)
-
-        with pytest.raises(UnknownOptionError):
-            _ = parser.parse(["-vxf"])
-
-    def test_combined_insufficient_values(self):
-        """Insufficient values for combined option raises error."""
+    def test_value_taking_option_without_value_raises_error(self):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -319,10 +222,7 @@ class TestCombinedFlagsErrorCases:
 
 
 class TestCombinedFlagsWithConstValues:
-    """Test combined flags with const_value options."""
-
     def test_combined_with_const_value_flag(self):
-        """Combined flags with const_value option."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -344,7 +244,6 @@ class TestCombinedFlagsWithConstValues:
         assert result.options["log-level"].value == "debug"
 
     def test_const_value_last_in_combination(self):
-        """Const value option works as last in combination."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -365,35 +264,8 @@ class TestCombinedFlagsWithConstValues:
         assert result.options["mode"].value == "fast"
 
 
-class TestCombinedFlagsWithNegation:
-    """Test combined flags with negation words."""
-
-    def test_negation_not_valid_in_combination(self):
-        """Negation words don't work in short form combinations."""
-        spec = CommandSpec(
-            name="cmd",
-            options={
-                "verbose": OptionSpec(
-                    "verbose",
-                    short=frozenset({"v"}),
-                    arity=ZERO_ARITY,
-                    negation_words=frozenset({"no"}),
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        # Short forms don't support negation
-        # -v just sets verbose to True
-        result = parser.parse(["-v"])
-        assert result.options["verbose"].value is True
-
-
 class TestCombinedFlagsWithAccumulation:
-    """Test combined flags with accumulation modes."""
-
     def test_combined_with_collect_mode(self):
-        """Combined flags with COLLECT accumulation."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -413,7 +285,6 @@ class TestCombinedFlagsWithAccumulation:
         assert result.options["force"].value is True
 
     def test_combined_with_count_mode(self):
-        """Combined flags with COUNT accumulation."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -431,7 +302,6 @@ class TestCombinedFlagsWithAccumulation:
         assert result.options["verbose"].value == 3
 
     def test_separate_and_combined_count(self):
-        """Count accumulation works with mix of combined and separate."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -450,10 +320,7 @@ class TestCombinedFlagsWithAccumulation:
 
 
 class TestCombinedFlagsWithFlagValues:
-    """Test combined flags with flag value coercion."""
-
     def test_combined_flags_with_equals_value(self):
-        """Combined flags with equals value at end."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -470,7 +337,6 @@ class TestCombinedFlagsWithFlagValues:
         assert result.options["debug"].value is True
 
     def test_combined_ending_with_equals_invalid(self):
-        """Combined flags ending with equals is invalid without value."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -487,10 +353,7 @@ class TestCombinedFlagsWithFlagValues:
 
 
 class TestComplexCombinedScenarios:
-    """Test complex scenarios with combined flags."""
-
-    def test_multiple_combinations_in_single_command(self):
-        """Multiple flag combinations in one command."""
+    def test_multiple_bundles_in_single_command(self):
         spec = CommandSpec(
             name="cmd",
             options={
@@ -510,16 +373,12 @@ class TestComplexCombinedScenarios:
         assert result.options["quiet"].value is True
         assert result.options["debug"].value is True
 
-    def test_combined_flags_with_options_and_positionals(self):
-        """Combined flags work with options and positionals."""
+    def test_bundled_flags_with_value_option_and_positionals(self):
         spec = CommandSpec(
             name="tar",
             options={
                 "create": OptionSpec(
                     "create", short=frozenset({"c"}), arity=ZERO_ARITY
-                ),
-                "extract": OptionSpec(
-                    "extract", short=frozenset({"x"}), arity=ZERO_ARITY
                 ),
                 "verbose": OptionSpec(
                     "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
@@ -539,34 +398,7 @@ class TestComplexCombinedScenarios:
         assert result.options["file"].value == "archive.tar"
         assert result.positionals["files"].value == ("file1", "file2")
 
-    def test_tar_style_combined_options(self):
-        """Tar-style command with combined options."""
-        spec = CommandSpec(
-            name="tar",
-            options={
-                "create": OptionSpec(
-                    "create", short=frozenset({"c"}), arity=ZERO_ARITY
-                ),
-                "gzip": OptionSpec("gzip", short=frozenset({"z"}), arity=ZERO_ARITY),
-                "verbose": OptionSpec(
-                    "verbose", short=frozenset({"v"}), arity=ZERO_ARITY
-                ),
-                "file": OptionSpec(
-                    "file", short=frozenset({"f"}), arity=EXACTLY_ONE_ARITY
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        # tar -czvf archive.tar.gz
-        result = parser.parse(["-czvf", "archive.tar.gz"])
-        assert result.options["create"].value is True
-        assert result.options["gzip"].value is True
-        assert result.options["verbose"].value is True
-        assert result.options["file"].value == "archive.tar.gz"
-
-    def test_combined_with_long_options_mixed(self):
-        """Combined short options can mix with long options."""
+    def test_bundled_short_options_mixed_with_long_options(self):
         spec = CommandSpec(
             name="cmd",
             options={

@@ -204,3 +204,10 @@ ignore-variadic-names = true
 "**/__main__.py" = ["D100"]
 "**/tests/**" = ["D", "PLR2004", "S101"]
 "examples/**" = ["T201"]                 # Allow print in examples
+
+[tool.uv.sources]
+aclaf = { workspace = true }
+aclaf-cli = { workspace = true }
+
+[tool.uv.workspace]
+members = [".", "cli"]

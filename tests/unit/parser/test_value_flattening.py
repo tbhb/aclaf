@@ -1,14 +1,3 @@
-"""Unit tests for value flattening feature.
-
-Tests the optional value flattening for options with COLLECT accumulation mode
-and multi-value arity, covering:
-- Basic flattening functionality
-- Configuration precedence (OptionSpec > CommandSpec > BaseParser)
-- Edge cases (single occurrence, zero values, mixed counts)
-- Non-applicable cases (non-COLLECT modes, single-value arity)
-- Validation warnings
-"""
-
 import warnings
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser
@@ -16,10 +5,7 @@ from aclaf.parser.types import AccumulationMode, Arity
 
 
 class TestBasicFlattening:
-    """Test basic value flattening functionality."""
-
     def test_flatten_multiple_occurrences_with_varying_counts(self) -> None:
-        """Multiple occurrences with different value counts should flatten."""
         spec = CommandSpec(
             name="build",
             options={
@@ -56,7 +42,6 @@ class TestBasicFlattening:
         )
 
     def test_no_flatten_preserves_nested_structure(self) -> None:
-        """Without flattening, nested structure is preserved."""
         spec = CommandSpec(
             name="build",
             options={
@@ -76,7 +61,6 @@ class TestBasicFlattening:
         assert result.options["files"].value == (("file1", "file2"), ("file3",))
 
     def test_single_occurrence_same_with_or_without_flatten(self) -> None:
-        """Single occurrence produces same result with or without flattening."""
         # With flattening
         spec_flat = CommandSpec(
             name="build",
@@ -114,7 +98,6 @@ class TestBasicFlattening:
         assert result_nested.options["files"].value == (("a", "b", "c"),)
 
     def test_flatten_with_zero_values_per_occurrence(self) -> None:
-        """Zero-value occurrences are effectively filtered during flattening."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -135,7 +118,6 @@ class TestBasicFlattening:
         assert result.options["files"].value == ("a", "b", "c")
 
     def test_flatten_with_mixed_value_counts(self) -> None:
-        """Different occurrences with varying value counts."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -157,7 +139,6 @@ class TestBasicFlattening:
         assert result.options["files"].value == ("a", "b", "c", "d", "e", "f")
 
     def test_flatten_with_fixed_multi_value_arity(self) -> None:
-        """Flattening works with fixed multi-value arity (e.g., 2-3 values)."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -178,10 +159,7 @@ class TestBasicFlattening:
 
 
 class TestConfigurationPrecedence:
-    """Test precedence resolution: OptionSpec > CommandSpec > BaseParser."""
-
     def test_option_level_overrides_command_level(self) -> None:
-        """OptionSpec.flatten_values=True overrides CommandSpec=False."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -223,7 +201,6 @@ class TestConfigurationPrecedence:
         assert result.options["inputs"].value == (("i1", "i2"), ("i3",))
 
     def test_option_level_false_overrides_command_level_true(self) -> None:
-        """OptionSpec.flatten_values=False overrides CommandSpec=True."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -265,7 +242,6 @@ class TestConfigurationPrecedence:
         assert result.options["inputs"].value == ("i1", "i2", "i3")
 
     def test_command_level_overrides_parser_level(self) -> None:
-        """CommandSpec.flatten_option_values overrides BaseParser."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -273,23 +249,20 @@ class TestConfigurationPrecedence:
                     name="files",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
-                    # No option-level setting, uses command-level
                 )
             },
-            flatten_option_values=True,  # Override parser-level
+            flatten_option_values=True,
         )
         parser = Parser(
             spec=spec,
-            flatten_option_values=False,  # Parser-level default
+            flatten_option_values=False,
         )
 
         result = parser.parse(["--files", "f1", "f2", "--files", "f3"])
 
-        # Should be flattened (command-level overrides parser-level)
         assert result.options["files"].value == ("f1", "f2", "f3")
 
     def test_option_none_command_none_uses_parser_default(self) -> None:
-        """When both option and command are None, uses parser default."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -297,24 +270,19 @@ class TestConfigurationPrecedence:
                     name="files",
                     arity=Arity(1, None),
                     accumulation_mode=AccumulationMode.COLLECT,
-                    flatten_values=None,  # Inherit
                 )
             },
-            flatten_option_values=None,  # Inherit
         )
 
-        # Test with parser default = True
         parser_true = Parser(spec=spec, flatten_option_values=True)
         result_true = parser_true.parse(["--files", "f1", "f2", "--files", "f3"])
         assert result_true.options["files"].value == ("f1", "f2", "f3")
 
-        # Test with parser default = False
         parser_false = Parser(spec=spec, flatten_option_values=False)
         result_false = parser_false.parse(["--files", "f1", "f2", "--files", "f3"])
         assert result_false.options["files"].value == (("f1", "f2"), ("f3",))
 
     def test_default_behavior_without_any_setting(self) -> None:
-        """Default is False when no settings provided at any level."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -339,10 +307,7 @@ class TestConfigurationPrecedence:
 
 
 class TestNonApplicableCases:
-    """Test that flattening doesn't apply to inappropriate options."""
-
     def test_last_wins_mode_not_affected(self) -> None:
-        """LAST_WINS mode doesn't produce nested tuples, so flattening has no effect."""
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
 
@@ -365,7 +330,6 @@ class TestNonApplicableCases:
             assert result.options["file"].value == ("f3", "f4")
 
     def test_first_wins_mode_not_affected(self) -> None:
-        """FIRST_WINS mode doesn't produce nested tuples."""
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
 
@@ -388,7 +352,6 @@ class TestNonApplicableCases:
             assert result.options["file"].value == ("f1", "f2")
 
     def test_count_mode_not_affected(self) -> None:
-        """COUNT mode produces integers, not tuples."""
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
 
@@ -412,7 +375,6 @@ class TestNonApplicableCases:
             assert result.options["verbose"].value == 3
 
     def test_error_mode_not_affected(self) -> None:
-        """ERROR mode prevents multiple occurrences."""
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
 
@@ -435,7 +397,6 @@ class TestNonApplicableCases:
             assert result.options["file"].value == ("f1", "f2")
 
     def test_single_value_arity_not_affected(self) -> None:
-        """Options with max arity of 1 don't produce nested tuples in COLLECT."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -455,7 +416,6 @@ class TestNonApplicableCases:
         assert result.options["file"].value == ("f1", "f2", "f3")
 
     def test_flag_with_zero_arity_not_affected(self) -> None:
-        """Flag options (arity 0) with COLLECT mode."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -477,10 +437,7 @@ class TestNonApplicableCases:
 
 
 class TestValidationWarnings:
-    """Test validation warnings for invalid configurations."""
-
     def test_warning_when_flatten_true_with_non_collect_mode(self) -> None:
-        """Warn when flatten_values=True is set with non-COLLECT mode."""
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
@@ -497,7 +454,6 @@ class TestValidationWarnings:
             assert "COLLECT mode" in str(w[0].message)
 
     def test_no_warning_when_flatten_false_with_non_collect(self) -> None:
-        """No warning when flatten_values=False with non-COLLECT mode."""
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
@@ -511,7 +467,6 @@ class TestValidationWarnings:
             assert len(w) == 0
 
     def test_no_warning_when_flatten_none_with_non_collect(self) -> None:
-        """No warning when flatten_values=None (inherited) with non-COLLECT mode."""
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
@@ -525,7 +480,6 @@ class TestValidationWarnings:
             assert len(w) == 0
 
     def test_no_warning_when_flatten_true_with_collect_mode(self) -> None:
-        """No warning when flatten_values=True with COLLECT mode (valid)."""
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
 
@@ -540,10 +494,7 @@ class TestValidationWarnings:
 
 
 class TestInteractionWithOtherOptions:
-    """Test flattening behavior when mixed with other option types."""
-
     def test_flatten_only_affects_specified_options(self) -> None:
-        """Flattening only affects options with flatten_values=True."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -590,7 +541,6 @@ class TestInteractionWithOtherOptions:
         assert result.options["single"].value == "s1"
 
     def test_large_number_of_occurrences(self) -> None:
-        """Flattening handles large numbers of occurrences efficiently."""
         spec = CommandSpec(
             name="cmd",
             options={

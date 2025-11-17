@@ -1,13 +1,3 @@
-"""Property-based tests for value flattening feature.
-
-Uses Hypothesis to verify invariants of the value flattening implementation:
-- Length preservation: total value count matches before/after flattening
-- Order preservation: flattening maintains value order
-- Idempotency: single occurrence behaves identically with/without flattening
-- No nested tuples: flattened results contain no nested tuple structures
-- Applicability: non-applicable options are unaffected
-"""
-
 import warnings
 
 from hypothesis import given, strategies as st
@@ -34,8 +24,6 @@ values = st.text(
 
 
 class TestLengthPreservation:
-    """Verify that flattening preserves total value count."""
-
     @given(
         occurrences=st.lists(
             st.lists(values, min_size=1, max_size=10),
@@ -46,7 +34,6 @@ class TestLengthPreservation:
     def test_flatten_preserves_total_value_count(
         self, occurrences: list[list[str]]
     ) -> None:
-        """Total count of values must match before and after flattening."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -84,7 +71,6 @@ class TestLengthPreservation:
     def test_flatten_with_zero_values_preserves_nonzero_count(
         self, occurrences: list[list[str]]
     ) -> None:
-        """Empty occurrences are filtered, preserving only actual values."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -115,8 +101,6 @@ class TestLengthPreservation:
 
 
 class TestOrderPreservation:
-    """Verify that flattening preserves value order."""
-
     @given(
         occurrences=st.lists(
             st.lists(values, min_size=1, max_size=10),
@@ -125,7 +109,6 @@ class TestOrderPreservation:
         )
     )
     def test_flatten_preserves_order(self, occurrences: list[list[str]]) -> None:
-        """Flattening must preserve the original order of values."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -162,7 +145,6 @@ class TestOrderPreservation:
     def test_flatten_maintains_sequence_with_numbers(
         self, occurrences: list[list[int]]
     ) -> None:
-        """Order preservation works with numeric string values."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -191,13 +173,10 @@ class TestOrderPreservation:
 
 
 class TestIdempotency:
-    """Verify single occurrence behaves identically with/without flattening."""
-
     @given(values=st.lists(values, min_size=1, max_size=20))
     def test_single_occurrence_same_with_or_without_flatten(
         self, values: list[str]
     ) -> None:
-        """Single occurrence with flatten=True unwraps the outer tuple."""
         # With flattening
         spec_flat = CommandSpec(
             name="cmd",
@@ -235,8 +214,6 @@ class TestIdempotency:
 
 
 class TestNoNestedTuples:
-    """Verify flattened results contain no nested tuple structures."""
-
     @given(
         occurrences=st.lists(
             st.lists(values, min_size=1, max_size=10),
@@ -247,7 +224,6 @@ class TestNoNestedTuples:
     def test_flattened_result_contains_no_tuples(
         self, occurrences: list[list[str]]
     ) -> None:
-        """All elements in flattened result should be strings, never tuples."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -285,7 +261,6 @@ class TestNoNestedTuples:
     def test_nested_result_contains_only_tuples_of_strings(
         self, occurrences: list[list[str]]
     ) -> None:
-        """Without flattening, result is tuple of tuples of strings."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -316,8 +291,6 @@ class TestNoNestedTuples:
 
 
 class TestApplicability:
-    """Verify flattening only applies to appropriate options."""
-
     @given(
         occurrences=st.lists(
             st.lists(values, min_size=1, max_size=5),
@@ -328,7 +301,6 @@ class TestApplicability:
     def test_non_collect_modes_never_flatten(
         self, occurrences: list[list[str]]
     ) -> None:
-        """Non-COLLECT modes should never produce flattened results."""
         with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
 
@@ -366,7 +338,6 @@ class TestApplicability:
     def test_single_value_arity_produces_flat_tuple_in_collect(
         self, occurrences: list[list[str]]
     ) -> None:
-        """Single-value arity with COLLECT naturally produces flat tuple."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -394,7 +365,6 @@ class TestApplicability:
 
     @given(flag_count=st.integers(min_value=1, max_value=20))
     def test_flags_with_collect_not_affected(self, flag_count: int) -> None:
-        """Flag options with COLLECT produce tuple of bools."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -420,8 +390,6 @@ class TestApplicability:
 
 
 class TestPrecedenceProperties:
-    """Verify configuration precedence works correctly."""
-
     @given(
         occurrences=st.lists(
             st.lists(values, min_size=1, max_size=5),
@@ -430,7 +398,6 @@ class TestPrecedenceProperties:
         )
     )
     def test_option_level_always_wins(self, occurrences: list[list[str]]) -> None:
-        """OptionSpec setting always takes precedence."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -475,10 +442,7 @@ class TestPrecedenceProperties:
 
 
 class TestEdgeCases:
-    """Test edge cases and boundary conditions."""
-
     def test_empty_occurrence_list(self) -> None:
-        """Option never specified produces empty result."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -501,7 +465,6 @@ class TestEdgeCases:
         value_count=st.integers(min_value=2, max_value=20),
     )
     def test_fixed_arity_enforces_count_per_occurrence(self, value_count: int) -> None:
-        """Fixed multi-value arity (e.g., exactly 2 or 3) works with flattening."""
         # Use arity (2, 2) - exactly 2 values per occurrence
         spec = CommandSpec(
             name="cmd",

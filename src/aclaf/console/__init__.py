@@ -1,5 +1,7 @@
 from ._base import DEFAULT_END, DEFAULT_SEP, BaseConsole
-from ._protocol import SupportsConsole
+from ._basic import BasicConsole
+from ._mock import MockConsole
+from ._protocol import Console, SupportsConsole
 from ._rich import RICH_AVAILABLE, RichConsole
 
 if RICH_AVAILABLE:
@@ -15,7 +17,9 @@ __all__ = [
     "RICH_AVAILABLE",
     "BaseConsole",
     "BasicConsole",
+    "Console",
     "DefaultConsole",
+    "MockConsole",
     "RichConsole",
     "SupportsConsole",
 ]

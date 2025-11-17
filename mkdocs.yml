@@ -179,6 +179,7 @@ nav:
       - guides/index.md
   - Explanation:
       - explanation/index.md
+      - Architecture: explanation/architecture.md
   - Reference:
       - reference/index.md
       - Parser:

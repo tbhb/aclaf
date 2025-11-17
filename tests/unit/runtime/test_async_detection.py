@@ -1,8 +1,3 @@
-"""Tests for async detection logic.
-
-This module tests FinalCommand.check_async() which determines whether
-a command or its subcommands are async and require async execution.
-"""
 
 import pytest
 
@@ -11,10 +6,8 @@ from aclaf.parser import ParseResult
 
 
 class TestAsyncDetection:
-    """Test async detection for commands."""
 
     def test_sync_command_returns_false(self):
-        """Sync command returns False from check_async."""
 
         def handler():
             pass
@@ -25,7 +18,6 @@ class TestAsyncDetection:
         assert cmd.check_async(parse_result) is False
 
     def test_async_command_returns_true(self):
-        """Async command returns True from check_async."""
 
         async def handler():
             pass
@@ -36,7 +28,6 @@ class TestAsyncDetection:
         assert cmd.check_async(parse_result) is True
 
     def test_sync_command_no_subcommand_returns_false(self):
-        """Sync command without subcommand invocation returns False."""
 
         def handler():
             pass
@@ -53,10 +44,8 @@ class TestAsyncDetection:
 
 
 class TestAsyncPropagationFromSubcommands:
-    """Test async detection propagates from subcommands."""
 
     def test_sync_parent_with_async_subcommand(self):
-        """Sync parent with async subcommand returns True."""
 
         def parent_handler():
             pass
@@ -82,7 +71,6 @@ class TestAsyncPropagationFromSubcommands:
         assert parent.check_async(parse_result) is True
 
     def test_sync_parent_with_sync_subcommand(self):
-        """Sync parent with sync subcommand returns False."""
 
         def parent_handler():
             pass
@@ -108,7 +96,6 @@ class TestAsyncPropagationFromSubcommands:
         assert parent.check_async(parse_result) is False
 
     def test_async_parent_returns_true_regardless_of_subcommand(self):
-        """Async parent returns True even if subcommand is sync."""
 
         async def parent_handler():
             pass
@@ -136,10 +123,8 @@ class TestAsyncPropagationFromSubcommands:
 
 
 class TestNestedAsyncPropagation:
-    """Test async detection through multi-level command chains."""
 
     def test_three_level_async_in_leaf(self):
-        """Async detection propagates through three-level chain."""
 
         def root_handler():
             pass
@@ -179,7 +164,6 @@ class TestNestedAsyncPropagation:
         assert root.check_async(parse_result) is True
 
     def test_three_level_all_sync(self):
-        """All-sync three-level chain returns False."""
 
         def root_handler():
             pass
@@ -220,10 +204,8 @@ class TestNestedAsyncPropagation:
 
 
 class TestAsyncDetectionErrorHandling:
-    """Test error handling in async detection."""
 
     def test_unknown_subcommand_raises_error(self):
-        """Unknown subcommand raises ValueError."""
 
         def handler():
             pass
@@ -241,7 +223,6 @@ class TestAsyncDetectionErrorHandling:
             _ = cmd.check_async(parse_result)
 
     def test_missing_subcommand_in_registry(self):
-        """Missing subcommand in registry raises ValueError."""
 
         def parent_handler():
             pass

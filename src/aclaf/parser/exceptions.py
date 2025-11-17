@@ -14,22 +14,6 @@ def _format_option_name(name: str) -> str:
 
 
 def _format_arity(arity: "Arity") -> str:
-    """Format arity as user-friendly text.
-
-    Args:
-        arity: The arity specification to format.
-
-    Returns:
-        A human-readable string describing the arity requirement.
-
-    Examples:
-        >>> _format_arity(Arity(min=2, max=2))
-        "2 value(s)"
-        >>> _format_arity(Arity(min=1, max=None))
-        "at least 1 value(s)"
-        >>> _format_arity(Arity(min=2, max=5))
-        "2-5 values"
-    """
     if arity.min == arity.max:
         return f"{arity.min} value(s)"
     if arity.max is None:
@@ -37,7 +21,7 @@ def _format_arity(arity: "Arity") -> str:
     return f"{arity.min}-{arity.max} values"
 
 
-class SpecValidationError(AclafError):
+class SpecificationError(AclafError):
     """Exception raised for validation errors in command specification.
 
     This exception is raised during specification construction or validation
@@ -56,24 +40,15 @@ class SpecValidationError(AclafError):
         - When specification validation rules are violated
 
     Note:
-        While SpecValidationError exists in the exception hierarchy, many
+        While SpecificationError exists in the exception hierarchy, many
         specification validation errors are currently raised as ValueError
         by the specification classes for compatibility with Python conventions.
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec
-        >>> try:
-        ...     # Duplicate option names will raise validation error
-        ...     spec = CommandSpec(
-        ...         name="myapp",
-        ...         options=[
-        ...             OptionSpec("verbose", long="verbose", short="v"),
-        ...             OptionSpec("version", long="verbose", short="V"),  # Duplicate
-        ...         ],
-        ...     )
-        ... except ValueError as e:
-        ...     print(f"Specification error: {e}")
     """
+
+    def __init__(self, message: str | None = None, detail: str | None = None) -> None:
+        if not message:
+            message = "An unspecified specification error occurred."
+        super().__init__(message, detail=detail)
 
 
 class ParserConfigurationError(AclafError):
@@ -90,16 +65,6 @@ class ParserConfigurationError(AclafError):
         - During [`ParserConfiguration`][aclaf.parser.ParserConfiguration]
           initialization with invalid values
         - When configuration validation rules are violated
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, Parser
-        >>> spec = CommandSpec(name="myapp")
-        >>> try:
-        ...     # Invalid minimum_abbreviation_length will raise error
-        ...     parser = Parser(spec, minimum_abbreviation_length=0)
-        ... except ParserConfigurationError as e:
-        ...     print(f"Configuration error: {e}")
-        Configuration error: minimum_abbreviation_length must be at least 1, got 0.
     """
 
 
@@ -123,19 +88,12 @@ class ParseError(AclafError):
         This exception is distinct from SpecValidationError, which is raised
         during specification construction for invalid command configurations.
         ParseError is raised during runtime parsing of user-provided arguments.
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> from aclaf.parser.exceptions import ParseError, UnknownOptionError
-        >>> spec = CommandSpec(name="myapp", options=[OptionSpec("verbose", short="v")])
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     result = parser.parse(["--unknown"])
-        ... except UnknownOptionError as e:
-        ...     print(f"Specific: {e}")
-        ... except ParseError as e:
-        ...     print(f"General: {e}")
     """
+
+    def __init__(self, message: str | None = None, detail: str | None = None) -> None:
+        if not message:
+            message = "An unspecified parse error occurred."
+        super().__init__(message, detail=detail)
 
 
 class OptionError(ParseError):
@@ -153,16 +111,6 @@ class OptionError(ParseError):
     Note:
         OptionError is never raised directly. Only its subclasses are raised
         during option parsing.
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> from aclaf.parser.exceptions import OptionError
-        >>> spec = CommandSpec(name="myapp", options=[OptionSpec("output", short="o")])
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     result = parser.parse(["-o"])  # Missing value
-        ... except OptionError as e:
-        ...     print(f"Option error for {e.name!r}: {e}")
     """
 
     def __init__(self, name: str, option_spec: "OptionSpec") -> None:
@@ -188,25 +136,6 @@ class UnknownOptionError(ParseError):
         - User provides an option not defined in the specification
         - Option name doesn't match when abbreviations are disabled
         - No valid abbreviation match when abbreviations are enabled
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> from aclaf.parser.exceptions import UnknownOptionError
-        >>> spec = CommandSpec(
-        ...     name="myapp",
-        ...     options=[
-        ...         OptionSpec("verbose", short="v"),
-        ...         OptionSpec("output", short="o"),
-        ...     ],
-        ... )
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     result = parser.parse(["--unknown"])
-        ... except UnknownOptionError as e:
-        ...     print(f"Unknown option: {e.name}")
-        ...     print(f"Valid options: {', '.join(e.possible_names)}")
-        Unknown option: unknown
-        Valid options: v, verbose, o, output
     """
 
     def __init__(self, name: str, possible_names: tuple[str, ...]) -> None:
@@ -216,7 +145,7 @@ class UnknownOptionError(ParseError):
         super().__init__(message)
 
 
-class OptionCannotBeSpecifiedMultipleTimesError(OptionError):
+class DuplicateOptionError(OptionError):
     """Exception raised when option specified multiple times but not allowed.
 
     This enforces the accumulation mode setting for options.
@@ -233,26 +162,6 @@ class OptionCannotBeSpecifiedMultipleTimesError(OptionError):
         - User specifies the same option multiple times
         - Multiple specifications include aliases and different forms
           (short/long)
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> from aclaf.parser.types import AccumulationMode
-        >>> spec = CommandSpec(
-        ...     name="myapp",
-        ...     options=[
-        ...         OptionSpec(
-        ...             "output",
-        ...             long="output",
-        ...             short="o",
-        ...             accumulation_mode=AccumulationMode.ERROR,
-        ...         )
-        ...     ],
-        ... )
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     parser.parse(["--output", "file1.txt", "-o", "file2.txt"])
-        ... except OptionCannotBeSpecifiedMultipleTimesError as e:
-        ...     print(f"Option {e.name!r} was already specified")
     """
 
     def __init__(self, name: str, option_spec: "OptionSpec") -> None:
@@ -281,23 +190,6 @@ class OptionDoesNotAcceptValueError(OptionError):
         - Option has arity `(0, 0)` but is not a flag
         - User provides a value using `=` syntax
         - The option is designed to have no associated value
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> from aclaf.parser.types import Arity
-        >>> spec = CommandSpec(
-        ...     name="myapp",
-        ...     options=[
-        ...         OptionSpec(
-        ...             "enable", long="enable", arity=Arity(min=0, max=0)
-        ...         )  # Zero arity, non-flag
-        ...     ],
-        ... )
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     parser.parse(["--enable=value"])
-        ... except OptionDoesNotAcceptValueError as e:
-        ...     print(f"Error: {e}")
     """
 
     def __init__(self, name: str, option_spec: "OptionSpec") -> None:
@@ -324,21 +216,6 @@ class FlagWithValueError(OptionError):
         - Option is defined as a flag (`is_flag=True`)
         - User provides value using `--flag=value` or `-f value` syntax
         - Parser has `allow_equals_for_flags=False` (the default)
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> spec = CommandSpec(
-        ...     name="myapp",
-        ...     options=[OptionSpec("verbose", long="verbose", is_flag=True)],
-        ... )
-        >>> parser = Parser(spec)  # allow_equals_for_flags defaults to False
-        >>> try:
-        ...     parser.parse(["--verbose=true"])
-        ... except FlagWithValueError as e:
-        ...     print(f"Error: {e}")
-        >>> # With allow_equals_for_flags=True, this would work:
-        >>> parser_with_flag_values = Parser(spec, allow_equals_for_flags=True)
-        >>> result = parser_with_flag_values.parse(["--verbose=true"])
     """
 
     def __init__(self, name: str, option_spec: "OptionSpec") -> None:
@@ -372,20 +249,6 @@ class InvalidFlagValueError(ParseError):
         - User provides a value using `=` syntax
         - Value is not in `truthy_flag_values` or `falsey_flag_values`
         - Empty string is provided as value
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> spec = CommandSpec(
-        ...     name="myapp",
-        ...     options=[OptionSpec("verbose", long="verbose", is_flag=True)],
-        ... )
-        >>> # Default truthy: {"true", "1", "yes", "on"}
-        >>> # Default falsey: {"false", "0", "no", "off"}
-        >>> parser = Parser(spec, allow_equals_for_flags=True)
-        >>> try:
-        ...     parser.parse(["--verbose=maybe"])
-        ... except InvalidFlagValueError as e:
-        ...     print(f"Invalid value: {e.value}")
     """
 
     def __init__(
@@ -424,23 +287,6 @@ class InsufficientOptionValuesError(OptionError):
         - Not enough values are available after the option
         - Values are consumed by other options or subcommands
         - Inline value provided but minimum arity `> 1`
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> from aclaf.parser.types import Arity
-        >>> spec = CommandSpec(
-        ...     name="myapp",
-        ...     options=[
-        ...         OptionSpec(
-        ...             "dimensions", long="dimensions", arity=Arity(min=2, max=3)
-        ...         )  # Requires 2-3 values
-        ...     ],
-        ... )
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     parser.parse(["--dimensions", "800"])  # Only one value
-        ... except InsufficientOptionValuesError as e:
-        ...     print(f"Expected: {e.option_spec.arity.min} values")
     """
 
     def __init__(self, name: str, option_spec: "OptionSpec") -> None:
@@ -471,21 +317,6 @@ class AmbiguousOptionError(ParseError):
         - Abbreviation matching is enabled (`allow_abbreviated_options=True`)
         - User provides a prefix that matches multiple option names
         - No single unique match can be determined
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> spec = CommandSpec(
-        ...     name="myapp",
-        ...     options=[
-        ...         OptionSpec("verbose", long="verbose"),
-        ...         OptionSpec("version", long="version"),
-        ...     ],
-        ... )
-        >>> parser = Parser(spec, allow_abbreviated_options=True)
-        >>> try:
-        ...     parser.parse(["--ver"])  # Matches both "verbose" and "version"
-        ... except AmbiguousOptionError as e:
-        ...     print(f"Did you mean one of: {', '.join(e.candidates)}")
     """
 
     def __init__(self, name: str, candidates: list[str]) -> None:
@@ -513,21 +344,6 @@ class AmbiguousSubcommandError(ParseError):
         - Abbreviation matching is enabled (`allow_abbreviated_subcommands=True`)
         - User provides a prefix that matches multiple subcommand names
         - No single unique match can be determined
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, Parser
-        >>> spec = CommandSpec(
-        ...     name="myapp",
-        ...     subcommands=[
-        ...         CommandSpec(name="install"),
-        ...         CommandSpec(name="initialize"),
-        ...     ],
-        ... )
-        >>> parser = Parser(spec, allow_abbreviated_subcommands=True)
-        >>> try:
-        ...     parser.parse(["in"])  # Matches both "install" and "initialize"
-        ... except AmbiguousSubcommandError as e:
-        ...     print(f"Please be more specific: {', '.join(e.candidates)}")
     """
 
     def __init__(self, name: str, candidates: list[str]) -> None:
@@ -549,22 +365,6 @@ class UnknownSubcommandError(ParseError):
         - User provides a subcommand not defined in the specification
         - Subcommand name doesn't match any defined subcommands or aliases
         - No valid abbreviation match when abbreviations are enabled
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, Parser
-        >>> spec = CommandSpec(
-        ...     name="git",
-        ...     subcommands=[
-        ...         CommandSpec(name="commit"),
-        ...         CommandSpec(name="push"),
-        ...         CommandSpec(name="pull"),
-        ...     ],
-        ... )
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     parser.parse(["merge"])
-        ... except UnknownSubcommandError as e:
-        ...     print(f"Available subcommands: {', '.join(e.possible_names)}")
     """
 
     def __init__(self, name: str, possible_names: tuple[str, ...]) -> None:
@@ -593,22 +393,6 @@ class InsufficientPositionalArgumentsError(ParseError):
         - Not enough arguments remain after parsing options
         - Arguments are consumed by other positional arguments
         - User provides fewer arguments than required
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, PositionalSpec, Parser
-        >>> from aclaf.parser.types import Arity
-        >>> spec = CommandSpec(
-        ...     name="copy",
-        ...     positionals=[
-        ...         PositionalSpec("source", arity=Arity(min=1, max=None)),
-        ...         PositionalSpec("destination", arity=Arity(min=1, max=1)),
-        ...     ],
-        ... )
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     parser.parse(["file1.txt"])  # No destination
-        ... except InsufficientPositionalArgumentsError as e:
-        ...     print(f"Expected: {e.expected_min}, Received: {e.received}")
     """
 
     def __init__(self, spec_name: str, expected_min: int, received: int) -> None:
@@ -639,19 +423,6 @@ class UnexpectedPositionalArgumentError(ParseError):
         the parser creates an implicit positional spec named `args` with
         unbounded arity `(0, -1)`, so this exception is typically only raised
         when the specification explicitly defines an empty positionals set.
-
-    Examples:
-        >>> from aclaf.parser import CommandSpec, OptionSpec, Parser
-        >>> spec = CommandSpec(
-        ...     name="status",
-        ...     options=[OptionSpec("verbose", short="v", is_flag=True)],
-        ...     # No positionals defined
-        ... )
-        >>> parser = Parser(spec)
-        >>> try:
-        ...     parser.parse(["--verbose", "extra_arg"])
-        ... except UnexpectedPositionalArgumentError as e:
-        ...     print(f"Unexpected argument: {e.argument}")
     """
 
     def __init__(self, argument: str, command_name: str) -> None:

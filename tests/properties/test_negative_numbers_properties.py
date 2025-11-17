@@ -1,9 +1,3 @@
-"""Property-based tests for negative number handling using Hypothesis.
-
-This module tests the negative number parsing feature with property-based tests
-to discover edge cases and verify invariants across a wide range of inputs.
-"""
-
 import dataclasses
 import re
 import warnings
@@ -24,14 +18,12 @@ if TYPE_CHECKING:
 
 @st.composite
 def negative_integers(draw: "DrawFn") -> str:
-    """Strategy for negative integers."""
     value = draw(st.integers(min_value=-1_000_000, max_value=-1))
     return str(value)
 
 
 @st.composite
 def negative_floats(draw: "DrawFn") -> str:
-    """Strategy for negative floats."""
     value = draw(
         st.floats(
             min_value=-1_000_000.0,
@@ -45,7 +37,6 @@ def negative_floats(draw: "DrawFn") -> str:
 
 @st.composite
 def negative_scientific(draw: "DrawFn") -> str:
-    """Strategy for negative numbers in scientific notation."""
     # Generate mantissa (e.g., -1.5, -2.0, -6.022)
     mantissa = draw(
         st.floats(
@@ -64,11 +55,8 @@ def negative_scientific(draw: "DrawFn") -> str:
 
 
 class TestNegativeNumberProperties:
-    """Property-based tests for negative number handling."""
-
     @given(negative_integers())
     def test_negative_integers_parsed_as_positionals(self, negative_int: str):
-        """Property: All negative integers parse as positional values."""
         spec = CommandSpec(
             name="cmd",
             positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -80,7 +68,6 @@ class TestNegativeNumberProperties:
 
     @given(negative_floats())
     def test_negative_floats_parsed_as_positionals(self, negative_float: str):
-        """Property: All negative floats parse as positional values."""
         spec = CommandSpec(
             name="cmd",
             positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -92,7 +79,6 @@ class TestNegativeNumberProperties:
 
     @given(negative_scientific())
     def test_negative_scientific_parsed_as_positionals(self, negative_sci: str):
-        """Property: All scientific notation negatives parse as positional values."""
         spec = CommandSpec(
             name="cmd",
             positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -104,7 +90,6 @@ class TestNegativeNumberProperties:
 
     @given(st.lists(negative_integers(), min_size=1, max_size=10))
     def test_multiple_negative_numbers_preserve_order(self, numbers: list[str]):
-        """Property: Multiple negative numbers preserve input order."""
         spec = CommandSpec(
             name="cmd",
             positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
@@ -116,7 +101,6 @@ class TestNegativeNumberProperties:
 
     @given(negative_integers())
     def test_negative_number_consumed_as_option_value(self, negative_int: str):
-        """Property: Negative numbers are consumed as option values."""
         spec = CommandSpec(
             name="cmd",
             options={"value": OptionSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -128,7 +112,6 @@ class TestNegativeNumberProperties:
 
     @given(st.text(min_size=1, max_size=20, alphabet=st.characters()))
     def test_custom_pattern_validation(self, pattern_suffix: str):
-        """Property: Invalid regex patterns are rejected."""
         spec = CommandSpec(name="cmd")
 
         # Invalid patterns should raise ParserConfigurationError during
@@ -149,11 +132,8 @@ class TestNegativeNumberProperties:
 
 
 class TestNegativeNumberInvariants:
-    """Test invariants that must hold for negative number parsing."""
-
     @given(negative_integers())
     def test_parse_result_structure(self, negative_int: str):
-        """Invariant: ParseResult has correct structure and values."""
         spec = CommandSpec(
             name="cmd",
             positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -174,7 +154,6 @@ class TestNegativeNumberInvariants:
 
     @given(negative_integers())
     def test_parse_is_deterministic(self, negative_int: str):
-        """Invariant: Parsing the same input produces the same result."""
         spec = CommandSpec(
             name="cmd",
             positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -189,7 +168,6 @@ class TestNegativeNumberInvariants:
 
     @given(st.lists(negative_integers(), min_size=0, max_size=10))
     def test_parse_does_not_modify_input(self, numbers: list[str]):
-        """Invariant: Parsing does not modify input list."""
         spec = CommandSpec(
             name="cmd",
             positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
@@ -203,14 +181,11 @@ class TestNegativeNumberInvariants:
 
 
 class TestNegativeNumberEdgeProperties:
-    """Property-based tests for edge cases."""
-
     @given(
         st.integers(min_value=-1_000_000, max_value=-1),
         st.integers(min_value=1, max_value=1_000_000),
     )
     def test_mixed_positive_negative_preserve_order(self, neg: int, pos: int):
-        """Property: Mixed positive and negative numbers preserve order."""
         spec = CommandSpec(
             name="cmd",
             positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
@@ -223,7 +198,6 @@ class TestNegativeNumberEdgeProperties:
 
     @given(negative_integers())
     def test_negative_number_after_delimiter_is_literal(self, negative_int: str):
-        """Property: Negative numbers after -- are treated as literals."""
         spec = CommandSpec(name="cmd")
         parser = Parser(spec, allow_negative_numbers=True)
 
@@ -232,7 +206,6 @@ class TestNegativeNumberEdgeProperties:
 
     @given(negative_integers())
     def test_disabled_flag_treats_as_option(self, negative_int: str):
-        """Property: When disabled, negative numbers are treated as options."""
         spec = CommandSpec(name="cmd")
         parser = Parser(spec, allow_negative_numbers=False)
 
@@ -245,7 +218,6 @@ class TestNegativeNumberEdgeProperties:
         st.integers(min_value=2, max_value=10),  # Avoid string/tuple confusion
     )
     def test_option_with_multiple_negative_values(self, neg: int, count: int):
-        """Property: Options can consume multiple negative number values."""
         spec = CommandSpec(
             name="cmd",
             options={"values": OptionSpec("values", arity=Arity(count, count))},
@@ -262,11 +234,8 @@ class TestNegativeNumberEdgeProperties:
 
 
 class TestNegativeNumberPatternProperties:
-    """Property-based tests for custom pattern behavior."""
-
     @given(negative_integers())
     def test_default_pattern_matches_integers(self, negative_int: str):
-        """Property: Default pattern matches all negative integers."""
         assert re.match(DEFAULT_NEGATIVE_NUMBER_PATTERN, negative_int)
 
     @given(
@@ -278,21 +247,18 @@ class TestNegativeNumberPatternProperties:
         )
     )
     def test_default_pattern_matches_floats(self, negative_float: float):
-        """Property: Default pattern matches all negative floats."""
         # Python's str() may produce scientific notation, which is also valid
         float_str = str(negative_float)
         assert re.match(DEFAULT_NEGATIVE_NUMBER_PATTERN, float_str)
 
     @given(st.text(min_size=1, max_size=10).filter(lambda x: not x.startswith("-")))
     def test_default_pattern_rejects_non_negative(self, text: str):
-        """Property: Default pattern rejects text not starting with minus."""
         # Should NOT match
         assert not re.match(DEFAULT_NEGATIVE_NUMBER_PATTERN, text)
 
 
 @st.composite
 def negative_complex_numbers(draw: "DrawFn") -> str:
-    """Strategy for negative complex numbers."""
     # Generate real part (negative)
     real = draw(
         st.floats(
@@ -319,7 +285,6 @@ def negative_complex_numbers(draw: "DrawFn") -> str:
 
 @st.composite
 def negative_pure_imaginary(draw: "DrawFn") -> str:
-    """Strategy for negative pure imaginary numbers (-4j, -2.5j)."""
     # Generate imaginary coefficient (negative)
     imag = draw(
         st.floats(
@@ -335,11 +300,8 @@ def negative_pure_imaginary(draw: "DrawFn") -> str:
 
 
 class TestComplexNumberProperties:
-    """Property-based tests for complex numbers."""
-
     @given(negative_complex_numbers())
     def test_negative_complex_parsed_as_positionals(self, complex_num: str):
-        """Property: All negative complex numbers parse as positional values."""
         spec = CommandSpec(
             name="cmd",
             positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -351,7 +313,6 @@ class TestComplexNumberProperties:
 
     @given(negative_complex_numbers())
     def test_complex_consumed_as_option_value(self, complex_num: str):
-        """Property: Complex numbers consumed as option values."""
         spec = CommandSpec(
             name="cmd",
             options={"value": OptionSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -363,7 +324,6 @@ class TestComplexNumberProperties:
 
     @given(negative_pure_imaginary())
     def test_pure_imaginary_parsed_as_positionals(self, imag_num: str):
-        """Property: Pure imaginary numbers parse as positional values."""
         spec = CommandSpec(
             name="cmd",
             positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},
@@ -375,7 +335,6 @@ class TestComplexNumberProperties:
 
     @given(st.lists(negative_complex_numbers(), min_size=1, max_size=5))
     def test_multiple_complex_preserve_order(self, numbers: list[str]):
-        """Property: Multiple complex numbers preserve input order."""
         spec = CommandSpec(
             name="cmd",
             positionals={"values": PositionalSpec("values", arity=ZERO_OR_MORE_ARITY)},
@@ -387,7 +346,6 @@ class TestComplexNumberProperties:
 
     @given(negative_complex_numbers())
     def test_complex_parse_is_deterministic(self, complex_num: str):
-        """Property: Parsing same complex number produces same result."""
         spec = CommandSpec(
             name="cmd",
             positionals={"value": PositionalSpec("value", arity=EXACTLY_ONE_ARITY)},

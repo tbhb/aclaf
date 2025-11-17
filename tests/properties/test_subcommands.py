@@ -1,9 +1,3 @@
-"""Property-based tests for subcommand hierarchy and interactions.
-
-This module tests invariants related to nested subcommands, option inheritance,
-conflict detection, and subcommand resolution across various configurations.
-"""
-
 import string
 
 import pytest
@@ -17,16 +11,6 @@ from .strategies import option_lists
 
 @st.composite
 def subcommand_names(draw: st.DrawFn, min_size: int = 2, max_size: int = 12) -> str:
-    """Generate valid subcommand names.
-
-    Args:
-        draw: Hypothesis draw function.
-        min_size: Minimum name length.
-        max_size: Maximum name length.
-
-    Returns:
-        A valid subcommand name (lowercase alphanumeric with dashes).
-    """
     # Subcommand names use lowercase ASCII letters, digits, and dashes
     alphabet = st.sampled_from(string.ascii_lowercase + string.digits + "-")
     return draw(
@@ -51,16 +35,6 @@ def subcommand_lists(
     min_size: int = 1,
     max_size: int = 8,
 ) -> list[str]:
-    """Generate lists of unique subcommand names.
-
-    Args:
-        draw: Hypothesis draw function.
-        min_size: Minimum number of subcommands.
-        max_size: Maximum number of subcommands.
-
-    Returns:
-        A list of unique subcommand names.
-    """
     return draw(
         st.lists(
             subcommand_names(),
@@ -72,8 +46,6 @@ def subcommand_lists(
 
 
 class TestNestedSubcommandProperties:
-    """Test properties of nested subcommand hierarchies."""
-
     @given(
         depth=st.integers(min_value=1, max_value=5),
         subcommand_name=subcommand_names(),
@@ -83,11 +55,6 @@ class TestNestedSubcommandProperties:
         depth: int,
         subcommand_name: str,
     ):
-        """Property: nested subcommands can be parsed at various depths.
-
-        The parser should correctly handle subcommand nesting from depth 1
-        (single subcommand) to depth 5 (deeply nested hierarchies).
-        """
         # Build nested command structure from bottom up
         current_spec = CommandSpec(name=f"{subcommand_name}-{depth}")
 
@@ -125,11 +92,6 @@ class TestNestedSubcommandProperties:
         self,
         names: list[str],
     ):
-        """Property: sibling subcommands don't interfere with each other.
-
-        Each subcommand at the same level should be independently resolvable
-        without affecting the others.
-        """
         spec = CommandSpec(
             name="root",
             subcommands={
@@ -158,11 +120,6 @@ class TestNestedSubcommandProperties:
         parent_name: str,
         child_names: list[str],
     ):
-        """Property: parent subcommand's children are isolated.
-
-        A parent subcommand's children should only be accessible through
-        that parent, not at the root level or through other parents.
-        """
         # Filter out any child names that match the parent name
         # to ensure children are truly isolated
         child_names = [child for child in child_names if child != parent_name]
@@ -198,8 +155,6 @@ class TestNestedSubcommandProperties:
 
 
 class TestSubcommandOptionInheritanceProperties:
-    """Test properties of option inheritance in subcommand hierarchies."""
-
     @given(
         parent_options=option_lists(min_size=1, max_size=4),
         child_options=option_lists(min_size=1, max_size=4),
@@ -209,11 +164,6 @@ class TestSubcommandOptionInheritanceProperties:
         parent_options: list[str],
         child_options: list[str],
     ):
-        """Property: parent and child options are isolated from each other.
-
-        Options defined on a parent command should not be accessible to
-        child subcommands, and vice versa (unless explicitly inherited).
-        """
         # Sanitize option names to be valid
         parent_options = [
             opt.lower().replace("-", "p").replace("_", "x") for opt in parent_options
@@ -275,11 +225,6 @@ class TestSubcommandOptionInheritanceProperties:
         parent_value: str,
         child_value: str,
     ):
-        """Property: same-named options in parent and child are independent.
-
-        When parent and child both define an option with the same name,
-        they should be treated as separate options with independent values.
-        """
         spec = CommandSpec(
             name="parent",
             options={shared_option: OptionSpec(shared_option)},
@@ -309,8 +254,6 @@ class TestSubcommandOptionInheritanceProperties:
 
 
 class TestSubcommandConflictProperties:
-    """Test properties related to subcommand name conflicts and ambiguity."""
-
     @given(
         common_prefix=st.text(
             alphabet=st.sampled_from("abcdefghijklmnopqrstuvwxyz"),
@@ -334,11 +277,6 @@ class TestSubcommandConflictProperties:
         suffix1: str,
         suffix2: str,
     ):
-        """Property: abbreviation ambiguity is detected correctly.
-
-        When multiple subcommands share a common prefix, using just
-        the prefix with abbreviation enabled should raise an ambiguity error.
-        """
         if suffix1 == suffix2:
             return  # Need different suffixes
 
@@ -370,11 +308,6 @@ class TestSubcommandConflictProperties:
         self,
         names: list[str],
     ):
-        """Property: exact subcommand name matches always succeed.
-
-        Even with abbreviation enabled, using the exact full name of a
-        subcommand should always work without ambiguity.
-        """
         spec = CommandSpec(
             name="root",
             subcommands={name: CommandSpec(name=name) for name in names},
@@ -405,11 +338,6 @@ class TestSubcommandConflictProperties:
         subcommand_name: str,
         option_name: str,
     ):
-        """Property: subcommand and option names can safely overlap.
-
-        Having an option with the same name as a subcommand should not
-        cause conflicts, as context determines which is being referenced.
-        """
         if subcommand_name == option_name:
             return  # Skip if names are identical to avoid confusion
 
@@ -440,8 +368,6 @@ class TestSubcommandConflictProperties:
 
 
 class TestSubcommandResolutionInvariants:
-    """Test fundamental invariants of subcommand resolution."""
-
     @given(
         names=subcommand_lists(min_size=1, max_size=10),
     )
@@ -449,11 +375,6 @@ class TestSubcommandResolutionInvariants:
         self,
         names: list[str],
     ):
-        """Property: parsing the same arguments produces identical results.
-
-        Multiple parses of the same argument list should yield identical
-        results, ensuring parser state doesn't leak between invocations.
-        """
         spec = CommandSpec(
             name="root",
             subcommands={name: CommandSpec(name=name) for name in names},
@@ -486,11 +407,6 @@ class TestSubcommandResolutionInvariants:
         self,
         depth: int,
     ):
-        """Property: nested subcommands preserve parent command data.
-
-        When parsing nested subcommands, each level should preserve the
-        options and positionals from its parent level correctly.
-        """
         # Build a nested structure where each level has an option
         current_spec = CommandSpec(
             name=f"level-{depth}",
@@ -539,11 +455,6 @@ class TestSubcommandResolutionInvariants:
         self,
         subcommand_count: int,
     ):
-        """Property: resolution performs efficiently with many subcommands.
-
-        Even with a large number of subcommands, resolution should remain
-        fast due to dictionary lookups and caching.
-        """
         # Generate unique subcommand names
         names = [f"subcmd-{i:03d}" for i in range(subcommand_count)]
 

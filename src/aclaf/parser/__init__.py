@@ -4,27 +4,32 @@ from ._base import (
     ParsedPositional,
     ParseResult,
 )
-from ._command import CommandSpec
+from ._command import CommandSpec, CommandSpecInput
 from ._configuration import (
     DEFAULT_PARSER_CONFIGURATION,
     ParserConfiguration,
     ParserConfigurationInput,
 )
-from ._parameters import OptionSpec, PositionalSpec
+from ._parameters import (
+    OptionSpec,
+    OptionSpecInput,
+    PositionalSpec,
+    PositionalSpecInput,
+)
 from ._parser import Parser
 from .exceptions import (
     AmbiguousOptionError,
     AmbiguousSubcommandError,
+    DuplicateOptionError,
     FlagWithValueError,
     InsufficientOptionValuesError,
     InsufficientPositionalArgumentsError,
     InvalidFlagValueError,
-    OptionCannotBeSpecifiedMultipleTimesError,
     OptionDoesNotAcceptValueError,
     OptionError,
     ParseError,
     ParserConfigurationError,
-    SpecValidationError,
+    SpecificationError,
     UnexpectedPositionalArgumentError,
     UnknownOptionError,
     UnknownSubcommandError,
@@ -55,14 +60,16 @@ __all__ = [
     "Arity",
     "BaseParser",
     "CommandSpec",
+    "CommandSpecInput",
+    "DuplicateOptionError",
     "FlagWithValueError",
     "InsufficientOptionValuesError",
     "InsufficientPositionalArgumentsError",
     "InvalidFlagValueError",
-    "OptionCannotBeSpecifiedMultipleTimesError",
     "OptionDoesNotAcceptValueError",
     "OptionError",
     "OptionSpec",
+    "OptionSpecInput",
     "ParseError",
     "ParseResult",
     "ParsedOption",
@@ -75,7 +82,8 @@ __all__ = [
     "ParserConfigurationError",
     "ParserConfigurationInput",
     "PositionalSpec",
-    "SpecValidationError",
+    "PositionalSpecInput",
+    "SpecificationError",
     "UnexpectedPositionalArgumentError",
     "UnknownOptionError",
     "UnknownSubcommandError",

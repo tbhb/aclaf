@@ -5,6 +5,7 @@ from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
     TypeAlias,
+    TypedDict,
     cast,
 )
 
@@ -12,9 +13,9 @@ from aclaf.console import DefaultConsole
 from aclaf.logging import Logger, NullLogger
 
 if TYPE_CHECKING:
-    from ._types import ParameterValueType
-    from .console import BaseConsole
+    from .console import Console
     from .parser import ParseResult
+    from .types import ParameterValueType
 
 
 class ParameterSource(Enum):
@@ -25,6 +26,22 @@ class ParameterSource(Enum):
 
 
 ParameterSourceMapping: TypeAlias = Mapping[str, ParameterSource]
+
+
+class ContextInput(TypedDict, total=False):
+    command: str
+    command_path: tuple[str, ...]
+    parse_result: "ParseResult"
+    errors: Mapping[str, tuple[str, ...]]
+    parameters: Mapping[str, "ParameterValueType"]
+    parameter_sources: ParameterSourceMapping
+    parent: "Context"
+    is_async: bool
+    console: "Console"
+    console_param: str
+    logger: "Logger"
+    context_param: str
+    logger_param: str
 
 
 @dataclass(slots=True, frozen=True)
@@ -43,8 +60,11 @@ class Context:
     )
     parent: "Context | None" = None
     is_async: bool = False
-    console: "BaseConsole" = field(default_factory=DefaultConsole)
+    console: "Console" = field(default_factory=DefaultConsole)
+    console_param: str | None = None
     logger: "Logger" = field(default_factory=NullLogger)
+    context_param: str | None = None
+    logger_param: str | None = None
 
     def __post_init__(self) -> None:
         for attr in ("errors", "parameters", "parameter_sources"):

@@ -1,9 +1,3 @@
-"""Comprehensive tests for subcommand functionality.
-
-This module tests subcommand parsing including basic resolution, nested subcommands,
-subcommand options and positionals, aliases, abbreviations, and complex scenarios.
-"""
-
 import pytest
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
@@ -21,10 +15,7 @@ from aclaf.parser.types import (
 
 
 class TestBasicSubcommands:
-    """Test basic subcommand resolution and parsing."""
-
     def test_resolves_exact_match(self):
-        """Basic subcommand resolution works."""
         args = ["foo"]
         spec = CommandSpec(
             name="cmd",
@@ -38,7 +29,6 @@ class TestBasicSubcommands:
         assert result.subcommand.command == "foo"
 
     def test_recognizes_multiple_subcommands(self):
-        """Multiple subcommands are recognized."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -62,7 +52,6 @@ class TestBasicSubcommands:
         assert result3.subcommand.command == "status"
 
     def test_none_when_not_provided(self):
-        """Parser works when no subcommand is provided."""
         spec = CommandSpec(
             name="cmd",
             subcommands={"start": CommandSpec(name="start")},
@@ -73,7 +62,6 @@ class TestBasicSubcommands:
         assert result.subcommand is None
 
     def test_unknown_subcommand_raises_error(self):
-        """Unknown subcommands raise UnknownSubcommandError."""
         spec = CommandSpec(
             name="cmd",
             subcommands={"start": CommandSpec(name="start")},
@@ -84,7 +72,6 @@ class TestBasicSubcommands:
             _ = parser.parse(["unknown"])
 
     def test_result_includes_name_and_alias_info(self):
-        """Result includes subcommand name and alias info."""
         spec = CommandSpec(
             name="cmd",
             subcommands={"start": CommandSpec(name="start")},
@@ -98,10 +85,7 @@ class TestBasicSubcommands:
 
 
 class TestSubcommandOptions:
-    """Test subcommand-specific options."""
-
     def test_option_with_multiple_arity_and_subcommand(self):
-        """Options with multiple values work with subcommands."""
         args = ["--opt", "val1", "val2", "sub"]
         spec = CommandSpec(
             name="cmd",
@@ -119,7 +103,6 @@ class TestSubcommandOptions:
         assert result.subcommand.command == "sub"
 
     def test_options_per_subcommand(self):
-        """Each subcommand can have its own options."""
         spec = CommandSpec(
             name="cmd",
             options={"opt": OptionSpec("opt")},
@@ -139,7 +122,6 @@ class TestSubcommandOptions:
         assert result.subcommand.options["opt"].value == "bar"
 
     def test_subcommand_only_option(self):
-        """Subcommand can have options not in parent."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -161,7 +143,6 @@ class TestSubcommandOptions:
         assert result.subcommand.options["threads"].value == "4"
 
     def test_parent_options_before_subcommand(self):
-        """Parent options can appear before subcommand."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -189,7 +170,6 @@ class TestSubcommandOptions:
         assert result.subcommand.options["force"].value is True
 
     def test_subcommand_option_isolation(self):
-        """Subcommand options don't leak to parent."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -217,10 +197,7 @@ class TestSubcommandOptions:
 
 
 class TestSubcommandPositionals:
-    """Test subcommand-specific positional arguments."""
-
     def test_subcommand_with_positionals(self):
-        """Subcommands can have positional arguments."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -243,7 +220,6 @@ class TestSubcommandPositionals:
         )
 
     def test_parent_and_subcommand_positionals(self):
-        """Both parent and subcommand can have positionals."""
         spec = CommandSpec(
             name="cmd",
             positionals={"config": PositionalSpec("config", arity=EXACTLY_ONE_ARITY)},
@@ -268,7 +244,6 @@ class TestSubcommandPositionals:
         )
 
     def test_subcommand_optional_positionals(self):
-        """Subcommands can have optional positionals."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -292,10 +267,7 @@ class TestSubcommandPositionals:
 
 
 class TestNestedSubcommands:
-    """Test nested subcommand hierarchies."""
-
     def test_two_level_nesting(self):
-        """Two levels of subcommands work."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -318,7 +290,6 @@ class TestNestedSubcommands:
         assert result.subcommand.subcommand.command == "add"
 
     def test_three_level_nesting(self):
-        """Three levels of subcommands work."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -347,7 +318,6 @@ class TestNestedSubcommands:
         assert result.subcommand.subcommand.subcommand.command == "level3"
 
     def test_nested_subcommand_with_options(self):
-        """Nested subcommands can have options at each level."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -390,7 +360,6 @@ class TestNestedSubcommands:
         assert result.subcommand.subcommand.options["fetch"].value is True
 
     def test_nested_subcommand_with_positionals(self):
-        """Nested subcommands can have positionals at each level."""
         spec = CommandSpec(
             name="cmd",
             positionals={"repo": PositionalSpec("repo", arity=EXACTLY_ONE_ARITY)},
@@ -431,10 +400,7 @@ class TestNestedSubcommands:
 
 
 class TestSubcommandAliases:
-    """Test subcommand alias functionality."""
-
     def test_single_alias(self):
-        """Single alias works."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -449,7 +415,6 @@ class TestSubcommandAliases:
         assert result.subcommand.alias == "rm"
 
     def test_multiple_aliases(self):
-        """Multiple aliases work."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -468,7 +433,6 @@ class TestSubcommandAliases:
             assert result.subcommand.alias == alias
 
     def test_alias_vs_primary_name(self):
-        """Both alias and primary name work."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -488,7 +452,6 @@ class TestSubcommandAliases:
         assert result2.subcommand.alias == "rm"
 
     def test_nested_subcommand_aliases(self):
-        """Aliases work for nested subcommands."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -513,12 +476,34 @@ class TestSubcommandAliases:
         assert result.subcommand.subcommand is not None
         assert result.subcommand.subcommand.alias == "a"
 
+    def test_alias_disabled(self):
+        spec = CommandSpec(
+            name="cmd",
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
+        )
+        parser = Parser(spec, allow_aliases=False)
+
+        with pytest.raises(UnknownSubcommandError):
+            _ = parser.parse(["rm"])
+
+    def test_primary_name_always_works(self):
+        spec = CommandSpec(
+            name="cmd",
+            subcommands={
+                "remove": CommandSpec(name="remove", aliases=frozenset({"rm"}))
+            },
+        )
+        parser = Parser(spec, allow_aliases=False)
+
+        result = parser.parse(["remove"])
+        assert result.subcommand is not None
+        assert result.subcommand.command == "remove"
+
 
 class TestSubcommandAbbreviations:
-    """Test subcommand abbreviation functionality."""
-
     def test_unambiguous_abbreviation(self):
-        """Unambiguous abbreviations work."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -537,7 +522,6 @@ class TestSubcommandAbbreviations:
         assert result2.subcommand.command == "remove"
 
     def test_ambiguous_abbreviation(self):
-        """Ambiguous abbreviations raise error."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -555,7 +539,6 @@ class TestSubcommandAbbreviations:
         assert "sta" in message
 
     def test_abbreviation_with_aliases(self):
-        """Abbreviations work with aliases."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -582,7 +565,6 @@ class TestSubcommandAbbreviations:
         assert result2.subcommand.command == "remove"
 
     def test_nested_subcommand_abbreviations(self):
-        """Abbreviations work at all nesting levels."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -604,12 +586,29 @@ class TestSubcommandAbbreviations:
         assert result.subcommand.subcommand is not None
         assert result.subcommand.subcommand.command == "add"
 
+    def test_minimum_abbreviation_length(self):
+        spec = CommandSpec(
+            name="cmd",
+            subcommands={"start": CommandSpec(name="start")},
+        )
+        parser = Parser(
+            spec,
+            allow_abbreviated_subcommands=True,
+            minimum_abbreviation_length=3,
+        )
+
+        # 3 chars works
+        result = parser.parse(["sta"])
+        assert result.subcommand is not None
+        assert result.subcommand.command == "start"
+
+        # 2 chars fails
+        with pytest.raises(UnknownSubcommandError):
+            _ = parser.parse(["st"])
+
 
 class TestSubcommandCaseInsensitive:
-    """Test case-insensitive subcommand matching."""
-
     def test_case_insensitive_matching(self):
-        """Case-insensitive matching works."""
         spec = CommandSpec(
             name="cmd",
             subcommands={"start": CommandSpec(name="start")},
@@ -621,7 +620,6 @@ class TestSubcommandCaseInsensitive:
         assert result.subcommand.command == "start"
 
     def test_case_insensitive_with_aliases(self):
-        """Case-insensitive matching works with aliases."""
         spec = CommandSpec(
             name="cmd",
             subcommands={
@@ -642,12 +640,20 @@ class TestSubcommandCaseInsensitive:
         assert result2.subcommand is not None
         assert result2.subcommand.command == "remove"
 
+    def test_case_insensitive_mixed_case(self):
+        spec = CommandSpec(
+            name="cmd",
+            subcommands={"start": CommandSpec(name="start")},
+        )
+        parser = Parser(spec, case_insensitive_subcommands=True)
+
+        result = parser.parse(["StArT"])
+        assert result.subcommand is not None
+        assert result.subcommand.command == "start"
+
 
 class TestComplexSubcommandScenarios:
-    """Test complex combinations of subcommand features."""
-
     def test_git_like_cli(self):
-        """Git-like command structure works."""
         spec = CommandSpec(
             name="git",
             options={
@@ -716,7 +722,6 @@ class TestComplexSubcommandScenarios:
         )
 
     def test_docker_like_cli(self):
-        """Docker-like command structure works."""
         spec = CommandSpec(
             name="docker",
             subcommands={

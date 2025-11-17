@@ -7,6 +7,25 @@ if TYPE_CHECKING:
 class AclafError(Exception):
     """Base exception for all Aclaf-related errors."""
 
+    def __init__(
+        self,
+        message: str | None = None,
+        detail: str | None = None,
+        suggestions: list[str] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.detail: str | None = detail
+        self.suggestions: list[str] | None = suggestions
+
+
+class RegistrationError(AclafError):
+    """Base exception for errors during command or parameter registration."""
+
+    def __init__(self, message: str | None = None, detail: str | None = None) -> None:
+        if not message:
+            message = "An unspecified registration error occurred."
+        super().__init__(message, detail=detail)
+
 
 class CommandFunctionAlreadyDefinedError(AclafError):
     """Raised when attempting to create more than one root command in an application."""
@@ -54,3 +73,21 @@ class ValidationError(AclafError):
     def __init__(self, errors: dict[str, dict[str, tuple[str, ...]]]) -> None:
         super().__init__("Validation failed")
         self.errors: dict[str, dict[str, tuple[str, ...]]] = errors
+
+
+class ExecutionError(AclafError):
+    """Raised when an error occurs during command execution."""
+
+    def __init__(self, message: str, detail: str | None = None) -> None:
+        if not message:
+            message = "An unspecified execution error occurred."
+        super().__init__(message, detail=detail)
+
+
+class ResponseError(AclafError):
+    """Raised when an error occurs while sending a response."""
+
+    def __init__(self, message: str | None = None, detail: str | None = None) -> None:
+        if not message:
+            message = "An unspecified response error occurred."
+        super().__init__(message, detail=detail)

@@ -1,10 +1,3 @@
-"""Property-based tests for the parser using Hypothesis.
-
-This module contains property-based tests that verify mathematical and logical
-invariants in the parser implementation. These tests use Hypothesis to generate
-random inputs and verify that certain properties always hold.
-"""
-
 import pytest
 from hypothesis import example, given, strategies as st
 
@@ -14,9 +7,9 @@ from aclaf.parser._parameters import (
 )
 from aclaf.parser.exceptions import (
     AmbiguousOptionError,
+    DuplicateOptionError,
     FlagWithValueError,
     InsufficientOptionValuesError,
-    OptionCannotBeSpecifiedMultipleTimesError,
     UnknownOptionError,
 )
 from aclaf.parser.types import AccumulationMode, Arity
@@ -25,8 +18,6 @@ from .strategies import option_lists, option_value_pairs
 
 
 class TestAccumulationModeProperties:
-    """Test that accumulation modes satisfy their defining properties."""
-
     @example(values=[""])  # Empty string
     @example(values=["a", "b", "c"])  # Simple case
     @given(
@@ -37,12 +28,6 @@ class TestAccumulationModeProperties:
         ),
     )
     def test_collect_mode_preserves_all_values_in_order(self, values: list[str]):
-        """Property: COLLECT mode preserves all occurrences in order.
-
-        For any list of values (not starting with -), parsing with COLLECT
-        accumulation mode should result in a tuple containing all values in
-        the same order.
-        """
         # Build args: --opt val1 --opt val2 --opt val3 ...
         args: list[str] = []
         for value in values:
@@ -69,11 +54,6 @@ class TestAccumulationModeProperties:
         ),  # Limit to 100 to avoid excessive argument lists
     )
     def test_count_mode_equals_number_of_occurrences(self, count: int):
-        """Property: COUNT mode result equals number of flag occurrences.
-
-        For any non-negative integer n, parsing n occurrences of a flag
-        with COUNT mode should result in the value n.
-        """
         args = ["--flag"] * count
         spec = CommandSpec(
             name="cmd",
@@ -102,12 +82,6 @@ class TestAccumulationModeProperties:
         ),
     )
     def test_first_wins_mode_keeps_first_value(self, values: list[str]):
-        """Property: FIRST_WINS mode result equals the first occurrence.
-
-        For any non-empty list of values (not starting with -), parsing with
-        FIRST_WINS accumulation mode should result in the value from the first
-        occurrence only.
-        """
         args: list[str] = []
         for value in values:
             args.extend(["--opt", value])
@@ -132,12 +106,6 @@ class TestAccumulationModeProperties:
         ),
     )
     def test_last_wins_mode_keeps_last_value(self, values: list[str]):
-        """Property: LAST_WINS mode result equals the last occurrence.
-
-        For any non-empty list of values (not starting with -), parsing with
-        LAST_WINS accumulation mode should result in the value from the last
-        occurrence only.
-        """
         args: list[str] = []
         for value in values:
             args.extend(["--opt", value])
@@ -159,12 +127,6 @@ class TestAccumulationModeProperties:
         value2=st.text(min_size=1).filter(lambda x: not x.startswith("-")),
     )
     def test_error_mode_raises_on_multiple_occurrences(self, value1: str, value2: str):
-        """Property: ERROR mode raises exception on multiple occurrences.
-
-        For any two values (not starting with -), parsing with ERROR
-        accumulation mode should raise OptionCannotBeSpecifiedMultipleTimesError
-        when the option appears more than once.
-        """
         args = ["--opt", value1, "--opt", value2]
         spec = CommandSpec(
             name="cmd",
@@ -175,19 +137,13 @@ class TestAccumulationModeProperties:
         parser = Parser(spec)
 
         # Property: should raise error on second occurrence
-        with pytest.raises(OptionCannotBeSpecifiedMultipleTimesError):
+        with pytest.raises(DuplicateOptionError):
             _ = parser.parse(args)
 
     @given(
         value=st.text(min_size=1).filter(lambda x: not x.startswith("-")),
     )
     def test_error_mode_accepts_single_occurrence(self, value: str):
-        """Property: ERROR mode accepts single occurrence.
-
-        For any value (not starting with -), parsing a single occurrence
-        with ERROR accumulation mode should succeed and return a tuple
-        containing that value.
-        """
         args = ["--opt", value]
         spec = CommandSpec(
             name="cmd",
@@ -209,11 +165,6 @@ class TestAccumulationModeProperties:
         ),
     )
     def test_first_wins_equals_head_of_collect(self, values: list[str]):
-        """Property: FIRST_WINS result equals first element of COLLECT result.
-
-        For any list of values, parsing with FIRST_WINS should give the
-        same result as taking the first element of COLLECT mode's tuple.
-        """
         args: list[str] = []
         for value in values:
             args.extend(["--opt", value])
@@ -248,11 +199,6 @@ class TestAccumulationModeProperties:
         ),
     )
     def test_last_wins_equals_tail_of_collect(self, values: list[str]):
-        """Property: LAST_WINS result equals last element of COLLECT result.
-
-        For any list of values, parsing with LAST_WINS should give the
-        same result as taking the last element of COLLECT mode's tuple.
-        """
         args: list[str] = []
         for value in values:
             args.extend(["--opt", value])
@@ -283,11 +229,6 @@ class TestAccumulationModeProperties:
         count=st.integers(min_value=1, max_value=50),
     )
     def test_count_equals_length_of_collect(self, count: int):
-        """Property: COUNT mode result equals length of COLLECT result.
-
-        For any number of flag occurrences, COUNT mode should return the
-        same value as the length of COLLECT mode's tuple.
-        """
         args = ["--flag"] * count
 
         spec_count = CommandSpec(
@@ -320,11 +261,6 @@ class TestAccumulationModeProperties:
         empty_count=st.integers(min_value=1, max_value=5),
     )
     def test_accumulation_with_empty_string_values(self, empty_count: int):
-        """Property: Empty strings are valid values and should be preserved.
-
-        Empty strings ("") are valid option values and should be treated
-        the same as non-empty strings by all accumulation modes.
-        """
         args: list[str] = []
         for _ in range(empty_count):
             args.extend(["--opt", ""])
@@ -342,11 +278,6 @@ class TestAccumulationModeProperties:
         assert result.options["opt"].value == ("",) * empty_count
 
     def test_empty_string_not_confused_with_missing_value(self):
-        """Edge case: Empty string is a value, not a missing value.
-
-        When an option receives an empty string as its value, that's
-        different from the option having no value at all.
-        """
         args_with_empty = ["--opt", ""]
         args_without_value = ["--opt"]
 
@@ -377,11 +308,6 @@ class TestAccumulationModeProperties:
         ),
     )
     def test_accumulation_with_unicode_values(self, values: list[str]):
-        """Property: Unicode values are handled correctly.
-
-        Options should correctly handle values containing Unicode characters,
-        emoji, and other non-ASCII text.
-        """
         args: list[str] = []
         for value in values:
             args.extend(["--opt", value])
@@ -402,11 +328,6 @@ class TestAccumulationModeProperties:
         whitespace=st.text(alphabet=" \t\n\r", min_size=1, max_size=10),
     )
     def test_accumulation_with_whitespace_values(self, whitespace: str):
-        """Property: Whitespace-only values are preserved.
-
-        Values that contain only whitespace characters should be treated
-        as valid values, not as empty or missing.
-        """
         args = ["--opt", whitespace]
 
         spec = CommandSpec(
@@ -427,11 +348,6 @@ class TestAccumulationModeProperties:
         value=st.text(min_size=1, max_size=50).filter(lambda x: not x.startswith("-")),
     )
     def test_special_characters_roundtrip(self, value: str):
-        """Property: All valid string values survive parsing unchanged.
-
-        Any non-option-like string should be parseable as a value and
-        returned unchanged.
-        """
         args = ["--opt", value]
 
         spec = CommandSpec(
@@ -446,8 +362,6 @@ class TestAccumulationModeProperties:
 
 
 class TestArityValidationProperties:
-    """Test that arity validation maintains its invariants."""
-
     @example(min_arity=0, max_arity=0)  # Zero-arity (flag-like)
     @example(min_arity=1, max_arity=1)  # Exactly one
     @example(min_arity=0, max_arity=None)  # Unbounded
@@ -461,11 +375,6 @@ class TestArityValidationProperties:
     def test_validate_arity_accepts_valid_arities(
         self, min_arity: int, max_arity: int | None
     ):
-        """Property: Valid arity values are accepted when min <= max.
-
-        For any non-negative min and max where min <= max (or max is None),
-        _validate_arity should accept the values and return a valid Arity.
-        """
         # Skip invalid cases where max < min
         if max_arity is not None and min_arity > max_arity:
             return
@@ -476,11 +385,6 @@ class TestArityValidationProperties:
         min_arity=st.integers(max_value=-1),
     )
     def test_validate_arity_rejects_negative_min(self, min_arity: int):
-        """Property: Negative minimum arity is rejected.
-
-        For any negative integer, _validate_arity should raise ValueError
-        when used as the minimum arity.
-        """
         with pytest.raises(ValueError, match="Minimum arity must not be negative"):
             _ = _validate_arity(Arity(min_arity, None))
 
@@ -488,11 +392,6 @@ class TestArityValidationProperties:
         max_arity=st.integers(max_value=-1),
     )
     def test_validate_arity_rejects_negative_max(self, max_arity: int):
-        """Property: Negative maximum arity is rejected.
-
-        For any negative integer, _validate_arity should raise ValueError
-        when used as the maximum arity.
-        """
         with pytest.raises(ValueError, match="Maximum arity must not be negative"):
             _ = _validate_arity(Arity(0, max_arity))
 
@@ -503,11 +402,6 @@ class TestArityValidationProperties:
     def test_validate_arity_rejects_min_greater_than_max(
         self, min_arity: int, max_arity: int
     ):
-        """Property: Minimum greater than maximum is rejected.
-
-        For any min > max (both non-negative), _validate_arity should
-        raise ValueError.
-        """
         # Ensure min > max
         if min_arity <= max_arity:
             min_arity = max_arity + 1
@@ -519,8 +413,6 @@ class TestArityValidationProperties:
 
 
 class TestParserIdempotenceProperties:
-    """Test that parser operations are idempotent where expected."""
-
     @given(
         # Generate random but valid-looking command-line arguments
         args=st.lists(
@@ -536,11 +428,6 @@ class TestParserIdempotenceProperties:
         ),
     )
     def test_multiple_parses_are_isolated(self, args: list[str]):
-        """Property: Multiple parse calls don't affect each other.
-
-        Parsing the same arguments twice with the same parser should
-        produce identical results, proving parser state isolation.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -569,15 +456,8 @@ class TestParserIdempotenceProperties:
 
 
 class TestBoundaryValues:
-    """Explicit boundary value tests to complement property tests.
-
-    While property tests verify invariants across random inputs,
-    these tests explicitly check important boundary values.
-    """
-
     @pytest.mark.parametrize("count", [0, 1, 10, 100, 1000])
     def test_count_mode_at_specific_values(self, count: int):
-        """Test COUNT mode at specific boundary values."""
         args = ["--flag"] * count
         spec = CommandSpec(
             name="cmd",
@@ -617,8 +497,6 @@ class TestBoundaryValues:
         num_values: int,
         should_pass: bool,  # noqa: FBT001
     ):
-        """Test arity validation at specific boundary combinations."""
-
         values = [f"val{i}" for i in range(num_values)]
         args = ["--opt", *values]
 
@@ -649,8 +527,6 @@ class TestBoundaryValues:
 
 
 class TestOptionValueConsumptionProperties:
-    """Test that option value consumption respects arity boundaries."""
-
     @example(min_arity=0, max_arity=1, num_values=0)  # Regression: empty value list
     @example(min_arity=1, max_arity=1, num_values=1)  # Exact match
     @example(min_arity=0, max_arity=0, num_values=0)  # Zero-arity
@@ -667,12 +543,6 @@ class TestOptionValueConsumptionProperties:
     def test_option_consumes_within_arity_bounds(
         self, min_arity: int, max_arity: int | None, num_values: int
     ):
-        """Property: Options consume values within arity bounds.
-
-        For any arity specification and available values, the parser
-        should consume at least min and at most max values (when sufficient
-        values are available), or raise InsufficientOptionValuesError.
-        """
         # Skip invalid arity combinations
         if max_arity is not None and min_arity > max_arity:
             return
@@ -733,12 +603,6 @@ class TestOptionValueConsumptionProperties:
     def test_option_stops_at_next_option(
         self, values_for_opt1: list[str], values_for_opt2: list[str]
     ):
-        """Property: Option value consumption stops at next option.
-
-        When parsing options with unbounded arity, the parser should stop
-        consuming values when it encounters another option, even if the
-        current option could accept more values.
-        """
         # Build args: --opt1 val1 val2 ... --opt2 val1 val2 ...
         args = ["--opt1", *values_for_opt1, "--opt2", *values_for_opt2]
 
@@ -766,8 +630,6 @@ class TestOptionValueConsumptionProperties:
 
 
 class TestConfigurationInteractionProperties:
-    """Test that parser configuration settings interact correctly."""
-
     @given(
         case_insensitive=st.booleans(),
         convert_underscores=st.booleans(),
@@ -779,11 +641,6 @@ class TestConfigurationInteractionProperties:
         convert_underscores: bool,  # noqa: FBT001
         options: list[str],
     ):
-        """Property: case sensitivity applies consistently to all options.
-
-        When case_insensitive_options is enabled, all option name matching
-        should ignore case. When disabled, matching should be case-sensitive.
-        """
         # Use only lowercase names for test, replace underscores/digits
         # Parser regex requires names to match specific patterns
         options = [opt.lower().replace("_", "x").replace("-", "y") for opt in options]
@@ -825,11 +682,6 @@ class TestConfigurationInteractionProperties:
         abbreviation_enabled: bool,  # noqa: FBT001
         min_length: int,
     ):
-        """Property: abbreviation settings are respected consistently.
-
-        When allow_abbreviated_options is enabled, options can be matched
-        by prefix. When disabled, only exact matches should work.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -869,11 +721,6 @@ class TestConfigurationInteractionProperties:
         self,
         strict_mode: bool,  # noqa: FBT001
     ):
-        """Property: strict mode controls option/positional ordering.
-
-        In strict POSIX mode, options must come before positionals.
-        In GNU mode, options can appear anywhere.
-        """
         spec = CommandSpec(
             name="cmd",
             options={"flag": OptionSpec("flag", is_flag=True)},
@@ -903,11 +750,6 @@ class TestConfigurationInteractionProperties:
         self,
         allow_negative_numbers: bool,  # noqa: FBT001
     ):
-        """Property: negative number parsing respects configuration.
-
-        When allow_negative_numbers is enabled, numeric strings starting
-        with - should be treated as values, not options.
-        """
         spec = CommandSpec(
             name="cmd",
             options={"opt": OptionSpec("opt")},
@@ -952,12 +794,6 @@ class TestConfigurationInteractionProperties:
         truthy_values: tuple[str, ...] | None,
         falsey_values: tuple[str, ...] | None,
     ):
-        """Property: flag value configuration is respected.
-
-        When allow_equals_for_flags is enabled, flags can accept explicit
-        true/false values. The configured truthy/falsey values should be
-        recognized.
-        """
         spec = CommandSpec(
             name="cmd",
             options={"flag": OptionSpec("flag", is_flag=True)},
@@ -991,11 +827,6 @@ class TestConfigurationInteractionProperties:
         flatten_values: bool,  # noqa: FBT001
         occurrence_count: int,
     ):
-        """Property: value flattening works correctly with COLLECT mode.
-
-        The flatten_values setting should affect how values are collected
-        in COLLECT mode when multiple values per occurrence are present.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -1034,11 +865,6 @@ class TestConfigurationInteractionProperties:
         convert_underscores: bool,  # noqa: FBT001
         use_underscores: bool,  # noqa: FBT001
     ):
-        """Property: underscore conversion applies consistently.
-
-        When convert_underscores_to_dashes is enabled, options with
-        underscores should match specifications with dashes, and vice versa.
-        """
         # Define option with dashes
         spec = CommandSpec(
             name="cmd",
@@ -1070,11 +896,6 @@ class TestConfigurationInteractionProperties:
         self,
         abbreviation_length: int,
     ):
-        """Property: minimum abbreviation length is enforced.
-
-        When abbreviation is enabled, options must match the minimum
-        abbreviation length requirement.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -1113,11 +934,6 @@ class TestConfigurationInteractionProperties:
         self,
         pairs: list[tuple[str, str]],
     ):
-        """Property: multiple configuration settings work together.
-
-        When multiple configuration options are enabled, they should
-        not interfere with each other.
-        """
         # Use all lowercase, simple names - replace special chars
         pairs = [
             (opt.lower().replace("_", "x").replace("-", "y"), val) for opt, val in pairs

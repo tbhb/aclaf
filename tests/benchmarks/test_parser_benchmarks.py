@@ -1,78 +1,3 @@
-"""Performance benchmarks for the ACLAF parser using pytest-benchmark.
-
-This module contains comprehensive performance tests to measure the parser's
-efficiency across various scenarios including option parsing, positional
-grouping, accumulation modes, subcommand resolution, and error handling.
-
-Basic Usage:
-    # Run all benchmarks with default options
-    uv run pytest tests/benchmarks/parser_benchmarks.py --benchmark-only
-
-    # Run specific benchmark
-    uv run pytest tests/benchmarks/parser_benchmarks.py::test_benchmark_simple_parsing
-
-    # Run benchmarks with verbose output
-    uv run pytest tests/benchmarks/parser_benchmarks.py --benchmark-only -v
-
-Regression Testing:
-    # Save baseline for future comparisons
-    uv run pytest tests/benchmarks/parser_benchmarks.py --benchmark-save=baseline
-
-    # Compare against baseline
-    uv run pytest tests/benchmarks/parser_benchmarks.py --benchmark-compare=baseline
-
-    # Fail if performance regresses by more than 10%
-    uv run pytest tests/benchmarks/ \\
-        --benchmark-compare=baseline \\
-        --benchmark-compare-fail=mean:10%
-
-Advanced Options:
-    # View detailed statistics columns
-    uv run pytest tests/benchmarks/ \\
-        --benchmark-columns=min,max,mean,stddev,median,rounds,iterations
-
-    # Export results to JSON for CI/CD
-    uv run pytest tests/benchmarks/ \\
-        --benchmark-json=benchmark_results.json
-
-    # Run only benchmarks faster than 1ms
-    uv run pytest tests/benchmarks/ \\
-        --benchmark-max-time=0.001
-
-    # Generate histogram of results
-    uv run pytest tests/benchmarks/ \\
-        --benchmark-histogram=histogram
-
-Requirements:
-    - pytest-benchmark>=4.0.0
-    - Python 3.12+
-    - All benchmarks run using `uv run pytest`
-
-Output Format:
-    pytest-benchmark provides:
-    - Formatted table with min/max/mean/stddev/median/IQR/rounds/iterations
-    - Automatic warmup and calibration
-    - Statistical analysis with outlier detection
-    - Comparison with previous runs
-    - Multiple output formats (terminal, JSON, histogram)
-
-Performance Characteristics:
-    The benchmarks test various performance aspects:
-    - Simple parsing: Baseline performance (~20-30μs)
-    - Positional grouping: Scaling behavior (O(n log n) observed vs O(n²) expected)
-    - Option accumulation: Linear scaling with tuple operations
-    - Subcommand resolution: Nested command overhead
-    - Error paths: Validation error cost
-
-Note:
-    Results vary by system performance, load, and Python optimizations.
-    Use --benchmark-save and --benchmark-compare for reliable regression detection.
-    Run benchmarks multiple times to establish consistent baselines.
-
-See Also:
-    - pytest-benchmark docs: https://pytest-benchmark.readthedocs.io/
-    - CI/CD integration: .github/workflows/benchmarks.yml (if exists)
-"""
 
 # pyright: reportUnknownParameterType=false, reportUnknownVariableType=false
 # pyright: reportUnknownMemberType=false, reportUnknownArgumentType=false
@@ -86,7 +11,6 @@ from aclaf.parser.types import ZERO_OR_MORE_ARITY, AccumulationMode, Arity
 
 
 def test_benchmark_simple_parsing(benchmark):
-    """Baseline: simple command with a few options."""
     # Setup code runs once, not included in timing
     spec = CommandSpec(
         "test",
@@ -106,7 +30,6 @@ def test_benchmark_simple_parsing(benchmark):
 
 
 def test_benchmark_combined_short_options(benchmark):
-    """Test combined short option parsing (-xvfza)."""
     spec = CommandSpec(
         "test",
         options={
@@ -130,7 +53,6 @@ def test_benchmark_combined_short_options(benchmark):
 
 
 def test_benchmark_many_options(benchmark):
-    """Test parsing many separate options."""
     option_names = [
         "alpha",
         "beta",
@@ -167,7 +89,6 @@ def test_benchmark_many_options(benchmark):
 
 
 def test_benchmark_empty_args(benchmark):
-    """Test parsing empty argument list."""
     spec = CommandSpec("test")
     parser = Parser(spec)
 
@@ -180,7 +101,6 @@ def test_benchmark_empty_args(benchmark):
 
 
 def test_benchmark_option_value_consumption(benchmark):
-    """Test option value consumption from arguments."""
     spec = CommandSpec(
         "test",
         options={
@@ -204,7 +124,6 @@ def test_benchmark_option_value_consumption(benchmark):
 
 
 def test_benchmark_positional_grouping_few(benchmark):
-    """Test positional grouping with few specs (baseline)."""
     spec = CommandSpec(
         "test",
         positionals={
@@ -225,7 +144,6 @@ def test_benchmark_positional_grouping_few(benchmark):
 
 
 def test_benchmark_positional_grouping_many(benchmark):
-    """Test positional grouping with many specs (O(s²) test)."""
     # Create 10 positional specs
     pos_names = [
         "first",
@@ -255,7 +173,6 @@ def test_benchmark_positional_grouping_many(benchmark):
 
 
 def test_benchmark_positional_grouping_very_many(benchmark):
-    """Test positional grouping with very many specs."""
     # Create 20 positional specs
     pos_names = [
         "arg-a",
@@ -295,7 +212,6 @@ def test_benchmark_positional_grouping_very_many(benchmark):
 
 
 def test_benchmark_option_accumulation_collect_10(benchmark):
-    """Test option accumulation with COLLECT mode (tuple concatenation)."""
     spec = CommandSpec(
         "test",
         options={
@@ -331,7 +247,6 @@ def test_benchmark_option_accumulation_collect_10(benchmark):
 
 
 def test_benchmark_option_accumulation_collect_50(benchmark):
-    """Test option accumulation with many occurrences."""
     spec = CommandSpec(
         "test",
         options={
@@ -358,7 +273,6 @@ def test_benchmark_option_accumulation_collect_50(benchmark):
 
 
 def test_benchmark_option_accumulation_count(benchmark):
-    """Test option accumulation with COUNT mode."""
     spec = CommandSpec(
         "test",
         options={
@@ -380,7 +294,6 @@ def test_benchmark_option_accumulation_count(benchmark):
 
 
 def test_benchmark_subcommand_resolution(benchmark):
-    """Test subcommand resolution."""
     subcommand = CommandSpec(
         "sub",
         options={
@@ -398,7 +311,6 @@ def test_benchmark_subcommand_resolution(benchmark):
 
 
 def test_benchmark_deep_subcommand_nesting(benchmark):
-    """Test deep subcommand nesting."""
     # Create nested subcommands: cmd > sub1 > sub2 > sub3
     sub3 = CommandSpec(
         "sub3",
@@ -419,7 +331,6 @@ def test_benchmark_deep_subcommand_nesting(benchmark):
 
 
 def test_benchmark_complex_realistic(benchmark):
-    """Realistic complex command with mixed features."""
     spec = CommandSpec(
         "git",
         options={
@@ -460,7 +371,6 @@ def test_benchmark_complex_realistic(benchmark):
 
 
 def test_benchmark_abbreviation_matching_success(benchmark):
-    """Test successful abbreviated option matching."""
     spec = CommandSpec(
         "test",
         options={
@@ -480,7 +390,6 @@ def test_benchmark_abbreviation_matching_success(benchmark):
 
 
 def test_benchmark_abbreviation_matching_baseline(benchmark):
-    """Baseline: Full option names without abbreviation matching."""
     spec = CommandSpec(
         "test",
         options={
@@ -500,7 +409,6 @@ def test_benchmark_abbreviation_matching_baseline(benchmark):
 
 
 def test_benchmark_validation_error_missing_required(benchmark):
-    """Test performance when required option is missing."""
     spec = CommandSpec(
         "test",
         options={
@@ -519,7 +427,6 @@ def test_benchmark_validation_error_missing_required(benchmark):
 
 
 def test_benchmark_validation_error_unknown_option(benchmark):
-    """Test performance when unknown option is provided."""
     spec = CommandSpec("test", options={})
     parser = Parser(spec)
 
@@ -533,7 +440,6 @@ def test_benchmark_validation_error_unknown_option(benchmark):
 
 
 def test_benchmark_realistic_mixed_all_features(benchmark):
-    """Test realistic mix of all parser features."""
     spec = CommandSpec(
         "app",
         options={
@@ -584,7 +490,6 @@ def test_benchmark_realistic_mixed_all_features(benchmark):
 
 
 def test_benchmark_only_double_dash(benchmark):
-    """Test parsing with only double-dash separator."""
     spec = CommandSpec(
         "test",
         positionals={
@@ -600,7 +505,6 @@ def test_benchmark_only_double_dash(benchmark):
 
 
 def test_benchmark_negative_numbers_as_positionals(benchmark):
-    """Benchmark negative number parsing as positional arguments."""
     spec = CommandSpec(
         "test",
         positionals={
@@ -616,7 +520,6 @@ def test_benchmark_negative_numbers_as_positionals(benchmark):
 
 
 def test_benchmark_negative_numbers_as_option_values(benchmark):
-    """Benchmark negative numbers consumed as option values."""
     spec = CommandSpec(
         "test",
         options={
@@ -638,7 +541,6 @@ def test_benchmark_negative_numbers_as_option_values(benchmark):
 
 
 def test_benchmark_mixed_positive_negative_numbers(benchmark):
-    """Benchmark parser with mix of positive and negative numbers."""
     spec = CommandSpec(
         "test",
         positionals={

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import (
+    Annotated,
     Any,
     TypeAlias,
     TypeVar,
@@ -15,20 +16,22 @@ from typing import (
 
 from annotated_types import BaseMetadata
 from typing_inspection import typing_objects
-from typing_inspection.introspection import AnnotationSource, inspect_annotation
+from typing_inspection.introspection import AnnotationSource
 
 from aclaf.logging import Logger, NullLogger
 
-from ._types import ConvertibleProtocol
+from ._internal._inspect import inspect_annotation
 from .exceptions import ConversionError
 from .parser import ParsedParameterValue
+from .types import ConvertibleProtocol
 
 T = TypeVar("T")
 K = TypeVar("K")
 V = TypeVar("V")
 
-# Non-generic converter function type - accepts ParsedParameterValue and optional metadata,
-# returns Any since we can't statically know the return type at the registry level
+# Non-generic converter function type - accepts ParsedParameterValue and
+# optional metadata, returns Any since we can't statically know the return
+# type at the registry level
 ConverterFunctionType: TypeAlias = Callable[
     [ParsedParameterValue, tuple[BaseMetadata, ...] | None], Any
 ]
@@ -88,7 +91,7 @@ class ConverterRegistry:
         """
         del self._converters[type_]
 
-    def get_converter(
+    def get_converter(  # noqa: PLR0911
         self, type_: type[T]
     ) -> Callable[[ParsedParameterValue, tuple[BaseMetadata, ...] | None], T] | None:
         """Retrieve a converter function for the given type.
@@ -107,6 +110,29 @@ class ConverterRegistry:
             The return type annotation expresses the expected contract but cannot
             be statically verified due to the dynamic nature of the registry.
         """
+        # Handle Annotated types specially - extract base type and preserve metadata
+        origin = get_origin(type_)
+        if origin is Annotated:
+            args = get_args(type_)
+            if args:
+                base_type = args[0]
+                metadata_from_type = args[1:]  # Rest is metadata
+
+                base_converter = self.get_converter(base_type)
+                if base_converter is None:
+                    return None
+
+                # Create wrapper that merges Annotated metadata with passed metadata
+                def annotated_converter(
+                    value: ParsedParameterValue,
+                    extra_metadata: tuple[BaseMetadata, ...] | None = None,
+                ) -> T:
+                    # Merge Annotated metadata with passed metadata
+                    combined_metadata = metadata_from_type + (extra_metadata or ())
+                    return cast("T", base_converter(value, combined_metadata))
+
+                return annotated_converter
+
         if type_ in self._converters:
             # We know this converter should return T, but it's stored as returning Any
             return cast(
@@ -180,14 +206,21 @@ class ConverterRegistry:
         args = get_args(type_)
         unwrapped_args: list[Any] = []
         for arg in args:
-            if typing_objects.is_typealiastype(arg):
+            # Try to unwrap ALL args using inspect_annotation, not just TypeAliasType
+            # This handles both PEP 613 (TypeAlias) and PEP 695 (type X = Y) aliases
+            try:
                 ann = inspect_annotation(
                     arg,
                     annotation_source=AnnotationSource.BARE,
                     unpack_type_aliases="eager",
                 )
+                # Use the unwrapped type
                 unwrapped_args.append(ann.type)
-            else:
+            except Exception:  # noqa: BLE001, PERF203
+                # Catch broad exceptions: inspect_annotation can raise various types
+                # depending on the input type. Performance impact is negligible since
+                # loops are short and exceptions rare in normal usage.
+                # If inspection fails, use arg as-is
                 unwrapped_args.append(arg)
         return self._make_generic_converter(origin, tuple(unwrapped_args))
 
@@ -202,7 +235,7 @@ class ConverterRegistry:
 
         def convert_enum(
             value: ParsedParameterValue,
-            metadata: tuple[BaseMetadata, ...] | None = None,
+            _metadata: tuple[BaseMetadata, ...] | None = None,
         ) -> T:
             if isinstance(value, type_):  # Already the enum type
                 return value
@@ -286,7 +319,6 @@ class ConverterRegistry:
         """Create a converter for a generic type based on its origin and arguments.
 
         Args:
-            type_: The full generic type
             origin: The origin type (e.g., list for list[int])
             args: Type arguments (e.g., (int,) for list[int])
 
@@ -304,14 +336,12 @@ class ConverterRegistry:
             if element_converter is None:
                 return None
 
-            return cast(
-                "Callable[[ParsedParameterValue, tuple[BaseMetadata, ...] | None], T]",
-                self._make_sequence_converter(origin, element_converter),
-            )
+            return self._make_sequence_converter(origin, element_converter)
 
         # Handle mapping types
         if origin in (dict, Mapping):
-            if len(args) != 2:
+            # Mappings require exactly 2 type arguments (key type and value type)
+            if len(args) != 2:  # noqa: PLR2004
                 return None
 
             key_type, value_type = args
@@ -321,10 +351,7 @@ class ConverterRegistry:
             if key_converter is None or value_converter is None:
                 return None
 
-            return cast(
-                "Callable[[ParsedParameterValue, tuple[BaseMetadata, ...] | None], T]",
-                self._make_mapping_converter(key_converter, value_converter),
-            )
+            return self._make_mapping_converter(key_converter, value_converter)
 
         return None
 
@@ -350,6 +377,8 @@ class ConverterRegistry:
                 return None
 
             # Try to convert to each non-None member type
+            # At this point, value is guaranteed to be ParsedParameterValue (not None)
+            # because we handle the None case above
             for member_type in args:
                 if member_type is type(None):
                     continue
@@ -359,16 +388,24 @@ class ConverterRegistry:
                     continue
 
                 try:
+                    # Type assertion: value is not None (checked at line 376-377)
+                    assert value is not None  # noqa: S101
                     return converter(value, metadata)
                 except (ConversionError, ValueError, TypeError) as e:
                     errors.append(e)
 
             # If we get here, conversion to all types failed
             type_names = [t.__name__ for t in args if t is not type(None)]
+            # Type assertion: value is not None (checked at line 376-377)
+            assert value is not None  # noqa: S101
+            # Use object as target_type (no specific type for union failures)
             raise ConversionError(
                 value,
-                target_type=Any,
-                reason=f"Could not convert to any of the union types: {', '.join(type_names)}",
+                target_type=object,
+                reason=(
+                    f"Could not convert to any of the union types: "
+                    f"{', '.join(type_names)}"
+                ),
             )
 
         return convert_union
@@ -401,7 +438,9 @@ class ConverterRegistry:
                 if origin in (tuple,):
                     return tuple(converted_elements)
                 if origin in (set, frozenset):
-                    return origin(converted_elements)
+                    # Type ignore: Partially unknown return type due to dynamic type
+                    # selection - origin is either set or frozenset, both valid
+                    return origin(converted_elements)  # pyright: ignore[reportUnknownVariableType]
                 return converted_elements
 
             # Handle single string value (split or wrap?)
@@ -411,7 +450,9 @@ class ConverterRegistry:
                 if origin in (tuple,):
                     return (converted,)
                 if origin in (set, frozenset):
-                    return origin([converted])
+                    # Type ignore: Partially unknown return type due to dynamic type
+                    # selection - origin is either set or frozenset, both valid
+                    return origin([converted])  # pyright: ignore[reportUnknownVariableType]
                 return [converted]
 
             raise ConversionError(
@@ -518,7 +559,9 @@ def convert_int(
     """
     if isinstance(value, int):
         return value
-    return int(value)
+    # Type ignore: ParsedParameterValue includes tuples, but converter registry
+    # ensures this is only called for convertible values (str, bool, int)
+    return int(value)  # pyright: ignore[reportArgumentType]
 
 
 def convert_float(
@@ -538,7 +581,9 @@ def convert_float(
     """
     if isinstance(value, float):
         return value
-    return float(value)
+    # Type ignore: ParsedParameterValue includes tuples, but converter registry
+    # ensures this is only called for convertible values (str, bool, int, float)
+    return float(value)  # pyright: ignore[reportArgumentType]
 
 
 def convert_bool(
@@ -576,7 +621,7 @@ def convert_bool(
 
 def convert_path(
     value: ParsedParameterValue,
-    metadata: tuple[BaseMetadata, ...] | None = None,
+    _metadata: tuple[BaseMetadata, ...] | None = None,
 ) -> Path:
     if isinstance(value, Path):
         return value

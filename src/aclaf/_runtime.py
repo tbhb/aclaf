@@ -8,12 +8,12 @@ from typing import (
     TYPE_CHECKING,
     Protocol,
     TypeAlias,
+    TypedDict,
     cast,
 )
 from typing_extensions import override
 
-from aclaf._converters import ConverterRegistry
-from aclaf._validation import ParameterValidatorRegistry
+from aclaf._errors import ErrorConfiguration
 from aclaf.exceptions import ConversionError, ValidationError
 from aclaf.logging import Logger, NullLogger
 
@@ -25,8 +25,7 @@ from ._response import (
     ResponseType,
     SyncResponseType,
 )
-from ._types import ParameterValueType
-from .console import DefaultConsole
+from .console import Console, DefaultConsole
 from .parser import (
     AccumulationMode,
     Arity,
@@ -37,18 +36,21 @@ from .parser import (
     ParserConfiguration,
     PositionalSpec,
 )
+from .types import ParameterValueType
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     from annotated_types import BaseMetadata
 
+    from aclaf._conversion import ConverterRegistry
     from aclaf._validation import (
-        ParameterSetValidatorFunctionType,
         ParameterValidatorFunctionType,
+        ParameterValidatorRegistry,
     )
+    from aclaf.metadata import MetadataByType
 
-    from ._converters import ConverterFunctionType
+    from ._conversion import ConverterFunctionType
     from .parser import ParsedParameterValue, ParseResult
 
 SyncCommandFunctionType: TypeAlias = Callable[..., SyncResponseType]
@@ -60,12 +62,37 @@ EMPTY_COMMAND_FUNCTION: CommandFunctionType = lambda: None  # noqa: E731
 
 DefaultFactoryFunction: TypeAlias = Callable[..., ParameterValueType]
 
+CommandFunctionRunParameters: TypeAlias = dict[
+    str, ParameterValueType | Context | Console | Logger
+]
+
 
 class ParameterKind(IntEnum):
-    CONSOLE = auto()
-    CONTEXT = auto()
     OPTION = auto()
     POSITIONAL = auto()
+
+
+class RuntimeParameterInput(TypedDict, total=False):
+    name: str
+    kind: ParameterKind
+    value_type: "type[ParameterValueType]"
+    arity: Arity
+    accumulation_mode: AccumulationMode | None
+    const_value: str | None
+    converter: "ConverterFunctionType | None"
+    default: "ParameterValueType | None"
+    default_factory: "DefaultFactoryFunction | None"
+    falsey_flag_values: tuple[str, ...] | None
+    flatten_values: bool
+    help: str | None
+    is_flag: bool
+    is_required: bool
+    long: tuple[str, ...]
+    metadata: tuple["BaseMetadata", ...]
+    negation_words: tuple[str, ...] | None
+    short: tuple[str, ...]
+    truthy_flag_values: tuple[str, ...] | None
+    validators: tuple["ParameterValidatorFunctionType", ...]
 
 
 @dataclass(slots=True, frozen=True)
@@ -75,36 +102,37 @@ class RuntimeParameter:
     value_type: "type[ParameterValueType]"
     arity: Arity
     accumulation_mode: AccumulationMode | None = None
-    long: tuple[str, ...] = field(default_factory=tuple)
-    short: tuple[str, ...] = field(default_factory=tuple)
-    is_flag: bool = False
-    falsey_flag_values: tuple[str, ...] | None = None
-    truthy_flag_values: tuple[str, ...] | None = None
-    negation_words: tuple[str, ...] | None = None
     const_value: str | None = None
-    flatten_values: bool = False
+    converter: "ConverterFunctionType | None" = None
     default: "ParameterValueType | None" = None
     default_factory: "DefaultFactoryFunction | None" = None
+    falsey_flag_values: tuple[str, ...] | None = None
+    flatten_values: bool = False
     help: str | None = None
+    is_flag: bool = False
+    is_required: bool = False
+    long: tuple[str, ...] = field(default_factory=tuple)
     metadata: tuple["BaseMetadata", ...] = field(default_factory=tuple)
-    converter: "ConverterFunctionType | None" = None
+    negation_words: tuple[str, ...] | None = None
+    short: tuple[str, ...] = field(default_factory=tuple)
+    truthy_flag_values: tuple[str, ...] | None = None
     validators: tuple["ParameterValidatorFunctionType", ...] = field(
         default_factory=tuple
     )
 
-    _metadata_by_type: Mapping[type["BaseMetadata"], "BaseMetadata"] | None = field(
+    _metadata_by_type: "MetadataByType | None" = field(
         default=None, init=False, repr=False
     )
 
     @property
-    def metadata_by_type(self) -> Mapping[type["BaseMetadata"], "BaseMetadata"]:
+    def metadata_by_type(
+        self,
+    ) -> "MetadataByType":
         if self._metadata_by_type is None:
-            object.__setattr__(
-                self,
-                "_metadata_by_type",
-                MappingProxyType({type(meta): meta for meta in self.metadata}),
-            )
-        return MappingProxyType({type(meta): meta for meta in self.metadata})
+            mapping = MappingProxyType({type(meta): meta for meta in self.metadata})
+            object.__setattr__(self, "_metadata_by_type", mapping)
+            return mapping
+        return self._metadata_by_type
 
     @override
     def __repr__(self) -> str:
@@ -120,6 +148,7 @@ class RuntimeParameter:
             f" flatten_values={self.flatten_values!r},"
             f" help={self.help!r},"
             f" is_flag={self.is_flag!r},"
+            f" is_required={self.is_required!r},"
             f" kind={self.kind!r},"
             f" long={self.long!r},"
             f" metadata={self.metadata!r},"
@@ -189,16 +218,44 @@ def default_respond(
     return ConsoleResponder(console=context.console)
 
 
+class RuntimeCommandInput(TypedDict, total=False):
+    name: str
+    run_func: CommandFunctionType
+    converters: "ConverterRegistry"
+    validators: "ParameterValidatorRegistry"
+    aliases: tuple[str, ...]
+    console: "Console | None"
+    console_param: str | None
+    context_param: str | None
+    error_config: "ErrorConfiguration"
+    parameters: "Mapping[str, RuntimeParameter]"
+    is_async: bool
+    logger: Logger
+    logger_param: str | None
+    parser_cls: type[BaseParser]
+    parser_config: ParserConfiguration | None
+    respond: RespondFunctionProtocol
+    responders: "Mapping[str, ResponderProtocol]"
+    subcommands: "Mapping[str, RuntimeCommand]"
+
+
 @dataclass(slots=True, frozen=True)
 class RuntimeCommand:
     name: str
     run_func: CommandFunctionType
+    converters: "ConverterRegistry" = field(repr=False)
+    validators: "ParameterValidatorRegistry" = field(repr=False)
     aliases: tuple[str, ...] = field(default_factory=tuple)
+    console: "Console | None" = None
+    console_param: str | None = None
+    context_param: str | None = None
+    error_config: "ErrorConfiguration" = field(default_factory=ErrorConfiguration)
     parameters: "Mapping[str, RuntimeParameter]" = field(
         default_factory=lambda: MappingProxyType({})
     )
     is_async: bool = False
     logger: Logger = field(default_factory=NullLogger)
+    logger_param: str | None = None
     parser_cls: type[BaseParser] = Parser
     parser_config: ParserConfiguration | None = None
     respond: RespondFunctionProtocol = default_respond
@@ -208,17 +265,8 @@ class RuntimeCommand:
     subcommands: "Mapping[str, RuntimeCommand]" = field(
         default_factory=lambda: MappingProxyType({})
     )
-    validators: tuple["ParameterSetValidatorFunctionType", ...] = field(
-        default_factory=tuple
-    )
 
     _cached_spec: CommandSpec | None = field(default=None, init=False, repr=False)
-    _validators: "ParameterValidatorRegistry" = field(
-        default_factory=lambda: ParameterValidatorRegistry(), repr=False
-    )
-    _converters: "ConverterRegistry" = field(
-        default_factory=lambda: ConverterRegistry(), repr=False
-    )
 
     def __post_init__(self) -> None:
         for attr in ("parameters", "responders", "subcommands"):
@@ -260,21 +308,26 @@ class RuntimeCommand:
             f"RuntimeCommand("
             f"name={self.name!r},"
             f" aliases={self.aliases!r},"
+            f" console={self.console!r},"
+            f" console_param={self.console_param!r},"
+            f" context_param={self.context_param!r},"
+            f" error_config={self.error_config!r},"
             f" is_async={self.is_async!r},"
+            f" logger_param={self.logger_param!r},"
             f" parameters={self.parameters!r},"
             f" parser_cls={self.parser_cls!r},"
             f" parser_config={self.parser_config!r},"
+            f" responders={self.responders!r},"
             f" run_func={self.run_func!r},"
             f" subcommands={self.subcommands!r},"
-            f" responders={self.responders!r},"
             ")"
         )
 
     def invoke(self, args: "Sequence[str] | None" = None) -> None:
         spec = self.to_command_spec()
         parser = self.parser_cls(spec, self.parser_config)
-        parse_result = parser.parse(args or sys.argv[1:])
 
+        parse_result = parser.parse(args or sys.argv[1:])
         parameters, conversion_errors = self._convert_parameters(
             parse_result, self.parameters
         )
@@ -285,12 +338,15 @@ class RuntimeCommand:
         context = Context(
             command=self.name,
             command_path=(self.name,),
-            parse_result=parse_result,
-            parameters=parameters,
+            console=self.console or DefaultConsole(),
+            console_param=self.console_param,
+            context_param=self.context_param,
             errors=errors,
             is_async=self.check_async(parse_result),
-            console=DefaultConsole(),
             logger=self.logger,
+            logger_param=self.logger_param,
+            parameters=parameters,
+            parse_result=parse_result,
         )
 
         if context.is_async:
@@ -313,11 +369,8 @@ class RuntimeCommand:
         return False
 
     def dispatch(self, context: Context) -> None:
-        if context.errors and context.parse_result.subcommand is None:
-            all_errors = self._collect_errors(context)
-            raise ValidationError(all_errors)
-
-        result = self.run_func(**context.parameters)
+        self._check_context_errors(context)
+        result = self._execute_run_func(context)
         responder = self.respond(result, context, self)
         responder.respond(result, context)
 
@@ -326,8 +379,9 @@ class RuntimeCommand:
             subcommand.dispatch(subcommand_context)
 
     async def dispatch_async(self, context: Context) -> None:
+        self._check_context_errors(context)
         responder = self.respond(None, context, self)
-        result = self.run_func(**context.parameters)
+        result = self._execute_run_func(context)
         if self.is_async:
             if inspect.isasyncgen(result) or inspect.iscoroutine(result):
                 await responder.respond_async(result, context)
@@ -340,6 +394,25 @@ class RuntimeCommand:
         if subcommand_dispatch := self._prepare_subcommand_dispatch(context):
             subcommand, subcommand_context = subcommand_dispatch
             await subcommand.dispatch_async(subcommand_context)
+
+    def _check_context_errors(self, context: Context) -> None:
+        if context.errors and context.parse_result.subcommand is None:
+            all_errors = self._collect_errors(context)
+            raise ValidationError(all_errors)
+
+    def _execute_run_func(self, context: Context) -> ResponseType | None:
+        return self.run_func(**self._make_run_parameters(context))
+
+    def _make_run_parameters(self, context: Context) -> CommandFunctionRunParameters:
+        run_params: CommandFunctionRunParameters = {}
+        run_params.update(context.parameters)
+        if self.context_param:
+            run_params[self.context_param] = context
+        if self.console_param:
+            run_params[self.console_param] = context.console
+        if self.logger_param:
+            run_params[self.logger_param] = context.logger
+        return run_params
 
     def _prepare_subcommand_dispatch(
         self, context: Context
@@ -364,6 +437,9 @@ class RuntimeCommand:
                 parent=context,
                 command=subcommand.name,
                 command_path=(*context.command_path, subcommand.name),
+                console_param=self.console_param,
+                context_param=self.context_param,
+                logger_param=self.logger_param,
                 parse_result=context.parse_result.subcommand,
                 parameters=parameters,
                 errors=errors,
@@ -401,7 +477,7 @@ class RuntimeCommand:
                 if parameter.converter:
                     converted[name] = parameter.converter(value, parameter.metadata)
                 else:
-                    converted[name] = self._converters.convert(
+                    converted[name] = self.converters.convert(
                         value, type_expr, parameter.metadata
                     )
             except ConversionError as e:
@@ -421,8 +497,15 @@ class RuntimeCommand:
                 errors[name] = (conversion_errors[name],)
                 continue
 
+            if name not in raw and parameter.is_required:
+                errors[name] = ("is required",)
+                continue
+
             value = raw.get(name)
-            value_errors: tuple[str, ...] | None = self._validators.validate(
+            if value is None and parameter.is_required:
+                errors[name] = ("is required",)
+                continue
+            value_errors: tuple[str, ...] | None = self.validators.validate(
                 value, raw, parameter.metadata
             )
 

@@ -1,11 +1,12 @@
 from dataclasses import dataclass, field
 from typing import (
     TYPE_CHECKING,
-    cast,
+    TypedDict,
 )
 from typing_extensions import override
 
-from aclaf._converters import ConverterFunctionType, ConverterRegistry
+from aclaf._conversion import ConverterFunctionType, ConverterRegistry
+from aclaf._errors import ErrorConfiguration
 from aclaf._parameters import (
     CommandParameter,
     Parameter,
@@ -16,6 +17,7 @@ from aclaf._validation import (
     ParameterValidatorRegistry,
     ValidatorRegistryKey,
 )
+from aclaf.console import Console
 from aclaf.logging import Logger, NullLogger
 
 from ._runtime import (
@@ -37,15 +39,41 @@ if TYPE_CHECKING:
     from .parser import ParserConfiguration
 
 
+class CommandInput(TypedDict, total=False):
+    name: str
+    aliases: "Iterable[str]"
+    console_param: "str | None"
+    context_param: "str | None"
+    converters: ConverterRegistry
+    error_config: "ErrorConfiguration"
+    is_async: bool
+    is_mounted: bool
+    logger: Logger
+    logger_param: "str | None"
+    parameters: dict[str, "Parameter"]
+    parent_command: "Command | None"
+    parser_config: "ParserConfiguration | None"
+    respond: RespondFunctionProtocol
+    responders: dict[str, "ResponderProtocol"]
+    root_command: "Command | None"
+    run_func: "CommandFunctionType | None"
+    subcommands: dict[str, "Command"]
+    validators: ParameterValidatorRegistry
+
+
 @dataclass(slots=True)
 class Command:
     name: str
     aliases: "Iterable[str]" = field(default_factory=tuple)
-    context_param: str | None = None
+    console: "Console | None" = None
+    console_param: "str | None" = None
+    context_param: "str | None" = None
     converters: ConverterRegistry = field(default_factory=ConverterRegistry, repr=False)
-    is_async: bool | None = None
+    error_config: "ErrorConfiguration" = field(default_factory=ErrorConfiguration)
+    is_async: bool = False
     is_mounted: bool = False
     logger: Logger = field(default_factory=NullLogger)
+    logger_param: "str | None" = None
     parameters: dict[str, "Parameter"] = field(default_factory=dict)
     parent_command: "Command | None" = None
     parser_config: "ParserConfiguration | None" = None
@@ -70,8 +98,9 @@ class Command:
     @property
     def command_parameters(self) -> dict[str, "CommandParameter"]:
         return {
-            name: cast("CommandParameter", param)
+            name: param
             for name, param in self.parameters.items()
+            if isinstance(param, CommandParameter)
         }
 
     @property
@@ -95,10 +124,14 @@ class Command:
         return (
             f"Command(name={self.name!r},"
             f" aliases={self.aliases!r},"
+            f" console={self.console!r},"
+            f" console_param={self.console_param!r},"
             f" context_param={self.context_param!r},"
+            f" error_config={self.error_config!r},"
             f" is_async={self.is_async!r},"
             f" is_mounted={self.is_mounted!r},"
             f" logger={self.logger!r},"
+            f" logger_param={self.logger_param!r},"
             f" parameters={self.parameters!r},"
             f" parent_command={self.parent_command!r},"
             f" parser_config={self.parser_config!r},"
@@ -138,6 +171,8 @@ class Command:
         return RuntimeCommand(
             name=self.name,
             aliases=tuple(self.aliases),
+            console=self.console,
+            error_config=self.error_config,
             logger=self.logger,
             parameters=parameters,
             parser_config=self.parser_config,
@@ -149,8 +184,11 @@ class Command:
                 for name, cmd_builder in self.subcommands.items()
             },
             is_async=self.is_async,
-            _converters=self.converters,
-            _validators=self.validators,
+            converters=self.converters,
+            validators=self.validators,
+            console_param=self.console_param,
+            context_param=self.context_param,
+            logger_param=self.logger_param,
         )
 
     def _check_run_func_async(self) -> bool:
@@ -170,12 +208,15 @@ class Command:
         def decorator(
             func: "CommandFunctionType",
         ) -> "Command":
-            parameters = extract_function_parameters(func)
+            parameters, special_parameters = extract_function_parameters(func)
             self.name = name or self.name or func.__name__
             self.aliases = aliases or self.aliases
             self.parameters = parameters
             self.run_func = func
             self.is_async = self._check_run_func_async()
+            self.context_param = special_parameters.get("context")
+            self.console_param = special_parameters.get("console")
+            self.logger_param = special_parameters.get("logger")
             return self
 
         return decorator
@@ -189,18 +230,22 @@ class Command:
         def decorator(
             func: "CommandFunctionType",
         ) -> "Command":
-            parameters = extract_function_parameters(func)
+            parameters, special_parameters = extract_function_parameters(func)
             cmd_name = name or func.__name__
             command = Command(
-                name=cmd_name,
                 aliases=aliases or (),
-                logger=self.logger,
-                root_command=self.root_command or self,
-                parent_command=self,
-                parameters=parameters,
-                run_func=func,
-                parser_config=self.parser_config,
+                console_param=special_parameters.get("console"),
+                context_param=special_parameters.get("context"),
                 converters=self.converters,
+                is_async=is_async_command_function(func),
+                logger=self.logger,
+                logger_param=special_parameters.get("logger"),
+                name=cmd_name,
+                parameters=parameters,
+                parent_command=self,
+                parser_config=self.parser_config,
+                root_command=self.root_command or self,
+                run_func=func,
                 validators=self.validators,
             )
             self._add_subcommand(cmd_name, command)

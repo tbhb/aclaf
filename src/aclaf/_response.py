@@ -4,11 +4,10 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol, TypeAlias, cast, runtime_checkable
 from typing_extensions import override
 
-from .console import SupportsConsole
+from .console import Console, SupportsConsole
 
 if TYPE_CHECKING:
     from ._context import Context
-    from .console import BaseConsole
 
 
 @runtime_checkable
@@ -51,7 +50,7 @@ class ResponderProtocol(Protocol):
 
 @dataclass(slots=True, frozen=True)
 class ConsoleResponder:
-    console: "BaseConsole"
+    console: "Console"
 
     def respond(self, result: "SyncResponseType | None", context: "Context") -> None:
         if result is None:

@@ -1,6 +1,7 @@
 import re
 import warnings
 from dataclasses import dataclass, field
+from typing import TypedDict
 
 from .types import AccumulationMode, Arity
 
@@ -20,6 +21,20 @@ def _validate_arity(value: Arity) -> None:
     if value.max is not None and value.min > value.max:
         msg = "Minimum arity must be less than maximum arity."
         raise ValueError(msg)
+
+
+class OptionSpecInput(TypedDict, total=False):
+    name: str
+    long: frozenset[str]
+    short: frozenset[str]
+    arity: Arity
+    accumulation_mode: AccumulationMode
+    is_flag: bool
+    falsey_flag_values: frozenset[str] | None
+    truthy_flag_values: frozenset[str] | None
+    negation_words: frozenset[str] | None
+    const_value: str | None
+    flatten_values: bool | None
 
 
 @dataclass(slots=True, frozen=True, unsafe_hash=True)
@@ -238,6 +253,11 @@ class OptionSpec:
                 f"Found overlapping values: {overlap_list}."
             )
             raise ValueError(msg)
+
+
+class PositionalSpecInput(TypedDict, total=False):
+    name: str
+    arity: Arity
 
 
 @dataclass(slots=True, frozen=True, unsafe_hash=True)

@@ -1,9 +1,3 @@
-"""Tests for basic command execution flow (without parameter injection).
-
-This module tests the execution flow through FinalCommand.invoke(), dispatch(),
-and dispatch_async() methods. Note that full parameter injection is not yet
-implemented, so these tests focus on command routing and async detection.
-"""
 
 from typing import TYPE_CHECKING
 
@@ -19,10 +13,8 @@ if TYPE_CHECKING:
 
 
 class TestSyncDispatch:
-    """Test synchronous command dispatch."""
 
     def test_dispatch_calls_run_func(self, mock_responder: "MagicMock"):
-        """dispatch() calls the run function."""
         called: list[bool] = []
 
         def handler():
@@ -38,7 +30,6 @@ class TestSyncDispatch:
         assert len(called) == 1
 
     def test_dispatch_with_no_subcommand(self, mock_responder: "MagicMock"):
-        """dispatch() works when no subcommand is invoked."""
         called: list[str] = []
 
         def handler():
@@ -56,7 +47,6 @@ class TestSyncDispatch:
         assert called == ["parent"]
 
     def test_dispatch_with_subcommand(self, mock_responder: "MagicMock"):
-        """dispatch() dispatches to subcommand."""
         called: list[str] = []
 
         def parent_handler():
@@ -89,7 +79,6 @@ class TestSyncDispatch:
     def test_dispatch_calls_child_and_parent_in_order(
         self, mock_responder: "MagicMock"
     ):
-        """dispatch() calls parent then child in correct order."""
         called: list[tuple[str, int]] = []
 
         def parent_handler():
@@ -123,13 +112,11 @@ class TestSyncDispatch:
 
 
 class TestAsyncDispatch:
-    """Test asynchronous command dispatch."""
 
     @pytest.mark.asyncio
     async def test_dispatch_async_calls_async_run_func(
         self, mock_responder: "MagicMock"
     ):
-        """dispatch_async() calls async run function."""
         called: list[bool] = []
 
         async def handler():
@@ -153,7 +140,6 @@ class TestAsyncDispatch:
     async def test_dispatch_async_calls_sync_run_func_if_not_async(
         self, mock_responder: "MagicMock"
     ):
-        """dispatch_async() can call sync run function."""
         called: list[bool] = []
 
         def handler():
@@ -170,7 +156,6 @@ class TestAsyncDispatch:
 
     @pytest.mark.asyncio
     async def test_dispatch_async_with_subcommand(self, mock_responder: "MagicMock"):
-        """dispatch_async() dispatches to subcommand."""
         called: list[str] = []
 
         async def parent_handler():
@@ -206,7 +191,6 @@ class TestAsyncDispatch:
 
     @pytest.mark.asyncio
     async def test_dispatch_async_mixed_sync_async(self, mock_responder: "MagicMock"):
-        """dispatch_async() handles mixed sync/async commands."""
         called: list[str] = []
 
         def parent_handler():
@@ -242,10 +226,8 @@ class TestAsyncDispatch:
 
 
 class TestSubcommandContextCreation:
-    """Test context creation for subcommands."""
 
     def test_prepare_subcommand_dispatch_returns_none_without_subcommand(self):
-        """_prepare_subcommand_dispatch returns None when no subcommand."""
         cmd = RuntimeCommand(name="test", run_func=lambda: None)
 
         parse_result = ParseResult(command="test", options={}, positionals={})
@@ -256,7 +238,6 @@ class TestSubcommandContextCreation:
         assert result is None
 
     def test_prepare_subcommand_dispatch_returns_subcommand_and_context(self):
-        """_prepare_subcommand_dispatch returns subcommand and its context."""
         child = RuntimeCommand(name="child", run_func=lambda: None)
         parent = RuntimeCommand(
             name="parent",
@@ -285,7 +266,6 @@ class TestSubcommandContextCreation:
     def test_subcommand_context_inherits_console(
         self, test_console: "BasicConsole"
     ) -> None:
-        """Subcommand context inherits console from parent."""
         child = RuntimeCommand(name="child", run_func=lambda: None)
         parent = RuntimeCommand(
             name="parent",

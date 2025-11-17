@@ -3,7 +3,6 @@ from dataclasses import dataclass, field
 from inspect import Parameter as FunctionParameter
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, TypedDict, Unpack, get_args, get_origin
-from typing_extensions import get_annotations
 
 from annotated_types import BaseMetadata
 from typing_inspection import typing_objects
@@ -11,17 +10,19 @@ from typing_inspection.introspection import (
     UNKNOWN,
     AnnotationSource,
     InspectedAnnotation,
-    inspect_annotation,
 )
 
+from aclaf.logging import Logger
+
 from ._context import Context
+from ._internal._inspect import get_annotations, inspect_annotation
 from ._internal._metadata import flatten_metadata
 from ._runtime import (
     CommandFunctionType,
     ParameterKind,
     RuntimeParameter,
 )
-from .console import BaseConsole
+from .console import Console
 from .metadata import (
     Arg,
     AtLeastOne,
@@ -34,6 +35,7 @@ from .metadata import (
     FirstWins,
     Flag,
     LastWins,
+    MetadataByType,
     MetadataType,
     Opt,
     ZeroOrMore,
@@ -49,10 +51,16 @@ from .parser import (
 )
 
 if TYPE_CHECKING:
-    from ._converters import ConverterFunctionType
+    from ._conversion import ConverterFunctionType
     from ._runtime import DefaultFactoryFunction
-    from ._types import ParameterValueType
     from ._validation import ParameterValidatorFunctionType
+    from .types import ParameterValueType
+
+
+class SpecialParameters(TypedDict, total=False):
+    context: str
+    console: str
+    logger: str
 
 
 @dataclass(slots=True, kw_only=True)
@@ -72,6 +80,7 @@ class CommandParameterInput(TypedDict, total=False):
     flatten_values: bool
     help: str | None
     is_flag: bool
+    is_required: bool
     kind: ParameterKind | None
     long: tuple[str, ...]
     metadata: list[MetadataType]
@@ -95,6 +104,7 @@ class CommandParameter(Parameter):
     flatten_values: bool = False
     help: str | None = None
     is_flag: bool = False
+    is_required: bool = False
     kind: ParameterKind | None = None
     long: tuple[str, ...] = field(default_factory=tuple)
     metadata: list[MetadataType] = field(default_factory=list)
@@ -109,14 +119,14 @@ class CommandParameter(Parameter):
         default_factory=tuple
     )
 
-    _metadata_by_type: MappingProxyType[type["BaseMetadata"], "BaseMetadata"] | None = (
-        field(default=None, init=False, repr=False)
+    _metadata_by_type: MetadataByType | None = field(
+        default=None, init=False, repr=False
     )
 
     @property
     def metadata_by_type(
         self,
-    ) -> MappingProxyType[type["BaseMetadata"], "BaseMetadata"]:
+    ) -> MetadataByType:
         if self._metadata_by_type is None:
             mapping = MappingProxyType(
                 {
@@ -200,6 +210,8 @@ class CommandParameter(Parameter):
                 attrs["kind"] = ParameterKind.POSITIONAL
             elif kind == func_parameter.KEYWORD_ONLY:
                 attrs["kind"] = ParameterKind.OPTION
+            elif kind == func_parameter.POSITIONAL_OR_KEYWORD:
+                attrs["kind"] = ParameterKind.POSITIONAL
             else:
                 msg = f"Could not determine parameter type for '{func_parameter.name}'"
                 raise TypeError(msg)
@@ -217,9 +229,8 @@ class CommandParameter(Parameter):
     ) -> InspectedAnnotation:
         try:
             return inspect_annotation(
-                annotation,
-                annotation_source=source,
-                unpack_type_aliases="eager",
+                annotation,  # pyright: ignore[reportAny]
+                source,
             )
         except NameError as e:
             msg = f"Parameter '{name}' type annotation could not be resolved: {e}"
@@ -343,6 +354,10 @@ class CommandParameter(Parameter):
                 merged_metadata.append(meta)
 
         merged_kwargs.update(overrides)
+
+        if "default" not in merged_kwargs:
+            merged_kwargs.update({"is_required": True})
+
         merged_parameter = cls(**merged_kwargs)
         merged_parameter.metadata = merged_metadata
         return merged_parameter
@@ -392,6 +407,7 @@ class CommandParameter(Parameter):
             arity=arity,
             accumulation_mode=accumulation_mode,
             is_flag=self.is_flag,
+            is_required=self.is_required,
             falsey_flag_values=self.falsey_flag_values,
             truthy_flag_values=self.truthy_flag_values,
             negation_words=self.negation_words,
@@ -415,7 +431,7 @@ class CommandParameter(Parameter):
             msg = "Parameter type must be set to convert to RuntimePositional"
             raise ValueError(msg)
 
-        arity = EXACTLY_ONE_ARITY if self.arity is None else self.arity
+        arity = self.arity or Arity(min=0 if self.default is not None else 1, max=1)
 
         metadata = [meta for meta in self.metadata if isinstance(meta, BaseMetadata)]
 
@@ -428,22 +444,13 @@ class CommandParameter(Parameter):
             default=self.default,
             default_factory=self.default_factory,
             help=self.help,
+            is_required=self.is_required,
         )
-
-
-@dataclass(slots=True)
-class ContextParameter(Parameter):
-    pass
-
-
-@dataclass(slots=True)
-class ConsoleParameter(Parameter):
-    pass
 
 
 def extract_typeddict_parameters(typeddict_type: type) -> dict[str, CommandParameter]:
     parameters: dict[str, CommandParameter] = {}
-    annotations = get_annotations(typeddict_type, eval_str=True)
+    annotations = get_annotations(typeddict_type)
     for name, annotation in annotations.items():  # pyright: ignore[reportAny]
         parameters[name] = CommandParameter.from_annotation(
             name, annotation, AnnotationSource.TYPED_DICT
@@ -453,19 +460,23 @@ def extract_typeddict_parameters(typeddict_type: type) -> dict[str, CommandParam
 
 def extract_function_parameters(
     func: "CommandFunctionType",
-) -> dict[str, Parameter]:
+) -> tuple[dict[str, Parameter], SpecialParameters]:
     sig = inspect.signature(func)
     parameters: dict[str, Parameter] = {}
+    special_parameters: SpecialParameters = {}
 
-    annotations = get_annotations(func, eval_str=True)
+    annotations = get_annotations(func)
     for func_parameter in sig.parameters.values():
         annotation = annotations[func_parameter.name]  # pyright: ignore[reportAny]
 
         if annotation is Context:
-            parameters[func_parameter.name] = ContextParameter(name=func_parameter.name)
+            special_parameters["context"] = func_parameter.name
             continue
-        if isinstance(annotation, BaseConsole):
-            parameters[func_parameter.name] = ConsoleParameter(name=func_parameter.name)
+        if isinstance(annotation, Console):
+            special_parameters["console"] = func_parameter.name
+            continue
+        if isinstance(annotation, Logger):
+            special_parameters["logger"] = func_parameter.name
             continue
 
         origin = get_origin(annotation)  # pyright: ignore[reportAny]
@@ -482,4 +493,4 @@ def extract_function_parameters(
             func_parameter, annotation
         )
 
-    return parameters
+    return parameters, special_parameters

@@ -1,10 +1,12 @@
 from dataclasses import dataclass
+from types import MappingProxyType
 from typing import TYPE_CHECKING, TypeAlias
+from typing_extensions import override
 
 from annotated_types import BaseMetadata
 
 if TYPE_CHECKING:
-    from aclaf._converters import ConverterFunctionType
+    from aclaf._conversion import ConverterFunctionType
     from aclaf._types import ParameterValueType
 
 __all__ = [
@@ -26,6 +28,8 @@ __all__ = [
 ]
 
 MetadataType: TypeAlias = BaseMetadata | str | int
+
+MetadataByType: TypeAlias = MappingProxyType[type[BaseMetadata], BaseMetadata]
 
 
 class ParameterMetadata(BaseMetadata):
@@ -73,7 +77,7 @@ class Collect(ParameterMetadata):
 
 @dataclass(slots=True, frozen=True)
 class Count(ParameterMetadata):
-    count: bool = True
+    pass
 
 
 @dataclass(slots=True, frozen=True)
@@ -114,3 +118,21 @@ class Usage(ParameterMetadata):
 @dataclass(slots=True, frozen=True)
 class MetaVar(ParameterMetadata):
     name: str
+
+
+@dataclass(slots=True, frozen=True)
+class Required(BaseMetadata):
+    required: bool = True
+
+    @override
+    def __hash__(self) -> int:
+        return hash(self.required)
+
+
+@dataclass(slots=True, frozen=True)
+class NotBlank(BaseMetadata):
+    not_blank: bool = True
+
+    @override
+    def __hash__(self) -> int:
+        return hash(self.not_blank)

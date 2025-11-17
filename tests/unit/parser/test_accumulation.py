@@ -1,17 +1,14 @@
-"""Tests for option accumulation modes.
-
-This module comprehensively tests all 5 accumulation modes:
-- COLLECT: Collect all values into a tuple
-- COUNT: Count number of occurrences
-- FIRST_WINS: Keep only the first value
-- LAST_WINS: Keep only the last value (default)
-- ERROR: Raise error on duplicate occurrences
-"""
-
 import pytest
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser
-from aclaf.parser.exceptions import OptionCannotBeSpecifiedMultipleTimesError
+from aclaf.parser import (
+    ZERO_OR_MORE_ARITY,
+    ZERO_OR_ONE_ARITY,
+    CommandSpec,
+    OptionSpec,
+    Parser,
+    ParseResult,
+)
+from aclaf.parser.exceptions import DuplicateOptionError
 from aclaf.parser.types import (
     EXACTLY_ONE_ARITY,
     ONE_OR_MORE_ARITY,
@@ -22,14 +19,7 @@ from aclaf.parser.types import (
 
 
 class TestCollectMode:
-    """Test COLLECT accumulation mode.
-
-    Basic accumulation, single occurrence, and order preservation are covered by
-    property tests. These tests focus on specific interactions and edge cases.
-    """
-
     def test_works_with_boolean_flags(self):
-        """COLLECT mode works with boolean flags."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -47,7 +37,6 @@ class TestCollectMode:
         assert result.options["verbose"].value == (True, True, True)
 
     def test_works_with_multi_value_options(self):
-        """COLLECT mode with options that accept multiple values."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -64,7 +53,6 @@ class TestCollectMode:
         assert result.options["files"].value == (("a", "b"), ("c", "d"))
 
     def test_works_alongside_other_options(self):
-        """COLLECT mode works alongside other options."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -82,14 +70,7 @@ class TestCollectMode:
 
 
 class TestCountMode:
-    """Test COUNT accumulation mode.
-
-    Basic counting behavior (single, zero, many occurrences) is covered by
-    property tests. These tests focus on short flag clustering interactions.
-    """
-
     def test_counts_combined_short_flags(self):
-        """COUNT mode works with combined short flags."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -107,7 +88,6 @@ class TestCountMode:
         assert result.options["verbose"].value == 3
 
     def test_counts_mixed_flag_forms(self):
-        """COUNT mode with mix of separate and combined flags."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -126,14 +106,7 @@ class TestCountMode:
 
 
 class TestFirstWinsMode:
-    """Test FIRST_WINS accumulation mode.
-
-    Basic first-wins behavior (keeping first value) is covered by property tests.
-    These tests focus on interactions with flags, arity, and option forms.
-    """
-
     def test_accumulation_first_wins_with_flags(self):
-        """FIRST_WINS works with boolean flags."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -150,7 +123,6 @@ class TestFirstWinsMode:
         assert result.options["flag"].value is True
 
     def test_accumulation_first_wins_with_multi_value_option(self):
-        """FIRST_WINS with options accepting multiple values."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -167,7 +139,6 @@ class TestFirstWinsMode:
         assert result.options["files"].value == ("a", "b")
 
     def test_first_wins_different_forms(self):
-        """FIRST_WINS keeps first regardless of option form used."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -183,16 +154,76 @@ class TestFirstWinsMode:
         result = parser.parse(["--output", "long.txt", "-o", "short.txt"])
         assert result.options["output"].value == "long.txt"
 
+    def test_first_wins_keeps_first_value(self):
+        args = ["--output", "file1.txt", "--output", "file2.txt"]
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "output": OptionSpec(
+                    "output",
+                    arity=EXACTLY_ONE_ARITY,
+                    accumulation_mode=AccumulationMode.FIRST_WINS,
+                )
+            },
+        )
+        parser = Parser(spec)
+        result = parser.parse(args)
+        # Should keep only first value
+        assert result.options["output"].value == "file1.txt"
+
+    def test_first_wins_with_multiple_occurrences(self):
+        args = ["-o", "a", "-o", "b", "-o", "c"]
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "output": OptionSpec(
+                    "output",
+                    short=frozenset({"o"}),
+                    arity=EXACTLY_ONE_ARITY,
+                    accumulation_mode=AccumulationMode.FIRST_WINS,
+                )
+            },
+        )
+        parser = Parser(spec)
+        result = parser.parse(args)
+        assert result.options["output"].value == "a"
+
+    def test_advanced_first_wins_with_flags(self):
+        args = ["--verbose", "--verbose"]
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "verbose": OptionSpec(
+                    "verbose",
+                    is_flag=True,
+                    accumulation_mode=AccumulationMode.FIRST_WINS,
+                )
+            },
+        )
+        parser = Parser(spec)
+        result = parser.parse(args)
+        assert result.options["verbose"].value is True
+
+    def test_advanced_first_wins_with_multi_value_option(self):
+        args = ["--files", "a", "b", "--files", "c", "d"]
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "files": OptionSpec(
+                    "files",
+                    arity=ZERO_OR_MORE_ARITY,
+                    accumulation_mode=AccumulationMode.FIRST_WINS,
+                )
+            },
+        )
+        parser = Parser(spec)
+        result = parser.parse(args)
+        # Should keep only first occurrence's values
+        assert result.options["files"].value == ("a", "b")
+
 
 class TestLastWinsMode:
-    """Test LAST_WINS accumulation mode (default).
-
-    Basic last-wins behavior (keeping last value) is covered by property tests.
-    These tests document the default mode and test specific interactions.
-    """
-
     def test_last_wins_is_default(self):
-        """LAST_WINS is the default accumulation mode."""
         spec = CommandSpec(
             name="cmd",
             options={"opt": OptionSpec("opt")},  # No accumulation_mode specified
@@ -203,7 +234,6 @@ class TestLastWinsMode:
         assert result.options["opt"].value == "last"
 
     def test_last_wins_with_flags(self):
-        """LAST_WINS works with boolean flags."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -220,7 +250,6 @@ class TestLastWinsMode:
         assert result.options["flag"].value is True
 
     def test_last_wins_with_multi_value_option(self):
-        """LAST_WINS with options accepting multiple values."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -238,14 +267,23 @@ class TestLastWinsMode:
 
 
 class TestErrorMode:
-    """Test ERROR accumulation mode.
-
-    Basic error behavior (raises on duplicate, allows single) is covered by
-    property tests. These tests focus on interactions with flags and option forms.
-    """
+    def test_allows_single_occurrence(self):
+        args = ["--output", "file.txt"]
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "output": OptionSpec(
+                    "output",
+                    arity=EXACTLY_ONE_ARITY,
+                    accumulation_mode=AccumulationMode.ERROR,
+                )
+            },
+        )
+        parser = Parser(spec)
+        result = parser.parse(args)
+        assert result.options["output"].value == "file.txt"
 
     def test_error_with_flags(self):
-        """ERROR mode works with flags."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -258,11 +296,27 @@ class TestErrorMode:
         )
         parser = Parser(spec)
 
-        with pytest.raises(OptionCannotBeSpecifiedMultipleTimesError):
+        with pytest.raises(DuplicateOptionError):
             _ = parser.parse(["--flag", "--flag"])
 
+    def test_error_with_values(self):
+        args = ["--output", "file1.txt", "--output", "file2.txt"]
+        spec = CommandSpec(
+            name="cmd",
+            options={
+                "output": OptionSpec(
+                    "output",
+                    arity=EXACTLY_ONE_ARITY,
+                    accumulation_mode=AccumulationMode.ERROR,
+                )
+            },
+        )
+        parser = Parser(spec)
+        with pytest.raises(DuplicateOptionError) as exc_info:
+            _ = parser.parse(args)
+        assert exc_info.value.option_spec.name == "output"
+
     def test_error_different_forms_still_duplicate(self):
-        """ERROR mode treats different forms as duplicate."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -275,15 +329,12 @@ class TestErrorMode:
         )
         parser = Parser(spec)
 
-        with pytest.raises(OptionCannotBeSpecifiedMultipleTimesError):
+        with pytest.raises(DuplicateOptionError):
             _ = parser.parse(["--output", "file1.txt", "-o", "file2.txt"])
 
 
 class TestAccumulationModeInteractions:
-    """Test interactions between accumulation modes and other features."""
-
     def test_accumulation_mode_with_const_value(self):
-        """Accumulation modes work with const_value."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -301,7 +352,6 @@ class TestAccumulationModeInteractions:
         assert result.options["mode"].value == ("debug", "debug", "debug")
 
     def test_accumulation_with_negation(self):
-        """Accumulation modes work with negation words."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -319,7 +369,6 @@ class TestAccumulationModeInteractions:
         assert result.options["verbose"].value == (True, False, True)
 
     def test_different_accumulation_modes_per_option(self):
-        """Different options can have different accumulation modes."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -363,7 +412,6 @@ class TestAccumulationModeInteractions:
         assert result.options["last"].value == "l2"
 
     def test_accumulation_with_arity_range(self):
-        """Accumulation modes work with complex arity."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -381,10 +429,7 @@ class TestAccumulationModeInteractions:
 
 
 class TestAccumulationEdgeCases:
-    """Test edge cases with accumulation modes."""
-
     def test_collect_empty_when_not_provided(self):
-        """Option not in result when not provided (all modes)."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -397,7 +442,6 @@ class TestAccumulationEdgeCases:
         assert "opt" not in result.options
 
     def test_error_message_contains_option_name(self):
-        """ERROR mode exception includes the option name."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -408,7 +452,64 @@ class TestAccumulationEdgeCases:
         )
         parser = Parser(spec)
 
-        with pytest.raises(OptionCannotBeSpecifiedMultipleTimesError) as exc_info:
+        with pytest.raises(DuplicateOptionError) as exc_info:
             _ = parser.parse(["--myoption", "v1", "--myoption", "v2"])
 
         assert "myoption" in str(exc_info.value).lower()
+
+
+class TestFlattenNestedTuples:
+    def test_non_tuple_value_early_return(self):
+        spec = CommandSpec(
+            name="test",
+            options={
+                "name": OptionSpec(
+                    name="name",
+                    arity=EXACTLY_ONE_ARITY,
+                    accumulation_mode=AccumulationMode.FIRST_WINS,
+                ),
+            },
+        )
+        parser = Parser(spec=spec)
+        result: ParseResult = parser.parse(["--name", "value"])
+
+        # Single value option returns scalar, not tuple
+        assert result.options["name"].value == "value"
+        assert not isinstance(result.options["name"].value, tuple)
+
+    def test_flat_tuple_value_early_return(self):
+        spec = CommandSpec(
+            name="test",
+            options={
+                "files": OptionSpec(
+                    name="files",
+                    arity=ZERO_OR_MORE_ARITY,
+                    accumulation_mode=AccumulationMode.FIRST_WINS,
+                ),
+            },
+        )
+        parser = Parser(spec=spec)
+        result: ParseResult = parser.parse(["--files", "a.txt", "b.txt"])
+
+        # Multiple values with FIRST_WINS return flat tuple
+        assert isinstance(result.options["files"].value, tuple)
+        assert result.options["files"].value == ("a.txt", "b.txt")
+
+    def test_nested_tuple_value_gets_flattened(self):
+        spec = CommandSpec(
+            name="test",
+            options={
+                "items": OptionSpec(
+                    name="items",
+                    arity=ZERO_OR_ONE_ARITY,
+                    accumulation_mode=AccumulationMode.COLLECT,
+                ),
+            },
+        )
+        parser = Parser(spec=spec)
+        result: ParseResult = parser.parse(["--items", "a", "--items", "b"])
+
+        # COLLECT mode with multiple invocations creates nested tuples
+        # that get flattened
+        assert isinstance(result.options["items"].value, tuple)
+        assert result.options["items"].value == ("a", "b")

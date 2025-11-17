@@ -1,758 +1,370 @@
-"""Integration tests for Docker-like CLI patterns.
+"""Integration tests for Docker-like CLI patterns using the App API.
 
-This module tests realistic Docker-style command structures with complex options,
-container management patterns, and exec/run scenarios.
+This module tests realistic Docker-style command structures with subcommands,
+short flag combinations, environment variables, and various argument patterns
+using the high-level App API.
+
+Note: This file intentionally uses patterns that trigger linting warnings:
+- FBT001/FBT002: Boolean arguments are part of the CLI API being tested
+- A001/A002: Parameter names like 'all' and 'exec' shadow builtins but match
+  actual docker CLI patterns
+- PLR0913: Some commands have many parameters matching real docker CLI
+- TC001: MockConsole is used at runtime, not just for type checking
 """
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
-from aclaf.parser.types import (
-    EXACTLY_ONE_ARITY,
-    ONE_OR_MORE_ARITY,
-    ZERO_ARITY,
-    ZERO_OR_MORE_ARITY,
-    AccumulationMode,
-)
+# ruff: noqa: FBT001, FBT002, A001, A002, PLR0913, TC001
+
+from typing import Annotated
+
+import pytest
+
+from aclaf import App
+from aclaf.console import MockConsole
+from aclaf.metadata import AtLeastOne, Collect, ZeroOrMore
+
+
+@pytest.fixture
+def docker_run_cli(console: MockConsole) -> App:
+    """Docker CLI with run command for most run tests."""
+    app = App("docker", console=console)
+
+    @app.command()
+    def run(  # pyright: ignore[reportUnusedFunction]
+        image: str,
+        command: Annotated[tuple[str, ...], ZeroOrMore()] = (),
+        interactive: Annotated[bool, "-i"] = False,
+        tty: Annotated[bool, "-t"] = False,
+        rm: bool = False,
+        env: Annotated[tuple[str, ...], "-e", Collect()] = (),
+    ):
+        console.print(f"[run] image={image}")
+        if command:
+            console.print(f"[run] command={command!r}")
+        if interactive:
+            console.print("[run] interactive=True")
+        if tty:
+            console.print("[run] tty=True")
+        if rm:
+            console.print("[run] rm=True")
+        if env:
+            console.print(f"[run] env={env!r}")
+
+    return app
 
 
 class TestDockerRunCommand:
-    """Test Docker run command patterns."""
+    def test_run_basic(self, docker_run_cli: App, console: MockConsole):
+        docker_run_cli(["run", "ubuntu"])
 
-    def test_run_basic(self):
-        """Test Docker run with minimal image-only syntax.
+        output = console.get_output()
+        assert "[run] image=ubuntu" in output
 
-        Verifies the basic Docker run pattern where only an image name is provided
-        without additional command arguments. Tests required positional for image
-        and optional positional for command with no values.
+    def test_run_with_command(self, docker_run_cli: App, console: MockConsole):
+        docker_run_cli(["run", "ubuntu", "echo", "hello"])
 
-        Tests:
-        - Required positional (image)
-        - Optional positional with no values (command)
-        - Minimal subcommand invocation
+        output = console.get_output()
+        assert "[run] image=ubuntu" in output
+        assert "[run] command=('echo', 'hello')" in output
 
-        CLI: docker run ubuntu
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "run": CommandSpec(
-                    name="run",
-                    positionals={
-                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+    def test_run_with_flags(self, docker_run_cli: App, console: MockConsole):
+        docker_run_cli(["run", "-it", "ubuntu"])
 
-        result = parser.parse(["run", "ubuntu"])
-        assert result.subcommand is not None
-        assert result.subcommand.positionals["image"].value == "ubuntu"
-        assert result.subcommand.positionals["command"].value == ()
+        output = console.get_output()
+        assert "[run] interactive=True" in output
+        assert "[run] tty=True" in output
+        assert "[run] image=ubuntu" in output
 
-    def test_run_with_command(self):
-        """Test Docker run with image and container command.
+    def test_run_with_remove_flag(self, docker_run_cli: App, console: MockConsole):
+        docker_run_cli(["run", "--rm", "ubuntu"])
 
-        Verifies the pattern where an image is followed by a command to execute
-        inside the container. Tests multiple positionals where the first is required
-        (image) and subsequent ones are optional (command arguments).
+        output = console.get_output()
+        assert "[run] rm=True" in output
+        assert "[run] image=ubuntu" in output
 
-        Tests:
-        - Required positional followed by optional ones
-        - Zero-or-more arity positional with values
-        - Command-as-positionals pattern
+    def test_run_with_environment_variables(
+        self, docker_run_cli: App, console: MockConsole
+    ):
+        docker_run_cli(["run", "-e", "VAR=value", "ubuntu"])
 
-        CLI: docker run ubuntu echo hello
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "run": CommandSpec(
-                    name="run",
-                    positionals={
-                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+        output = console.get_output()
+        assert "[run] env=('VAR=value',)" in output
+        assert "[run] image=ubuntu" in output
 
-        result = parser.parse(["run", "ubuntu", "echo", "hello"])
-        assert result.subcommand is not None
-        assert result.subcommand.positionals["image"].value == "ubuntu"
-        assert result.subcommand.positionals["command"].value == ("echo", "hello")
+    def test_run_complex(self, docker_run_cli: App, console: MockConsole):
+        docker_run_cli(["run", "-it", "--rm", "-e", "VAR=val", "ubuntu", "/bin/bash"])
 
-    def test_run_with_flags(self):
-        """Test Docker run with interactive and TTY flags clustered.
-
-        Verifies Docker's common -it flag cluster for interactive terminal sessions.
-        Tests short option clustering with two zero-arity flags before positional
-        argument. Common pattern for running interactive containers.
-
-        Tests:
-        - Short option clustering (-it)
-        - Multiple zero-arity flags in cluster
-        - Clustered options before positional
-
-        CLI: docker run -it ubuntu
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "run": CommandSpec(
-                    name="run",
-                    options={
-                        "interactive": OptionSpec(
-                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
-                        ),
-                        "tty": OptionSpec(
-                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
-                        ),
-                    },
-                    positionals={
-                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY)
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["run", "-it", "ubuntu"])
-        assert result.subcommand is not None
-        assert result.subcommand.options["interactive"].value is True
-        assert result.subcommand.options["tty"].value is True
-        assert result.subcommand.positionals["image"].value == "ubuntu"
-
-    def test_run_with_remove_flag(self):
-        """Test Docker run with auto-remove cleanup flag.
-
-        Verifies the pattern where a long boolean flag modifies container lifecycle
-        behavior (automatically remove on exit). Tests long zero-arity option before
-        required positional.
-
-        Tests:
-        - Long zero-arity option (--rm)
-        - Option before required positional
-        - Cleanup behavior flag
-
-        CLI: docker run --rm ubuntu
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "run": CommandSpec(
-                    name="run",
-                    options={"rm": OptionSpec("rm", arity=ZERO_ARITY)},
-                    positionals={
-                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY)
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["run", "--rm", "ubuntu"])
-        assert result.subcommand is not None
-        assert result.subcommand.options["rm"].value is True
-
-    def test_run_with_environment_variables(self):
-        """Test Docker run with environment variable option and COLLECT mode.
-
-        Verifies the pattern where environment variables are passed via repeated
-        -e flags, each taking one value. Uses COLLECT accumulation mode to gather
-        all environment variable assignments. Common for configuring containers.
-
-        Tests:
-        - Value-taking option with COLLECT mode
-        - Repeated option for multiple values
-        - Environment variable passing pattern
-
-        CLI: docker run -e VAR=value ubuntu
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "run": CommandSpec(
-                    name="run",
-                    options={
-                        "env": OptionSpec(
-                            "env",
-                            short=frozenset({"e"}),
-                            arity=EXACTLY_ONE_ARITY,
-                            accumulation_mode=AccumulationMode.COLLECT,
-                        )
-                    },
-                    positionals={
-                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY)
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["run", "-e", "VAR=value", "ubuntu"])
-        assert result.subcommand is not None
-        assert result.subcommand.options["env"].value == ("VAR=value",)
-
-    def test_run_complex(self):
-        """Test Docker run with complex option combination and command.
-
-        Verifies realistic Docker run with multiple option types: clustered flags
-        (-it), long boolean (--rm), accumulated value option (-e), image, and
-        container command. Tests comprehensive option-positional interaction.
-
-        Tests:
-        - Clustered zero-arity options (-it)
-        - Long zero-arity option (--rm)
-        - COLLECT accumulation mode (-e)
-        - Multiple positionals (image, command)
-        - Complex real-world option combination
-
-        CLI: docker run -it --rm -e VAR=val ubuntu /bin/bash
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "run": CommandSpec(
-                    name="run",
-                    options={
-                        "interactive": OptionSpec(
-                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
-                        ),
-                        "tty": OptionSpec(
-                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
-                        ),
-                        "rm": OptionSpec("rm", arity=ZERO_ARITY),
-                        "env": OptionSpec(
-                            "env",
-                            short=frozenset({"e"}),
-                            arity=EXACTLY_ONE_ARITY,
-                            accumulation_mode=AccumulationMode.COLLECT,
-                        ),
-                    },
-                    positionals={
-                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(
-            ["run", "-it", "--rm", "-e", "VAR=val", "ubuntu", "/bin/bash"]
-        )
-        assert result.subcommand is not None
-        assert result.subcommand.options["interactive"].value is True
-        assert result.subcommand.options["tty"].value is True
-        assert result.subcommand.options["rm"].value is True
-        assert result.subcommand.options["env"].value == ("VAR=val",)
-        assert result.subcommand.positionals["image"].value == "ubuntu"
-        assert result.subcommand.positionals["command"].value == ("/bin/bash",)
+        output = console.get_output()
+        assert "[run] interactive=True" in output
+        assert "[run] tty=True" in output
+        assert "[run] rm=True" in output
+        assert "[run] env=('VAR=val',)" in output
+        assert "[run] image=ubuntu" in output
+        assert "[run] command=('/bin/bash',)" in output
 
 
 class TestDockerExecCommand:
-    """Test Docker exec command patterns."""
+    def test_exec_basic(self, console: MockConsole):
+        app = App("docker", console=console)
 
-    def test_exec_basic(self):
-        """Test Docker exec with container name and command arguments.
+        @app.command()
+        def exec(  # pyright: ignore[reportUnusedFunction]
+            container: str, command: Annotated[tuple[str, ...], AtLeastOne()]
+        ):
+            console.print(f"[exec] container={container}")
+            console.print(f"[exec] command={command!r}")
 
-        Verifies the exec pattern where a container name is followed by a command
-        and its arguments. Tests two positionals: one required (container), one
-        requiring at least one value (command).
+        app(["exec", "mycontainer", "ls", "-la"])
 
-        Tests:
-        - Required positional (container)
-        - One-or-more arity positional (command)
-        - Multiple positional values for command
+        output = console.get_output()
+        assert "[exec] container=mycontainer" in output
+        assert "[exec] command=('ls', '-la')" in output
 
-        CLI: docker exec mycontainer ls -la
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "exec": CommandSpec(
-                    name="exec",
-                    positionals={
-                        "container": PositionalSpec(
-                            "container", arity=EXACTLY_ONE_ARITY
-                        ),
-                        "command": PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+    def test_exec_with_flags(self, console: MockConsole):
+        app = App("docker", console=console)
 
-        result = parser.parse(["exec", "mycontainer", "ls", "-la"])
-        assert result.subcommand is not None
-        assert result.subcommand.positionals["container"].value == "mycontainer"
-        assert result.subcommand.positionals["command"].value == ("ls", "-la")
+        @app.command()
+        def exec(  # pyright: ignore[reportUnusedFunction]
+            container: str,
+            command: Annotated[tuple[str, ...], AtLeastOne()],
+            interactive: Annotated[bool, "-i"] = False,
+            tty: Annotated[bool, "-t"] = False,
+        ):
+            console.print(f"[exec] container={container}")
+            console.print(f"[exec] command={command!r}")
+            if interactive:
+                console.print("[exec] interactive=True")
+            if tty:
+                console.print("[exec] tty=True")
 
-    def test_exec_with_flags(self):
-        """Test Docker exec with interactive flags and shell command.
+        app(["exec", "-it", "mycontainer", "bash"])
 
-        Verifies the exec pattern with clustered -it flags for interactive terminal
-        sessions in running containers. Common pattern for debugging containers.
-        Tests option cluster before multiple positionals.
-
-        Tests:
-        - Clustered zero-arity options (-it)
-        - Options before multiple positionals
-        - Interactive exec pattern
-
-        CLI: docker exec -it mycontainer bash
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "exec": CommandSpec(
-                    name="exec",
-                    options={
-                        "interactive": OptionSpec(
-                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
-                        ),
-                        "tty": OptionSpec(
-                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
-                        ),
-                    },
-                    positionals={
-                        "container": PositionalSpec(
-                            "container", arity=EXACTLY_ONE_ARITY
-                        ),
-                        "command": PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["exec", "-it", "mycontainer", "bash"])
-        assert result.subcommand is not None
-        assert result.subcommand.options["interactive"].value is True
-        assert result.subcommand.options["tty"].value is True
-        assert result.subcommand.positionals["container"].value == "mycontainer"
-        assert result.subcommand.positionals["command"].value == ("bash",)
+        output = console.get_output()
+        assert "[exec] interactive=True" in output
+        assert "[exec] tty=True" in output
+        assert "[exec] container=mycontainer" in output
+        assert "[exec] command=('bash',)" in output
 
 
 class TestDockerPsCommand:
-    """Test Docker ps command patterns."""
+    def test_ps_default(self, console: MockConsole):
+        app = App("docker", console=console)
 
-    def test_ps_default(self):
-        """Test Docker ps with no arguments for default listing.
+        @app.command()
+        def ps(  # pyright: ignore[reportUnusedFunction]
+            all: Annotated[bool, "-a"] = False, quiet: Annotated[bool, "-q"] = False
+        ):
+            console.print("[ps] invoked")
+            if all:
+                console.print("[ps] all=True")
+            if quiet:
+                console.print("[ps] quiet=True")
 
-        Verifies the simple list-containers pattern with no options or arguments.
-        Tests subcommand invocation with all options and positionals using default
-        values.
+        app(["ps"])
 
-        Tests:
-        - Subcommand with no arguments
-        - Default option behavior
-        - Simple listing pattern
+        output = console.get_output()
+        assert "[ps] invoked" in output
 
-        CLI: docker ps
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "ps": CommandSpec(
-                    name="ps",
-                    options={
-                        "all": OptionSpec(
-                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
-                        ),
-                        "quiet": OptionSpec(
-                            "quiet", short=frozenset({"q"}), arity=ZERO_ARITY
-                        ),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+    def test_ps_all(self, console: MockConsole):
+        app = App("docker", console=console)
 
-        result = parser.parse(["ps"])
-        assert result.subcommand is not None
-        assert result.subcommand.command == "ps"
+        @app.command()
+        def ps(all: Annotated[bool, "-a"] = False):  # pyright: ignore[reportUnusedFunction]
+            console.print("[ps] invoked")
+            if all:
+                console.print("[ps] all=True")
 
-    def test_ps_all(self):
-        """Test Docker ps with all-containers flag.
+        app(["ps", "-a"])
 
-        Verifies the pattern where a flag modifies listing behavior to show all
-        containers (not just running ones). Tests simple flag-only subcommand usage.
+        output = console.get_output()
+        assert "[ps] all=True" in output
 
-        Tests:
-        - Single short zero-arity option
-        - Flag modifying list behavior
-        - No positional arguments
+    def test_ps_quiet(self, console: MockConsole):
+        app = App("docker", console=console)
 
-        CLI: docker ps -a
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "ps": CommandSpec(
-                    name="ps",
-                    options={
-                        "all": OptionSpec(
-                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
-                        )
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+        @app.command()
+        def ps(  # pyright: ignore[reportUnusedFunction]
+            all: Annotated[bool, "-a"] = False, quiet: Annotated[bool, "-q"] = False
+        ):
+            console.print("[ps] invoked")
+            if all:
+                console.print("[ps] all=True")
+            if quiet:
+                console.print("[ps] quiet=True")
 
-        result = parser.parse(["ps", "-a"])
-        assert result.subcommand is not None
-        assert result.subcommand.options["all"].value is True
+        app(["ps", "-aq"])
 
-    def test_ps_quiet(self):
-        """Test Docker ps with clustered display control flags.
-
-        Verifies the pattern of combining multiple output control flags (-a for all,
-        -q for quiet/IDs only). Tests flag clustering for list customization without
-        positional arguments.
-
-        Tests:
-        - Flag clustering with multiple options
-        - Combined output control flags
-        - No positional arguments
-
-        CLI: docker ps -aq
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "ps": CommandSpec(
-                    name="ps",
-                    options={
-                        "all": OptionSpec(
-                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
-                        ),
-                        "quiet": OptionSpec(
-                            "quiet", short=frozenset({"q"}), arity=ZERO_ARITY
-                        ),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["ps", "-aq"])
-        assert result.subcommand is not None
-        assert result.subcommand.options["all"].value is True
-        assert result.subcommand.options["quiet"].value is True
+        output = console.get_output()
+        assert "[ps] all=True" in output
+        assert "[ps] quiet=True" in output
 
 
 class TestDockerBuildCommand:
-    """Test Docker build command patterns."""
+    def test_build_basic(self, console: MockConsole):
+        app = App("docker", console=console)
 
-    def test_build_basic(self):
-        """Test Docker build with minimal context-only syntax.
+        @app.command()
+        def build(context: str):  # pyright: ignore[reportUnusedFunction]
+            console.print(f"[build] context={context}")
 
-        Verifies the basic build pattern with only a build context path. Tests
-        required positional for build context (often current directory ".").
+        app(["build", "."])
 
-        Tests:
-        - Single required positional
-        - Build context as positional
-        - Minimal build command
+        output = console.get_output()
+        assert "[build] context=." in output
 
-        CLI: docker build .
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "build": CommandSpec(
-                    name="build",
-                    positionals={
-                        "context": PositionalSpec("context", arity=EXACTLY_ONE_ARITY)
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+    def test_build_with_tag(self, console: MockConsole):
+        app = App("docker", console=console)
 
-        result = parser.parse(["build", "."])
-        assert result.subcommand is not None
-        assert result.subcommand.positionals["context"].value == "."
+        @app.command()
+        def build(  # pyright: ignore[reportUnusedFunction]
+            context: str, tag: Annotated[str | None, "-t"] = None
+        ):
+            console.print(f"[build] context={context}")
+            if tag:
+                console.print(f"[build] tag={tag}")
 
-    def test_build_with_tag(self):
-        """Test Docker build with image tag option.
+        app(["build", "-t", "myimage:latest", "."])
 
-        Verifies the pattern where an option specifies the output image name/tag
-        before the build context. Common for naming built images. Tests value-taking
-        option before required positional.
+        output = console.get_output()
+        assert "[build] tag=myimage:latest" in output
+        assert "[build] context=." in output
 
-        Tests:
-        - Short option with value (-t)
-        - Image tag specification
-        - Option before required positional
+    def test_build_with_file(self, console: MockConsole):
+        app = App("docker", console=console)
 
-        CLI: docker build -t myimage:latest .
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "build": CommandSpec(
-                    name="build",
-                    options={
-                        "tag": OptionSpec(
-                            "tag", short=frozenset({"t"}), arity=EXACTLY_ONE_ARITY
-                        )
-                    },
-                    positionals={
-                        "context": PositionalSpec("context", arity=EXACTLY_ONE_ARITY)
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+        @app.command()
+        def build(  # pyright: ignore[reportUnusedFunction]
+            context: str,
+            file: Annotated[str | None, "-f"] = None,
+            tag: Annotated[str | None, "-t"] = None,
+        ):
+            console.print(f"[build] context={context}")
+            if file:
+                console.print(f"[build] file={file}")
+            if tag:
+                console.print(f"[build] tag={tag}")
 
-        result = parser.parse(["build", "-t", "myimage:latest", "."])
-        assert result.subcommand is not None
-        assert result.subcommand.options["tag"].value == "myimage:latest"
-        assert result.subcommand.positionals["context"].value == "."
+        app(["build", "-f", "Dockerfile.prod", "-t", "myimage", "."])
 
-    def test_build_with_file(self):
-        """Test Docker build with custom Dockerfile and tag.
-
-        Verifies the pattern of specifying both a custom Dockerfile path and output
-        tag before the build context. Tests multiple value-taking options before
-        required positional.
-
-        Tests:
-        - Multiple value-taking options (-f, -t)
-        - Custom Dockerfile path
-        - Option order independence
-        - Options before required positional
-
-        CLI: docker build -f Dockerfile.prod -t myimage .
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "build": CommandSpec(
-                    name="build",
-                    options={
-                        "file": OptionSpec(
-                            "file", short=frozenset({"f"}), arity=EXACTLY_ONE_ARITY
-                        ),
-                        "tag": OptionSpec(
-                            "tag", short=frozenset({"t"}), arity=EXACTLY_ONE_ARITY
-                        ),
-                    },
-                    positionals={
-                        "context": PositionalSpec("context", arity=EXACTLY_ONE_ARITY)
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["build", "-f", "Dockerfile.prod", "-t", "myimage", "."])
-        assert result.subcommand is not None
-        assert result.subcommand.options["file"].value == "Dockerfile.prod"
-        assert result.subcommand.options["tag"].value == "myimage"
+        output = console.get_output()
+        assert "[build] file=Dockerfile.prod" in output
+        assert "[build] tag=myimage" in output
+        assert "[build] context=." in output
 
 
 class TestDockerVolumeCommand:
-    """Test Docker volume commands with nested subcommands."""
+    def test_volume_create(self, console: MockConsole):
+        app = App("docker", console=console)
 
-    def test_volume_create(self):
-        """Test Docker nested volume create subcommand.
+        @app.command()
+        def volume():
+            console.print("[volume] invoked")
 
-        Verifies Docker's two-level subcommand structure for volume management
-        (volume -> create). Tests nested subcommands with optional positional for
-        volume name.
+        @volume.command()
+        def create(name: Annotated[tuple[str, ...], ZeroOrMore()] = ()):  # pyright: ignore[reportUnusedFunction]
+            console.print(f"[volume create] name={name!r}")
 
-        Tests:
-        - Two-level subcommand nesting
-        - Optional positional at nested level
-        - Volume management pattern
+        app(["volume", "create", "myvolume"])
 
-        CLI: docker volume create myvolume
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "volume": CommandSpec(
-                    name="volume",
-                    subcommands={
-                        "create": CommandSpec(
-                            name="create",
-                            positionals={
-                                "name": PositionalSpec("name", arity=ZERO_OR_MORE_ARITY)
-                            },
-                        ),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+        output = console.get_output()
+        assert "[volume] invoked" in output
+        assert "[volume create] name=('myvolume',)" in output
 
-        result = parser.parse(["volume", "create", "myvolume"])
-        assert result.subcommand is not None
-        assert result.subcommand.subcommand is not None
-        assert result.subcommand.subcommand is not None
-        assert result.subcommand.subcommand.command == "create"
-        assert result.subcommand.subcommand is not None
-        assert result.subcommand.subcommand.positionals["name"].value == ("myvolume",)
+    def test_volume_list(self, console: MockConsole):
+        app = App("docker", console=console)
 
-    def test_volume_list(self):
-        """Test Docker nested volume list with aliased subcommand.
+        @app.command()
+        def volume():
+            console.print("[volume] invoked")
 
-        Verifies the pattern where nested subcommands have short aliases (ls for list).
-        Tests alias resolution in two-level subcommand structures.
+        @volume.command(aliases=["list"])
+        def ls():  # pyright: ignore[reportUnusedFunction]
+            console.print("[volume ls] invoked")
 
-        Tests:
-        - Two-level subcommand nesting
-        - Nested subcommand aliases
-        - Alias resolution at depth
+        app(["volume", "ls"])
 
-        CLI: docker volume ls
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "volume": CommandSpec(
-                    name="volume",
-                    subcommands={
-                        "ls": CommandSpec(name="ls", aliases=frozenset({"list"})),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec, allow_aliases=True)
-
-        result = parser.parse(["volume", "ls"])
-        assert result.subcommand is not None
-        assert result.subcommand.subcommand is not None
-        assert result.subcommand.subcommand is not None
-        assert result.subcommand.subcommand.command == "ls"
+        output = console.get_output()
+        assert "[volume] invoked" in output
+        assert "[volume ls] invoked" in output
 
 
 class TestComplexDockerScenarios:
-    """Test complex multi-feature Docker scenarios."""
+    def test_complete_docker_cli(self, console: MockConsole):
+        app = App("docker", console=console)
 
-    def test_complete_docker_cli(self):
-        """Test comprehensive Docker CLI with multiple subcommand families.
+        @app.command()
+        def run(  # pyright: ignore[reportUnusedFunction]
+            image: str,
+            command: Annotated[tuple[str, ...], ZeroOrMore()] = (),
+            interactive: Annotated[bool, "-i"] = False,
+            tty: Annotated[bool, "-t"] = False,
+            rm: bool = False,
+        ):
+            console.print(f"[run] image={image}")
+            if command:
+                console.print(f"[run] command={command!r}")
+            if interactive:
+                console.print("[run] interactive=True")
+            if tty:
+                console.print("[run] tty=True")
+            if rm:
+                console.print("[run] rm=True")
 
-        Verifies a realistic Docker CLI specification with diverse subcommands (run,
-        ps, exec) each having different option and positional patterns. Tests parser
-        stability and spec reuse across different command invocations.
+        @app.command()
+        def ps(  # pyright: ignore[reportUnusedFunction]
+            all: Annotated[bool, "-a"] = False, quiet: Annotated[bool, "-q"] = False
+        ):
+            console.print("[ps] invoked")
+            if all:
+                console.print("[ps] all=True")
+            if quiet:
+                console.print("[ps] quiet=True")
 
-        Tests:
-        - Multiple diverse subcommands
-        - Global options
-        - Parser reuse across commands
-        - Heterogeneous subcommand patterns
+        @app.command()
+        def exec(  # pyright: ignore[reportUnusedFunction]
+            container: str,
+            command: Annotated[tuple[str, ...], AtLeastOne()],
+            interactive: Annotated[bool, "-i"] = False,
+            tty: Annotated[bool, "-t"] = False,
+        ):
+            console.print(f"[exec] container={container}")
+            console.print(f"[exec] command={command!r}")
+            if interactive:
+                console.print("[exec] interactive=True")
+            if tty:
+                console.print("[exec] tty=True")
 
-        CLI: docker run -it ubuntu, docker ps -a, docker exec container bash
-        """
-        spec = CommandSpec(
-            name="docker",
-            options={"version": OptionSpec("version", arity=ZERO_ARITY)},
-            subcommands={
-                "run": CommandSpec(
-                    name="run",
-                    options={
-                        "interactive": OptionSpec(
-                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
-                        ),
-                        "tty": OptionSpec(
-                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
-                        ),
-                        "rm": OptionSpec("rm", arity=ZERO_ARITY),
-                    },
-                    positionals={
-                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY),
-                        "command": PositionalSpec("command", arity=ZERO_OR_MORE_ARITY),
-                    },
-                ),
-                "ps": CommandSpec(
-                    name="ps",
-                    options={
-                        "all": OptionSpec(
-                            "all", short=frozenset({"a"}), arity=ZERO_ARITY
-                        ),
-                        "quiet": OptionSpec(
-                            "quiet", short=frozenset({"q"}), arity=ZERO_ARITY
-                        ),
-                    },
-                ),
-                "exec": CommandSpec(
-                    name="exec",
-                    options={
-                        "interactive": OptionSpec(
-                            "interactive", short=frozenset({"i"}), arity=ZERO_ARITY
-                        ),
-                        "tty": OptionSpec(
-                            "tty", short=frozenset({"t"}), arity=ZERO_ARITY
-                        ),
-                    },
-                    positionals={
-                        "container": PositionalSpec(
-                            "container", arity=EXACTLY_ONE_ARITY
-                        ),
-                        "command": PositionalSpec("command", arity=ONE_OR_MORE_ARITY),
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
+        # Test multiple sequential command invocations
+        app(["run", "-it", "ubuntu"])
+        output1 = console.get_output()
+        assert "[run] interactive=True" in output1
+        assert "[run] tty=True" in output1
+        assert "[run] image=ubuntu" in output1
 
-        # Test multiple commands
-        result1 = parser.parse(["run", "-it", "ubuntu"])
-        assert result1.subcommand is not None
-        assert result1.subcommand.command == "run"
+        # Clear console between invocations to test commands independently
+        console.clear()
+        app(["ps", "-a"])
+        output2 = console.get_output()
+        assert "[ps] all=True" in output2
 
-        result2 = parser.parse(["ps", "-a"])
-        assert result2.subcommand is not None
-        assert result2.subcommand.command == "ps"
+        console.clear()
+        app(["exec", "container", "bash"])
+        output3 = console.get_output()
+        assert "[exec] container=container" in output3
+        assert "[exec] command=('bash',)" in output3
 
-        result3 = parser.parse(["exec", "container", "bash"])
-        assert result3.subcommand is not None
-        assert result3.subcommand.command == "exec"
+    def test_docker_run_with_port_mappings(self, console: MockConsole):
+        app = App("docker", console=console)
 
-    def test_docker_run_with_port_mappings(self):
-        """Test Docker run with multiple port mapping options.
+        @app.command()
+        def run(  # pyright: ignore[reportUnusedFunction]
+            image: str, publish: Annotated[tuple[str, ...], "-p", Collect()] = ()
+        ):
+            console.print(f"[run] image={image}")
+            if publish:
+                console.print(f"[run] publish={publish!r}")
 
-        Verifies the pattern of repeated -p flags to map multiple ports using COLLECT
-        accumulation mode. Common for exposing multiple container ports. Tests option
-        repetition and value collection.
+        app(["run", "-p", "8080:80", "-p", "443:443", "nginx"])
 
-        Tests:
-        - COLLECT accumulation mode
-        - Repeated value-taking options (-p)
-        - Multiple port mappings
-        - Accumulated values tuple
-
-        CLI: docker run -p 8080:80 -p 443:443 nginx
-        """
-        spec = CommandSpec(
-            name="docker",
-            subcommands={
-                "run": CommandSpec(
-                    name="run",
-                    options={
-                        "publish": OptionSpec(
-                            "publish",
-                            short=frozenset({"p"}),
-                            arity=EXACTLY_ONE_ARITY,
-                            accumulation_mode=AccumulationMode.COLLECT,
-                        ),
-                    },
-                    positionals={
-                        "image": PositionalSpec("image", arity=EXACTLY_ONE_ARITY)
-                    },
-                ),
-            },
-        )
-        parser = Parser(spec)
-
-        result = parser.parse(["run", "-p", "8080:80", "-p", "443:443", "nginx"])
-        assert result.subcommand is not None
-        assert result.subcommand.options["publish"].value == ("8080:80", "443:443")
-        assert result.subcommand.positionals["image"].value == "nginx"
+        output = console.get_output()
+        assert "[run] publish=('8080:80', '443:443')" in output
+        assert "[run] image=nginx" in output

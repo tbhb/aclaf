@@ -1,10 +1,3 @@
-"""Tests for underscore-to-dash conversion feature.
-
-This module tests the convert_underscores_to_dashes configuration flag, which
-enables bidirectional normalization between underscore and dash separators in
-option names (e.g., --my_option ↔ --my-option).
-"""
-
 import pytest
 
 from aclaf.parser import (
@@ -21,10 +14,7 @@ from aclaf.parser.types import (
 
 
 class TestBasicConversion:
-    """Test basic underscore-to-dash conversion."""
-
     def test_user_underscores_spec_dashes(self):
-        """User can specify --my_option for spec with --my-option."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -41,7 +31,6 @@ class TestBasicConversion:
         assert result.options["opt"].alias == "my-option"
 
     def test_user_dashes_spec_underscores(self):
-        """User can specify --my-option for spec with --my_option."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -58,7 +47,6 @@ class TestBasicConversion:
         assert result.options["opt"].alias == "my_option"
 
     def test_user_dashes_spec_dashes_no_change(self):
-        """Dashes in both spec and input work as expected."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -74,7 +62,6 @@ class TestBasicConversion:
         assert result.options["opt"].alias == "my-option"
 
     def test_conversion_disabled_requires_exact_match(self):
-        """With conversion disabled, underscores and dashes must match exactly."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -94,7 +81,6 @@ class TestBasicConversion:
             _ = parser.parse(["--my_option", "value"])
 
     def test_conversion_enabled_by_default(self):
-        """Conversion is enabled by default."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -112,7 +98,6 @@ class TestBasicConversion:
         assert result2.options["opt"].value == "value"
 
     def test_multiple_underscores_converted(self):
-        """Multiple underscores are all converted to dashes."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -129,7 +114,6 @@ class TestBasicConversion:
         assert result.options["opt"].value == "value"
 
     def test_consecutive_underscores_converted(self):
-        """Multiple consecutive underscores convert to multiple dashes."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -144,7 +128,6 @@ class TestBasicConversion:
         assert result.options["opt"].value == "value"
 
     def test_mixed_separators_in_input(self):
-        """Input with both underscores and dashes gets all underscores converted."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -160,7 +143,6 @@ class TestBasicConversion:
         assert result.options["opt"].value == "value"
 
     def test_case_preserving(self):
-        """Conversion preserves case."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -177,10 +159,7 @@ class TestBasicConversion:
 
 
 class TestConversionInteractions:
-    """Test conversion interaction with other parser features."""
-
     def test_conversion_with_case_insensitive(self):
-        """Conversion works with case-insensitive matching."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -200,7 +179,6 @@ class TestConversionInteractions:
         assert result.options["opt"].value == "value"
 
     def test_conversion_with_case_insensitive_reverse(self):
-        """Conversion + case insensitive works in both directions."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -219,7 +197,6 @@ class TestConversionInteractions:
         assert result.options["opt"].value == "value"
 
     def test_conversion_with_abbreviation(self):
-        """Conversion works with abbreviation matching."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -240,7 +217,6 @@ class TestConversionInteractions:
         assert result.options["opt"].value == "value"
 
     def test_conversion_with_negation_spec_dashes(self):
-        """Negation works when spec has dashes and user types underscores."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -258,7 +234,6 @@ class TestConversionInteractions:
         assert result.options["force"].value is False
 
     def test_conversion_with_negation_spec_underscores(self):
-        """Negation works when spec has underscores and user types dashes."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -277,7 +252,6 @@ class TestConversionInteractions:
         assert result.options["force"].value is False
 
     def test_conversion_with_equals_syntax(self):
-        """Conversion works with --option=value syntax."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -292,7 +266,6 @@ class TestConversionInteractions:
         assert result.options["opt"].value == "value"
 
     def test_conversion_with_short_options_unaffected(self):
-        """Short options are not affected by conversion (no separators)."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -310,7 +283,6 @@ class TestConversionInteractions:
         assert result.options["opt"].value == "value"
 
     def test_conversion_with_aliases(self):
-        """Conversion works with option aliases."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -329,7 +301,6 @@ class TestConversionInteractions:
         assert result2.options["opt"].value == "value"
 
     def test_conversion_with_subcommand_options(self):
-        """Conversion works within subcommand options."""
         spec = CommandSpec(
             name="git",
             subcommands={
@@ -350,7 +321,6 @@ class TestConversionInteractions:
         assert result.subcommand.options["all"].value is True
 
     def test_conversion_with_accumulation(self):
-        """Conversion works with accumulation modes."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -369,10 +339,7 @@ class TestConversionInteractions:
 
 
 class TestConversionEdgeCases:
-    """Test edge cases in underscore-to-dash conversion."""
-
     def test_spec_with_mixed_separators_exact_match_only(self):
-        """Option spec with mixed separators requires exact normalized match."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -390,7 +357,6 @@ class TestConversionEdgeCases:
         assert result.options["opt"].value == "value"
 
     def test_very_long_option_name(self):
-        """Conversion works with very long option names."""
         long_name = "this-is-a-very-long-option-name-with-many-dashes-for-testing"
         spec = CommandSpec(
             name="cmd",
@@ -408,7 +374,6 @@ class TestConversionEdgeCases:
         assert result.options["opt"].value == "value"
 
     def test_two_character_option_names(self):
-        """Two character long options work with conversion (minimum length)."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -423,7 +388,6 @@ class TestConversionEdgeCases:
         assert result.options["opt"].value == "value"
 
     def test_empty_option_value(self):
-        """Conversion works with empty option values."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -438,7 +402,6 @@ class TestConversionEdgeCases:
         assert result.options["opt"].value == ""
 
     def test_multiple_options_mixed_styles(self):
-        """Multiple options with different separator styles all work."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -471,10 +434,7 @@ class TestConversionEdgeCases:
 
 
 class TestConversionWithFlags:
-    """Test conversion with boolean flag options."""
-
     def test_conversion_with_flag_option(self):
-        """Conversion works with zero-arity flag options."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -489,7 +449,6 @@ class TestConversionWithFlags:
         assert result.options["verbose"].value is True
 
     def test_conversion_with_flag_equals_syntax(self):
-        """Conversion works with --flag=value syntax for boolean flags."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -508,7 +467,6 @@ class TestConversionWithFlags:
         assert result.options["force"].value is True
 
     def test_conversion_with_negated_flag(self):
-        """Conversion works with negated flags."""
         spec = CommandSpec(
             name="cmd",
             options={
@@ -527,10 +485,7 @@ class TestConversionWithFlags:
 
 
 class TestConversionNested:
-    """Test conversion with nested subcommands."""
-
     def test_nested_subcommands_with_conversion(self):
-        """Conversion works in deeply nested subcommands."""
         spec = CommandSpec(
             name="tool",
             subcommands={
@@ -559,7 +514,6 @@ class TestConversionNested:
         assert result.subcommand.subcommand.options["opt"].value == "value"
 
     def test_parent_and_subcommand_options_both_converted(self):
-        """Conversion applies to both parent and subcommand options."""
         spec = CommandSpec(
             name="app",
             options={

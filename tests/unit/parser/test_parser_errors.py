@@ -1,25 +1,12 @@
-"""Error path tests for _parser.py.
-
-This test module focuses on error conditions and edge cases in the parser's
-main logic, including malformed input, insufficient values, and validation
-failures.
-
-Target coverage:
-- Malformed argument handling (lines with error raises)
-- Arity violation errors
-- Value validation errors
-- Edge case error conditions
-"""
-
 import pytest
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
 from aclaf.parser.exceptions import (
+    DuplicateOptionError,
     FlagWithValueError,
     InsufficientOptionValuesError,
     InsufficientPositionalArgumentsError,
     InvalidFlagValueError,
-    OptionCannotBeSpecifiedMultipleTimesError,
     OptionDoesNotAcceptValueError,
     UnexpectedPositionalArgumentError,
     UnknownOptionError,
@@ -36,14 +23,7 @@ from aclaf.parser.types import (
 
 
 class TestFlagWithValueErrors:
-    """Test FlagWithValueError raised when flags receive unexpected values."""
-
     def test_flag_with_inline_value_not_allowed(self):
-        """Flag with inline value raises error when flag values not allowed.
-
-        Tests line 169 in _parser.py where a flag receives an inline value
-        via = syntax but allow_equals_for_flags is False.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -63,11 +43,6 @@ class TestFlagWithValueErrors:
             _ = parser.parse(["--verbose=true"])
 
     def test_flag_with_inline_value_short_option_not_allowed(self):
-        """Flag with inline value via short option raises error when not allowed.
-
-        Tests line 614-616 in _parser.py for short option flag with inline
-        value when allow_equals_for_flags is False.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -87,11 +62,6 @@ class TestFlagWithValueErrors:
             _ = parser.parse(["-v=true"])
 
     def test_zero_arity_non_flag_with_non_empty_inline_value(self):
-        """Zero-arity non-flag with non-empty inline value raises FlagWithValueError.
-
-        Tests line 284 in _parser.py where a zero-arity non-flag option
-        receives a non-empty inline value.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -112,14 +82,7 @@ class TestFlagWithValueErrors:
 
 
 class TestOptionDoesNotAcceptValueErrors:
-    """Test OptionDoesNotAcceptValueError for options that reject values."""
-
     def test_zero_arity_with_empty_inline_value(self):
-        """Zero-arity option with empty inline value raises error.
-
-        Tests line 279-281 in _parser.py where a zero-arity non-flag
-        option receives an empty string via = syntax.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -139,11 +102,6 @@ class TestOptionDoesNotAcceptValueErrors:
             _ = parser.parse(["--count="])
 
     def test_zero_arity_short_option_with_value_attempt(self):
-        """Zero-arity short option followed by unknown chars raises error.
-
-        Tests line 432-435 in _parser.py where a zero-arity option is
-        followed by characters that look like a value attempt.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -172,11 +130,6 @@ class TestOptionDoesNotAcceptValueErrors:
             _ = parser.parse(["-vxabc"])
 
     def test_zero_arity_short_option_with_equals_not_allowed(self):
-        """Zero-arity short option with = raises error when not allowed.
-
-        Tests line 457-459 in _parser.py where a zero-arity option is
-        followed by = but allow_equals_for_flags is False.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -197,11 +150,6 @@ class TestOptionDoesNotAcceptValueErrors:
             _ = parser.parse(["-v=value"])
 
     def test_zero_arity_non_flag_short_with_inline_value(self):
-        """Zero-arity non-flag short option with inline value raises error.
-
-        Tests line 657-659 in _parser.py for zero-arity non-flag as last
-        short option with inline value when flag values not allowed.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -223,14 +171,7 @@ class TestOptionDoesNotAcceptValueErrors:
 
 
 class TestInsufficientOptionValuesErrors:
-    """Test InsufficientOptionValuesError for options requiring values."""
-
     def test_arity_requires_multiple_but_only_inline_value(self):
-        """Option requiring multiple values with only inline value raises error.
-
-        Tests line 237-239 in _parser.py where an option with arity.min > 1
-        receives only an inline value via = syntax.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -249,12 +190,6 @@ class TestInsufficientOptionValuesErrors:
             _ = parser.parse(["--files=single.txt"])
 
     def test_inner_short_option_requires_values(self):
-        """Inner short option requiring values consumes remaining chars as value.
-
-        Tests line 508-509 in _parser.py where a non-flag short option
-        with arity.min > 0 appears before the last position. The parser
-        treats remaining characters as the inline value for that option.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -277,11 +212,6 @@ class TestInsufficientOptionValuesErrors:
         assert result.options["file"].value == "v"
 
     def test_short_option_with_known_option_following(self):
-        """Short option requiring values with known option following raises error.
-
-        Tests line 504-506 in _parser.py where an option requiring values
-        is followed by a known option character with only 1 remaining char.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -312,11 +242,6 @@ class TestInsufficientOptionValuesErrors:
             _ = parser.parse(["-afv"])
 
     def test_option_insufficient_values_from_args(self):
-        """Option cannot get required values from next_args.
-
-        Tests line 1058-1059 in _parser.py where an option cannot find
-        enough values in next_args to satisfy its arity.min.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -335,11 +260,6 @@ class TestInsufficientOptionValuesErrors:
             _ = parser.parse(["--output", "single.txt"])
 
     def test_short_option_inline_value_from_equals_arity_min_gt_1(self):
-        """Short option with = value but arity.min > 1 raises error.
-
-        Tests line 686-689 in _parser.py where the last short option has
-        an inline value from = but requires multiple values.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -359,11 +279,6 @@ class TestInsufficientOptionValuesErrors:
             _ = parser.parse(["-f=single.txt"])
 
     def test_short_option_inline_not_equals_arity_min_gt_1(self):
-        """Short option with inline value (not =) requires multiple values.
-
-        Tests line 718-721 in _parser.py where the last short option has
-        a direct inline value but arity.min > 1.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -384,11 +299,6 @@ class TestInsufficientOptionValuesErrors:
             _ = parser.parse(["-fvalue"])
 
     def test_option_cannot_consume_enough_values_after_inline(self):
-        """Option with inline start value cannot find remaining required values.
-
-        Tests line 1138-1139 in _parser.py where an option has an inline
-        start value but cannot find enough additional values in next_args.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -410,14 +320,7 @@ class TestInsufficientOptionValuesErrors:
 
 
 class TestInvalidFlagValueErrors:
-    """Test InvalidFlagValueError for invalid flag value strings."""
-
     def test_flag_with_empty_inline_value(self):
-        """Flag with empty inline value raises InvalidFlagValueError.
-
-        Tests line 989-992 in _parser.py where a flag receives an empty
-        string via = syntax (e.g., --flag=).
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -436,11 +339,6 @@ class TestInvalidFlagValueErrors:
             _ = parser.parse(["--verbose="])
 
     def test_flag_with_invalid_inline_value(self):
-        """Flag with invalid inline value raises InvalidFlagValueError.
-
-        Tests line 1007-1009 in _parser.py where a flag receives an
-        inline value that's not in truthy or falsey sets.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -462,14 +360,7 @@ class TestInvalidFlagValueErrors:
 
 
 class TestOptionAccumulationErrors:
-    """Test errors related to option accumulation modes."""
-
     def test_error_accumulation_mode_duplicate_option(self):
-        """Option with ERROR accumulation mode specified twice raises error.
-
-        Tests line 1235-1237 in _parser.py where an option with
-        AccumulationMode.ERROR is specified multiple times.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -483,21 +374,14 @@ class TestOptionAccumulationErrors:
         parser = Parser(spec)
 
         with pytest.raises(
-            OptionCannotBeSpecifiedMultipleTimesError,
+            DuplicateOptionError,
             match=r"Option '--output'.* cannot be specified multiple times",
         ):
             _ = parser.parse(["--output", "file1.txt", "--output", "file2.txt"])
 
 
 class TestPositionalErrors:
-    """Test errors related to positional argument handling."""
-
     def test_insufficient_positional_arguments(self):
-        """Insufficient positional arguments for required positionals raises error.
-
-        Tests line 893-895 in _parser.py where not enough positional
-        arguments are provided to satisfy positional specs.
-        """
         spec = CommandSpec(
             name="test",
             positionals={
@@ -514,11 +398,6 @@ class TestPositionalErrors:
             _ = parser.parse(["source.txt"])
 
     def test_unexpected_positional_in_strict_mode(self):
-        """Extra positional arguments in strict mode raise error.
-
-        Tests line 933-936 in _parser.py where leftover positionals
-        remain after grouping in strict_options_before_positionals mode.
-        """
         spec = CommandSpec(
             name="test",
             positionals={
@@ -535,14 +414,7 @@ class TestPositionalErrors:
 
 
 class TestUnknownOptionErrors:
-    """Test UnknownOptionError for unrecognized option names."""
-
     def test_unknown_long_option(self):
-        """Unknown long option raises UnknownOptionError.
-
-        Tests error path when long option cannot be resolved via
-        current_spec.resolve_option() call at line 152-154.
-        """
         spec = CommandSpec(name="test", options={})
         parser = Parser(spec)
 
@@ -550,11 +422,6 @@ class TestUnknownOptionErrors:
             _ = parser.parse(["--verbose"])
 
     def test_unknown_short_option_first_character(self):
-        """Unknown short option as first character raises error.
-
-        Tests line 410-414 in _parser.py where the first character
-        in a short option string cannot be resolved.
-        """
         spec = CommandSpec(name="test", options={})
         parser = Parser(spec)
 
@@ -562,11 +429,6 @@ class TestUnknownOptionErrors:
             _ = parser.parse(["-x"])
 
     def test_unknown_short_option_middle_character(self):
-        """Unknown character after flag treated as inline value raises error.
-
-        Tests line 614-616 in _parser.py where a flag is followed by
-        unknown characters, which are treated as an inline value attempt.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -588,15 +450,7 @@ class TestUnknownOptionErrors:
 
 
 class TestUnknownSubcommandErrors:
-    """Test UnknownSubcommandError for unrecognized subcommands."""
-
     def test_unknown_subcommand_with_no_positionals(self):
-        """Unknown subcommand when spec has subcommands but no positionals raises error.
-
-        Tests line 812-814 in _parser.py where an argument cannot be
-        resolved as a subcommand and the spec defines subcommands but
-        no positionals.
-        """
         sub_spec = CommandSpec(name="init")
         spec = CommandSpec(
             name="git",
@@ -614,14 +468,7 @@ class TestUnknownSubcommandErrors:
 
 
 class TestEdgeCaseErrors:
-    """Test edge cases and boundary conditions for error handling."""
-
     def test_multiple_insufficient_value_errors(self):
-        """When insufficient values provided to second occurrence, raises error.
-
-        This tests that the parser fails fast and reports insufficient
-        values for options even on duplicate occurrences.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -639,11 +486,6 @@ class TestEdgeCaseErrors:
             _ = parser.parse(["--output", "file1.txt", "--output"])
 
     def test_option_value_consumption_respects_positional_requirements(self):
-        """Option value consumption stops to preserve required positionals.
-
-        Tests that line 1128-1133 correctly prevents options from consuming
-        values needed by required positionals.
-        """
         spec = CommandSpec(
             name="test",
             options={
@@ -665,12 +507,6 @@ class TestEdgeCaseErrors:
         assert result.positionals["source"].value == "source.txt"
 
     def test_flag_value_from_next_args_not_in_value_sets(self):
-        """Flag checks next arg value but doesn't consume if invalid.
-
-        Tests line 1010-1014 in _parser.py where a flag checks the next
-        argument but finds it's not in truthy/falsey sets, so returns
-        True without consuming.
-        """
         spec = CommandSpec(
             name="test",
             options={

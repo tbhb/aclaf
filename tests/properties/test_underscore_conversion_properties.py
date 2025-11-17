@@ -1,9 +1,3 @@
-"""Property-based tests for underscore-to-dash conversion using Hypothesis.
-
-This module tests invariants and properties of the underscore-to-dash conversion
-feature, verifying that normalization behaves correctly across a wide input space.
-"""
-
 import re
 import string
 from typing import TYPE_CHECKING
@@ -21,24 +15,6 @@ if TYPE_CHECKING:
 
 @st.composite
 def option_name_with_separators(draw: "DrawFn", separator: str) -> str:
-    """Generate option names with specified separator.
-
-    Generates valid long option names matching the regex:
-    ^[a-zA-Z0-9][a-zA-Z-_]*[a-zA-Z0-9]$
-
-    This means:
-    - Start with alphanumeric
-    - End with alphanumeric
-    - Middle can have alphanumeric, dash, or underscore
-    - Minimum 2 characters
-
-    Args:
-        draw: Hypothesis draw function
-        separator: The separator character ('_' or '-')
-
-    Returns:
-        A string option name with segments separated by the separator
-    """
     # Generate 2-4 segments, each starting with a letter
     num_segments = draw(st.integers(min_value=2, max_value=4))
     segments: list[str] = []
@@ -58,17 +34,11 @@ def option_name_with_separators(draw: "DrawFn", separator: str) -> str:
 
 
 class TestConversionNormalizationProperties:
-    """Test mathematical properties of normalization."""
-
     @example(name="ab")
     @example(name="my_option")
     @example(name="my-option")
     @given(name=option_name_with_separators(separator="_"))
     def test_idempotency_underscore_input(self, name: str):
-        """Property: normalize(normalize(x)) == normalize(x).
-
-        Applying normalization twice produces the same result as applying it once.
-        """
         # First normalization
         normalized_once = name.replace("_", "-")
         # Second normalization
@@ -79,7 +49,6 @@ class TestConversionNormalizationProperties:
     @example(name="my-option")
     @given(name=option_name_with_separators(separator="-"))
     def test_idempotency_dash_input(self, name: str):
-        """Property: Normalizing dash-only names is a no-op."""
         normalized = name.replace("_", "-")
         assert normalized == name
 
@@ -92,14 +61,11 @@ class TestConversionNormalizationProperties:
         ).filter(lambda s: s and s[0].isalpha() and "_" not in s and "-" not in s)
     )
     def test_preservation_without_separators(self, name: str):
-        """Property: Names without separators are unchanged."""
         normalized = name.replace("_", "-")
         assert normalized == name
 
 
 class TestConversionEquivalenceProperties:
-    """Test equivalence between underscore and dash forms."""
-
     @example(name="my_option", value="test")
     @example(name="database_url", value="postgres://localhost")
     @given(
@@ -109,11 +75,6 @@ class TestConversionEquivalenceProperties:
     def test_bidirectional_equivalence_underscores_to_dashes(
         self, name: str, value: str
     ):
-        """Property: Spec with underscores accepts user input with dashes.
-
-        When conversion is enabled, a spec defined with underscores should accept
-        user input with dashes, and both produce the same result.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -146,11 +107,6 @@ class TestConversionEquivalenceProperties:
     def test_bidirectional_equivalence_dashes_to_underscores(
         self, name: str, value: str
     ):
-        """Property: Spec with dashes accepts user input with underscores.
-
-        When conversion is enabled, a spec defined with dashes should accept
-        user input with underscores, and both produce the same result.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -181,11 +137,6 @@ class TestConversionEquivalenceProperties:
         value=st.text(min_size=1, max_size=50).filter(lambda s: not s.startswith("-")),
     )
     def test_strict_mode_requires_exact_separator_match(self, name: str, value: str):
-        """Property: With conversion disabled, separators must match exactly.
-
-        When conversion is disabled, user input must use the exact separator
-        style as the spec definition.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -208,8 +159,6 @@ class TestConversionEquivalenceProperties:
 
 
 class TestConversionWithCaseInsensitivity:
-    """Test interaction between conversion and case insensitivity."""
-
     @example(name="my_option", value="test")
     @example(name="database_url", value="value")
     @given(
@@ -217,11 +166,6 @@ class TestConversionWithCaseInsensitivity:
         value=st.text(min_size=1, max_size=50).filter(lambda s: not s.startswith("-")),
     )
     def test_conversion_then_case_normalization_order(self, name: str, value: str):
-        """Property: Conversion is applied before case normalization.
-
-        When both conversion and case insensitivity are enabled, underscore-to-dash
-        conversion happens first, then case normalization.
-        """
         # Normalize name to lowercase with dashes
         normalized = name.replace("_", "-").lower()
 
@@ -250,19 +194,12 @@ class TestConversionWithCaseInsensitivity:
 
 
 class TestConversionCommutativity:
-    """Test that conversion operations commute properly."""
-
     @example(name="my_option", value="test")
     @given(
         name=option_name_with_separators(separator="_"),
         value=st.text(min_size=1, max_size=50).filter(lambda s: not s.startswith("-")),
     )
     def test_multiple_conversions_yield_same_result(self, name: str, value: str):
-        """Property: Multiple parsers with same config produce same results.
-
-        Creating multiple parser instances with the same configuration should
-        produce identical results for the same input.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -284,21 +221,12 @@ class TestConversionCommutativity:
 
 
 class TestConversionWithNegation:
-    """Test conversion works correctly with negation words."""
-
     @example(name="force_push")
     @example(name="use_colors")
     @given(
         name=option_name_with_separators(separator="_"),
     )
     def test_negation_name_construction_with_underscores(self, name: str):
-        """Property: Negation names are built from normalized option names.
-
-        When a spec defines a flag with underscores, the negation pattern
-        (e.g., no-force-push) is built from the normalized name.
-        This test verifies that the spec construction succeeds and doesn't
-        raise validation errors.
-        """
         # Just verify that spec construction works - negation names are
         # built from normalized option names when convert_underscores_to_dashes=True
         spec = CommandSpec(
@@ -321,11 +249,6 @@ class TestConversionWithNegation:
         name=option_name_with_separators(separator="-"),
     )
     def test_negation_name_construction_with_dashes(self, name: str):
-        """Property: Negation names work with dash-separated spec names.
-
-        When a spec defines a flag with dashes, the negation pattern
-        is constructed correctly.
-        """
         spec = CommandSpec(
             name="cmd",
             options={
@@ -343,27 +266,16 @@ class TestConversionWithNegation:
 
 
 class TestConversionLengthInvariance:
-    """Test that conversion doesn't affect option name length incorrectly."""
-
     @example(name="a_b")
     @example(name="very_long_option_name_with_many_segments")
     @given(name=option_name_with_separators(separator="_"))
     def test_conversion_preserves_character_count(self, name: str):
-        """Property: Conversion preserves total character count.
-
-        Replacing underscores with dashes should not change the length of the
-        option name.
-        """
         normalized = name.replace("_", "-")
         assert len(normalized) == len(name)
 
     @example(name="a_b_c_d")
     @given(name=option_name_with_separators(separator="_"))
     def test_conversion_preserves_separator_count(self, name: str):
-        """Property: Conversion preserves number of separators.
-
-        The number of separators (underscores → dashes) should remain constant.
-        """
         underscore_count = name.count("_")
         dash_count = name.replace("_", "-").count("-")
         assert underscore_count == dash_count

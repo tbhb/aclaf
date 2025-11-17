@@ -1,0 +1,178 @@
+[build-system]
+requires = ["uv_build>=0.9.6,<0.10.0"]
+build-backend = "uv_build"
+
+[project]
+name = "aclaf-cli"
+version = "0.1.0"
+authors = [{ name = "Tony Burns", email = "tony@tonyburns.net" }]
+description = "A command line application framework."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Terminals",
+  "Topic :: Utilities",
+  "Typing :: Typed",
+]
+dependencies = ["aclaf==0.1.0"]
+
+[dependency-groups]
+dev = [
+  "hypothesis>=6.147.0",
+  "pytest-asyncio>=1.2.0",
+  "pytest-benchmark>=5.2.2",
+  "pytest-cov>=7.0.0",
+  "pytest-mock>=3.15.1",
+  "pytest>=8.4.2",
+]
+
+[project.scripts]
+aclaf = "aclaf_cli.app:app"
+
+[tool.basedpyright]
+include = ["src", "tests"]
+
+[tool.pytest.ini_options]
+addopts = [
+  "--import-mode=importlib",
+  "--tb",
+  "short",
+  "--ignore=tests/benchmarks",
+]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+filterwarnings = ["error"]
+testpaths = ["tests"]
+xfail_strict = true
+markers = [
+  "security: Security-focused tests for injection and validation (deselect with '-m \"not security\"')",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/aclaf_cli"]
+relative_files = true
+omit = ["tests/*", "**/__pycache__/*", "**/site-packages/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "def __repr__",
+  "raise AssertionError",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "@abstractmethod",
+  "@abc.abstractmethod",
+]
+precision = 2
+show_missing = true
+skip_covered = false
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.hypothesis]
+# Save failing examples to local database for reproducibility
+database = ".hypothesis/examples"
+# Show more detailed output during test runs
+verbosity = "verbose"
+# Default number of examples to test per property
+max_examples = 100
+
+[tool.ruff]
+target-version = "py310"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = [
+  "A",     # flake8-builtins
+  "ARG",   # flake8-unused-arguments
+  "ASYNC", # flake8-async
+  "B",     # bugbear
+  "BLE",   # flake8-blind-except
+  "C4",    # flake8-comprehensions
+  "D",     # pydocstyle
+  "DTZ",   # flake8-datetimez
+  "E",     # pycodestyle (error)
+  "EM",    # flake8-errmsg
+  "EXE",   # flake8-executable
+  "F",     # pyflakes
+  "FBT",   # flake8-boolean-trap
+  "FURB",  # refurb
+  "G",     # flake8-logging-format
+  "I",     # isort
+  "ICN",   # flake8-import-conventions
+  "ISC",   # flake8-implicit-str-concat
+  "LOG",   # flake8-logging
+  "N",     # pep8-naming
+  "PERF",  # Perflint
+  "PGH",   # pygrep-hooks
+  "PIE",   # flake8-pie
+  "PL",    # pylint
+  "PT",    # flake8-pytest-style
+  "PTH",   # flake8-use-pathlib
+  "PYI",   # flake8-pyi
+  "RET",   # flake8-return
+  "RUF",   # Ruff-specific rules
+  "S",     # flake8-bandit
+  "SIM",   # flake8-simplify
+  "SLF",   # flake8-self
+  "SLOT",  # flake8-slots
+  "TC",    # flake8-type-checking
+  "TD",    # flake8-todos
+  "TID",   # flake8-tidy-imports
+  "T10",   # flake8-debugger
+  "T20",   # flake8-print
+  "TRY",   # tryceratops
+  "UP",    # pyupgrade
+]
+ignore = [
+  "D100",  # Missing docstring in public module
+  "D101",  # Missing docstring in public class
+  "D102",  # Missing docstring in public method
+  "D103",  # Missing docstring in public function
+  "D104",  # Missing docstring in public package
+  "D105",  # Missing docstring in magic method
+  "D107",  # Missing docstring in __init__
+  "TD003",
+]
+pydocstyle = { convention = "google" }
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+extra-standard-library = ["typing_extensions"]
+forced-separate = ["tests"]
+
+[tool.ruff.lint.flake8-type-checking]
+quote-annotations = true
+
+[tool.ruff.lint.flake8-unused-arguments]
+ignore-variadic-names = true
+
+[tool.ruff.lint.per-file-ignores]
+"**/__main__.py" = ["D100"]
+"**/tests/**" = ["D", "PLR2004", "S101"]
+"examples/**" = ["T201"]                 # Allow print in examples
+
+[tool.uv.sources]
+aclaf = { workspace = true }

@@ -13,6 +13,7 @@ Available adapters:
 """
 
 from ._loguru import LOGURU_AVAILABLE, LoguruLogger
+from ._mock import MockLogger
 from ._null import NullLogger
 from ._protocol import Logger
 from ._stdlib import StandardLibraryLogger
@@ -23,6 +24,7 @@ __all__ = [
     "STRUCTLOG_AVAILABLE",
     "Logger",
     "LoguruLogger",
+    "MockLogger",
     "NullLogger",
     "StandardLibraryLogger",
     "StructlogLogger",

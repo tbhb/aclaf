@@ -4,8 +4,8 @@ from typing import TypeAlias, cast
 
 from annotated_types import BaseMetadata, Ge, Gt, Le, Lt, MaxLen, MinLen, MultipleOf
 
-from aclaf._types import ParameterValueType
 from aclaf.logging import Logger, NullLogger
+from aclaf.types import ParameterValueType
 
 ParameterValidatorFunctionType: TypeAlias = Callable[
     [ParameterValueType | None, Mapping[str, ParameterValueType | None], BaseMetadata],
@@ -26,6 +26,9 @@ class ParameterValidatorRegistry:
     _validators: dict[ValidatorRegistryKey, ParameterValidatorFunctionType] = field(
         default_factory=dict, init=False, repr=False
     )
+
+    def __post_init__(self) -> None:
+        self._make_default_validators()
 
     def register(
         self,

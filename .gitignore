@@ -374,6 +374,7 @@ research/
 reviews/
 specs/
 temp/
+tmp/
 
 # Vale styles (downloaded packages, but keep our custom vocabularies)
 .vale/*

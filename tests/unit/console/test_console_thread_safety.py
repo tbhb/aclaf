@@ -1,9 +1,3 @@
-"""Tests for BasicConsole thread safety.
-
-This module tests that BasicConsole properly handles concurrent writes
-from multiple threads without data corruption.
-"""
-
 import threading
 from io import StringIO
 
@@ -11,10 +5,7 @@ from aclaf.console._basic import BasicConsole
 
 
 class TestConsoleThreadSafety:
-    """Test BasicConsole thread safety."""
-
     def test_concurrent_writes_are_serialized(self):
-        """Concurrent writes from multiple threads don't corrupt output."""
         buffer = StringIO()
         console = BasicConsole(file=buffer)
 
@@ -26,7 +17,7 @@ class TestConsoleThreadSafety:
             for i in range(writes_per_thread):
                 console.print(f"Thread-{thread_id}-Write-{i}")
 
-        threads = []
+        threads: list[threading.Thread] = []
         for tid in range(num_threads):
             thread = threading.Thread(target=worker, args=(tid,))
             threads.append(thread)
@@ -49,7 +40,6 @@ class TestConsoleThreadSafety:
             assert "-Write-" in line
 
     def test_lock_prevents_interleaving(self):
-        """Lock prevents interleaving of multi-part writes."""
         buffer = StringIO()
         console = BasicConsole(file=buffer)
 
@@ -61,7 +51,7 @@ class TestConsoleThreadSafety:
                 # Each print writes "A B C\n" as a single atomic operation
                 console.print("A", "B", "C")
 
-        threads = []
+        threads: list[threading.Thread] = []
         for tid in range(num_threads):
             thread = threading.Thread(target=worker, args=(tid,))
             threads.append(thread)
@@ -78,7 +68,6 @@ class TestConsoleThreadSafety:
             assert line == "A B C", f"Line was corrupted: {line!r}"
 
     def test_flush_is_thread_safe(self):
-        """Flush operations are thread-safe."""
         buffer = StringIO()
         console = BasicConsole(file=buffer)
 
@@ -88,7 +77,7 @@ class TestConsoleThreadSafety:
             for i in range(10):
                 console.print(f"Message {i}", flush=True)
 
-        threads = []
+        threads: list[threading.Thread] = []
         for _ in range(num_threads):
             thread = threading.Thread(target=worker)
             threads.append(thread)
@@ -104,7 +93,6 @@ class TestConsoleThreadSafety:
         assert len(lines) == num_threads * 10
 
     def test_single_threaded_performance(self):
-        """Single-threaded operation still works correctly with lock."""
         buffer = StringIO()
         console = BasicConsole(file=buffer)
 

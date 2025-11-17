@@ -12,11 +12,11 @@ from .constants import (
     DEFAULT_TRUTHY_VALUES,
 )
 from .exceptions import (
+    DuplicateOptionError,
     FlagWithValueError,
     InsufficientOptionValuesError,
     InsufficientPositionalArgumentsError,
     InvalidFlagValueError,
-    OptionCannotBeSpecifiedMultipleTimesError,
     OptionDoesNotAcceptValueError,
     UnexpectedPositionalArgumentError,
     UnknownOptionError,
@@ -1233,9 +1233,7 @@ class Parser(BaseParser):
             case (AccumulationMode.ERROR, None):
                 accumulated_option = new
             case (AccumulationMode.ERROR, ParsedOption()):
-                raise OptionCannotBeSpecifiedMultipleTimesError(
-                    option_spec.name, option_spec
-                )
+                raise DuplicateOptionError(option_spec.name, option_spec)
 
             case _:
                 # Unreachable: all AccumulationMode values should be handled
