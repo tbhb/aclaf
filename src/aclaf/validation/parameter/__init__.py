@@ -1,7 +1,7 @@
 from annotated_types import Ge, Gt, Le, Lt, MaxLen, MinLen, MultipleOf, Predicate
 
-from aclaf.validators._registry import ValidatorRegistry
-from aclaf.validators._shared import validate_predicate
+from aclaf.validation._registry import ValidatorRegistry
+from aclaf.validation._shared import validate_predicate
 
 from ._comparison import (
     validate_ge,

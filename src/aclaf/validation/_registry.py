@@ -6,9 +6,8 @@ from annotated_types import BaseMetadata, GroupedMetadata
 from aclaf.logging import NullLogger
 
 if TYPE_CHECKING:
-    from aclaf import ParameterValueType
     from aclaf.logging import Logger
-    from aclaf.types import ParameterValueMappingType
+    from aclaf.types import ParameterValueMappingType, ParameterValueType
 
 
 ValidatorMetadataType: TypeAlias = BaseMetadata | GroupedMetadata

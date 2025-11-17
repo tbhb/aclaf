@@ -17,7 +17,7 @@ from ._runtime import (
 from .console import Console
 from .logging import Logger
 from .types import ParameterValueType
-from .validators import ValidatorFunction, ValidatorRegistry
+from .validation import ValidatorFunction, ValidatorRegistry
 
 __all__ = [
     "EMPTY_COMMAND_FUNCTION",

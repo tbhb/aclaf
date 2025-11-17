@@ -6,7 +6,7 @@ from aclaf._parameters import extract_function_parameters
 from aclaf._runtime import is_async_command_function
 from aclaf.console import Console, DefaultConsole
 from aclaf.logging import Logger, NullLogger, create_logger
-from aclaf.validators import (
+from aclaf.validation import (
     ValidatorRegistry,
     default_command_validators,
     default_parameter_validators,

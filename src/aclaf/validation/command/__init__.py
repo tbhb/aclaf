@@ -1,7 +1,7 @@
 from annotated_types import Predicate
 
-from aclaf.validators._registry import ValidatorRegistry
-from aclaf.validators._shared import validate_predicate
+from aclaf.validation._registry import ValidatorRegistry
+from aclaf.validation._shared import validate_predicate
 
 from ._conflict import ConflictsWith, validate_conflicts_with
 from ._constraint import (
