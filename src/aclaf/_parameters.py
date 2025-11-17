@@ -7,9 +7,11 @@ from typing import (
     Annotated,
     Any,
     TypedDict,
+    Union,
     Unpack,
     get_args,
     get_origin,
+    get_type_hints,
 )
 
 from annotated_types import BaseMetadata
@@ -71,35 +73,33 @@ class SpecialParameters(TypedDict, total=False):
     logger: str
 
 
-def _extract_annotated_metadata(annotation: Any) -> list[MetadataType]:  # pyright: ignore[reportExplicitAny]
-    """Extract metadata from Annotated types, recursively handling nested annotations.
+def _extract_union_metadata(type_expr: Any) -> list[MetadataType]:  # pyright: ignore[reportExplicitAny]
+    """Extract metadata from Annotated types within union type arguments.
 
-    This handles cases like:
-    - Annotated[int, Gt(0)] -> [Gt(0)]
-    - Annotated[PositiveInt, Opt()] -> [Opt(), Gt(0)]
-    - Annotated[PositiveInt | None, Opt()] -> [Opt(), Gt(0)]
+    typing-inspection library extracts metadata from the outer Annotated layer,
+    but does not extract metadata from Annotated types nested inside unions.
+    This function handles that case.
+
+    Example:
+        Annotated[Annotated[int, Gt(0)] | None, Opt()]
+        -> typing-inspection extracts: [Opt()]
+        -> this function extracts: [Gt(0)] (from the union's type)
     """
     metadata: list[MetadataType] = []
-    origin = get_origin(annotation)
+    origin = get_origin(type_expr)
 
-    if origin is not None and origin is Annotated:
-        args = get_args(annotation)
-        if len(args) > 1:
-            # args[0] is base type, args[1:] is metadata
-            metadata.extend(args[1:])
-
-            # Recursively extract from base type if it's also Annotated
-            # or contains Annotated types (e.g., in unions)
-            base_type = args[0]
-            base_origin = get_origin(base_type)
-            if base_origin is Annotated:
-                # Direct Annotated type
-                metadata.extend(_extract_annotated_metadata(base_type))
-            elif base_origin is not None:
-                # Could be a Union or other generic - check args
-                for type_arg in get_args(base_type):
-                    if get_origin(type_arg) is Annotated:
-                        metadata.extend(_extract_annotated_metadata(type_arg))
+    # Check if the type expression is a union (Union or UnionType from PEP 604)
+    # Union comes from typing.Union, while | syntax creates types.UnionType
+    if origin is Union or (origin is not None and typing_objects.is_union(type_expr)):
+        # Iterate through union type arguments
+        for type_arg in get_args(type_expr):
+            arg_origin = get_origin(type_arg)
+            # If the union member is an Annotated type, extract its metadata
+            if arg_origin is Annotated:
+                args = get_args(type_arg)
+                if len(args) > 1:
+                    # args[0] is base type, args[1:] is metadata
+                    metadata.extend(args[1:])
 
     return metadata
 
@@ -169,10 +169,13 @@ class CommandParameter(Parameter):
         self,
     ) -> MetadataByType:
         if self._metadata_by_type is None:
+            # Iterate in reverse order to implement last-wins semantics:
+            # Since metadata is in outer-to-inner order, reversing gives us
+            # inner-to-outer iteration, so outer (last in source) overwrites inner
             mapping = MappingProxyType(
                 {
                     type(meta): meta
-                    for meta in self.metadata
+                    for meta in reversed(self.metadata)
                     if isinstance(meta, BaseMetadata)
                 }
             )
@@ -187,16 +190,23 @@ class CommandParameter(Parameter):
         source: AnnotationSource,
         default: "ParameterValueType | None" = None,
     ) -> "CommandParameter":
-        # Extract metadata from Annotated wrapper BEFORE unpacking type aliases
-        # Preserves metadata from type aliases like PositiveInt
-        metadata_from_annotated = _extract_annotated_metadata(annotation)
-
-        # Inspect annotation (may unpack type aliases)
+        # Inspect annotation (handles nested Annotated, type aliases, etc.)
         ann = CommandParameter._inspect_annotation(name, annotation, source)
 
-        # Flatten and combine metadata from both sources
-        metadata_from_inspection = flatten_metadata(ann.metadata)
-        metadata = metadata_from_annotated + metadata_from_inspection
+        # Flatten metadata from inspection
+        metadata = flatten_metadata(ann.metadata)
+
+        # Extract metadata from Annotated types inside unions
+        # (typing-inspection doesn't do this)
+        union_metadata = _extract_union_metadata(ann.type)
+
+        # Combine metadata: outer annotation + union member metadata
+        # Union metadata comes second to maintain precedence
+        metadata = metadata + union_metadata
+
+        # Reverse to ensure outer-to-inner order per spec requirement
+        # (typing-inspection returns inner-to-outer, spec requires outer-to-inner)
+        metadata = list(reversed(metadata))
 
         type_expr = CommandParameter._get_type(name, ann)  # pyright: ignore[reportAny]
 
@@ -210,9 +220,9 @@ class CommandParameter(Parameter):
         )
 
         if attrs.get("kind") is None:
-            if attrs.get("long_names") or attrs.get("short_names"):
+            if attrs.get("long") or attrs.get("short"):
                 attrs["kind"] = ParameterKind.OPTION
-            if isinstance(type_expr, bool):
+            elif type_expr is bool:
                 attrs["kind"] = ParameterKind.OPTION
                 attrs["is_flag"] = True
             else:
@@ -231,18 +241,25 @@ class CommandParameter(Parameter):
     ) -> "CommandParameter":
         kind = func_parameter.kind
 
-        # Extract metadata from Annotated wrapper BEFORE unpacking type aliases
-        # Preserves metadata from type aliases like PositiveInt
-        metadata_from_annotated = _extract_annotated_metadata(annotation)
-
-        # Inspect annotation (may unpack type aliases)
+        # Inspect annotation (handles nested Annotated, type aliases, etc.)
         ann = CommandParameter._inspect_annotation(
             func_parameter.name, annotation, AnnotationSource.FUNCTION
         )
 
-        # Flatten and combine metadata from both sources
-        metadata_from_inspection = flatten_metadata(ann.metadata)
-        metadata = metadata_from_annotated + metadata_from_inspection
+        # Flatten metadata from inspection
+        metadata = flatten_metadata(ann.metadata)
+
+        # Extract metadata from Annotated types inside unions
+        # (typing-inspection doesn't do this)
+        union_metadata = _extract_union_metadata(ann.type)
+
+        # Combine metadata: outer annotation + union member metadata
+        # Union metadata comes second to maintain precedence
+        metadata = metadata + union_metadata
+
+        # Reverse to ensure outer-to-inner order per spec requirement
+        # (typing-inspection returns inner-to-outer, spec requires outer-to-inner)
+        metadata = list(reversed(metadata))
 
         default = func_parameter.default  # pyright: ignore[reportAny]
         type_expr = CommandParameter._get_type(func_parameter.name, ann)  # pyright: ignore[reportAny]
@@ -258,7 +275,7 @@ class CommandParameter(Parameter):
         )
 
         if attrs.get("kind") is None:
-            if attrs.get("long_names") or attrs.get("short_names"):
+            if attrs.get("long") or attrs.get("short"):
                 attrs["kind"] = ParameterKind.OPTION
             elif type_expr is bool:
                 attrs["kind"] = ParameterKind.OPTION
@@ -320,6 +337,11 @@ class CommandParameter(Parameter):
         long_names: list[str] = []
         short_names: list[str] = []
 
+        # Track seen metadata categories for conflict detection
+        arity_metadata: list[str] = []
+        accumulation_metadata: list[str] = []
+        kind_metadata: list[str] = []
+
         if type_expr is bool and default is not None:
             attrs["kind"] = ParameterKind.OPTION
             attrs["is_flag"] = True
@@ -334,35 +356,47 @@ class CommandParameter(Parameter):
                     short_names.append(name[1:])
                     kind = ParameterKind.OPTION if kind is None else kind
                 case "1" | ExactlyOne():
+                    arity_metadata.append("ExactlyOne")
                     attrs["arity"] = EXACTLY_ONE_ARITY
                 case "?" | AtMostOne():
+                    arity_metadata.append("AtMostOne")
                     attrs["arity"] = ZERO_OR_ONE_ARITY
                 case "*" | ZeroOrMore():
+                    arity_metadata.append("ZeroOrMore")
                     attrs["arity"] = ZERO_OR_MORE_ARITY
                 case "+" | AtLeastOne():
+                    arity_metadata.append("AtLeastOne")
                     attrs["arity"] = ONE_OR_MORE_ARITY
 
                 # Integer arity
                 case int(n) if n > 1:
+                    arity_metadata.append(f"int({n})")
                     attrs["arity"] = Arity(min=n, max=n)
 
                 # Accumulation modes
                 case FirstWins():
+                    accumulation_metadata.append("FirstWins")
                     attrs["accumulation_mode"] = AccumulationMode.FIRST_WINS
                 case LastWins():
+                    accumulation_metadata.append("LastWins")
                     attrs["accumulation_mode"] = AccumulationMode.LAST_WINS
                 case ErrorOnDuplicate():
+                    accumulation_metadata.append("ErrorOnDuplicate")
                     attrs["accumulation_mode"] = AccumulationMode.ERROR
                 case Collect(flatten=flatten):
+                    accumulation_metadata.append("Collect")
                     attrs["accumulation_mode"] = AccumulationMode.COLLECT
                     attrs["flatten_values"] = flatten
                 case Count():
+                    accumulation_metadata.append("Count")
                     attrs["accumulation_mode"] = AccumulationMode.COUNT
 
                 # Parameter kinds
                 case Arg():
+                    kind_metadata.append("Arg")
                     kind = ParameterKind.POSITIONAL if kind is None else kind
                 case Opt():
+                    kind_metadata.append("Opt")
                     kind = ParameterKind.OPTION if kind is None else kind
                 case Flag(
                     const=const,
@@ -371,6 +405,7 @@ class CommandParameter(Parameter):
                     negation=negation,
                     count=count,
                 ):
+                    kind_metadata.append("Flag")
                     kind = ParameterKind.OPTION if kind is None else kind
                     attrs["is_flag"] = True
                     attrs["const_value"] = const
@@ -378,6 +413,7 @@ class CommandParameter(Parameter):
                     attrs["truthy_flag_values"] = truthy
                     attrs["negation_words"] = negation
                     if count:
+                        accumulation_metadata.append("Count (from Flag)")
                         attrs["accumulation_mode"] = AccumulationMode.COUNT
 
                 # Default values
@@ -387,6 +423,41 @@ class CommandParameter(Parameter):
                 # Ignore other metadata types
                 case _:
                     pass
+
+        # Conflict detection
+        if len(arity_metadata) > 1:
+            arity_list = ", ".join(arity_metadata)
+            msg = f"Multiple arity specifications found: {arity_list}"
+            raise ValueError(msg)
+
+        if len(accumulation_metadata) > 1:
+            acc_list = ", ".join(accumulation_metadata)
+            msg = f"Multiple accumulation modes found: {acc_list}"
+            raise ValueError(msg)
+
+        # Check for Arg and Opt being mutually exclusive (Flag can coexist with Opt)
+        if "Arg" in kind_metadata and (
+            "Opt" in kind_metadata or "Flag" in kind_metadata
+        ):
+            msg = "Arg metadata cannot be combined with Opt or Flag metadata"
+            raise ValueError(msg)
+
+        # Validate Flag metadata compatibility
+        if attrs.get("is_flag") and type_expr not in (bool, int):
+            type_name = type_expr.__name__
+            msg = f"Flag metadata requires bool or int base type, got {type_name}"
+            raise ValueError(msg)
+
+        # Validate Count accumulation mode compatibility
+        if attrs.get(
+            "accumulation_mode"
+        ) == AccumulationMode.COUNT and type_expr not in (int, float):
+            type_name = type_expr.__name__
+            msg = (
+                f"Count accumulation mode requires int or float result type, "
+                f"got {type_name}"
+            )
+            raise ValueError(msg)
 
         if long_names:
             attrs["long"] = tuple(long_names)
@@ -510,7 +581,8 @@ class CommandParameter(Parameter):
 
 def extract_typeddict_parameters(typeddict_type: type) -> dict[str, CommandParameter]:
     parameters: dict[str, CommandParameter] = {}
-    annotations = get_annotations(typeddict_type)
+    # Use get_type_hints to resolve forward references in Python 3.14+
+    annotations = get_type_hints(typeddict_type, include_extras=True)
     for name, annotation in annotations.items():  # pyright: ignore[reportAny]
         parameters[name] = CommandParameter.from_annotation(
             name, annotation, AnnotationSource.TYPED_DICT
@@ -546,8 +618,9 @@ def extract_function_parameters(
             and typing_objects.is_unpack(origin)
         ):
             parameters.update(
-                extract_typeddict_parameters(get_args(annotation.type)[0])  # pyright: ignore[reportAny]
+                extract_typeddict_parameters(get_args(annotation)[0])  # pyright: ignore[reportAny]
             )
+            continue
 
         parameters[func_parameter.name] = CommandParameter.from_function_parameter(
             func_parameter, annotation

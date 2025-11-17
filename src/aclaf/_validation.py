@@ -1,5 +1,6 @@
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from enum import IntEnum, auto
 from typing import TypeAlias, cast
 
 from annotated_types import BaseMetadata, Ge, Gt, Le, Lt, MaxLen, MinLen, MultipleOf
@@ -18,6 +19,11 @@ ParameterSetValidatorFunctionType: TypeAlias = Callable[
 
 
 ValidatorRegistryKey: TypeAlias = type[BaseMetadata]
+
+
+class ValidationScope(IntEnum):
+    COMMAND = auto()
+    PARAMETER = auto()
 
 
 @dataclass(slots=True)

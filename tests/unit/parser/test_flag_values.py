@@ -341,8 +341,6 @@ class TestShortOptionWithoutEqualsFlagValue:
 
 
 class TestOptionSpecFlagValueValidation:
-    """Consolidated validation tests for OptionSpec truthy/falsey flag values."""
-
     def test_truthy_empty_frozenset_raises_error(self):
         with pytest.raises(
             ValueError,
@@ -462,8 +460,6 @@ class TestTruthyFalseyFlagValues:
 
 
 class TestParserConfigurationFlagValueValidation:
-    """Validation tests for Parser configuration truthy/falsey flag values."""
-
     def test_truthy_none_uses_defaults(self):
         spec = CommandSpec(name="cmd")
         parser = Parser(spec, truthy_flag_values=None)
