@@ -141,7 +141,8 @@ class TestSinglePositional:
         )
         parser = Parser(spec)
         result = parser.parse(args)
-        assert result.positionals["file"].value == ()
+        # For arity (0, 1), parser returns scalar (empty string when no value)
+        assert result.positionals["file"].value == ""
 
     def test_zero_or_one_arity_with_one_arg(self):
         args = ["file.txt"]

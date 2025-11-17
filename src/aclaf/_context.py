@@ -33,7 +33,7 @@ class ContextInput(TypedDict, total=False):
     command_path: tuple[str, ...]
     parse_result: "ParseResult"
     errors: Mapping[str, tuple[str, ...]]
-    parameters: Mapping[str, "ParameterValueType"]
+    parameters: Mapping[str, "ParameterValueType | None"]
     parameter_sources: ParameterSourceMapping
     parent: "Context"
     is_async: bool
@@ -52,7 +52,7 @@ class Context:
     errors: "Mapping[str, tuple[str, ...]]" = field(
         default_factory=lambda: MappingProxyType({})
     )
-    parameters: Mapping[str, "ParameterValueType"] = field(
+    parameters: Mapping[str, "ParameterValueType | None"] = field(
         default_factory=lambda: MappingProxyType({})
     )
     parameter_sources: ParameterSourceMapping = field(

@@ -104,6 +104,17 @@ def _extract_union_metadata(type_expr: Any) -> list[MetadataType]:  # pyright: i
     return metadata
 
 
+# Sentinel value to distinguish "no default provided" from "default=None"
+class _NoDefault:
+    """Sentinel value indicating no default was provided."""
+
+    def __repr__(self) -> str:
+        return "<no default>"
+
+
+NO_DEFAULT: Any = _NoDefault()
+
+
 @dataclass(slots=True, kw_only=True)
 class Parameter:
     kind: ParameterKind | None = None
@@ -139,7 +150,7 @@ class CommandParameter(Parameter):
     accumulation_mode: AccumulationMode | None = None
     arity: Arity | None = None
     const_value: str | None = None
-    default: "ParameterValueType | None" = None
+    default: "ParameterValueType | Any" = NO_DEFAULT
     default_factory: "DefaultFactoryFunction | None" = None
     falsey_flag_values: tuple[str, ...] | None = None
     flatten_values: bool = False
@@ -528,6 +539,9 @@ class CommandParameter(Parameter):
 
         metadata = [meta for meta in self.metadata if isinstance(meta, BaseMetadata)]
 
+        # Convert NO_DEFAULT sentinel back to None for RuntimeParameter
+        default = None if self.default is NO_DEFAULT else self.default
+
         return RuntimeParameter(
             name=self.name,
             kind=self.kind,
@@ -544,7 +558,7 @@ class CommandParameter(Parameter):
             negation_words=self.negation_words,
             const_value=self.const_value,
             flatten_values=self.flatten_values,
-            default=self.default,
+            default=default,
             default_factory=self.default_factory,
             help=self.help,
         )
@@ -562,9 +576,16 @@ class CommandParameter(Parameter):
             msg = "Parameter type must be set to convert to RuntimePositional"
             raise ValueError(msg)
 
-        arity = self.arity or Arity(min=0 if self.default is not None else 1, max=1)
+        # Check if a default was provided (including None) or default_factory
+        has_default = (
+            self.default is not NO_DEFAULT or self.default_factory is not None
+        )
+        arity = self.arity or Arity(min=0 if has_default else 1, max=1)
 
         metadata = [meta for meta in self.metadata if isinstance(meta, BaseMetadata)]
+
+        # Convert NO_DEFAULT sentinel back to None for RuntimeParameter
+        default = None if self.default is NO_DEFAULT else self.default
 
         return RuntimeParameter(
             name=self.name,
@@ -572,7 +593,7 @@ class CommandParameter(Parameter):
             value_type=self.value_type,
             metadata=tuple(metadata),
             arity=arity,
-            default=self.default,
+            default=default,
             default_factory=self.default_factory,
             help=self.help,
             is_required=self.is_required,

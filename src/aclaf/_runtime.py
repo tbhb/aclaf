@@ -16,6 +16,7 @@ from typing_extensions import override
 from aclaf._errors import ErrorConfiguration
 from aclaf.exceptions import ConversionError, ValidationError
 from aclaf.logging import Logger, NullLogger
+from aclaf.validation import default_command_validators, default_parameter_validators
 
 from ._context import Context
 from ._response import (
@@ -36,7 +37,7 @@ from .parser import (
     ParserConfiguration,
     PositionalSpec,
 )
-from .types import ParameterValueType
+from .types import ParameterValueMappingType, ParameterValueType
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -44,11 +45,11 @@ if TYPE_CHECKING:
     from annotated_types import BaseMetadata
 
     from aclaf._conversion import ConverterRegistry
-    from aclaf._validation import (
-        ParameterValidatorFunctionType,
-        ParameterValidatorRegistry,
-    )
     from aclaf.metadata import MetadataByType
+    from aclaf.validation import (
+        ValidatorFunction,
+        ValidatorRegistry,
+    )
 
     from ._conversion import ConverterFunctionType
     from .parser import ParsedParameterValue, ParseResult
@@ -63,7 +64,7 @@ EMPTY_COMMAND_FUNCTION: CommandFunctionType = lambda: None  # noqa: E731
 DefaultFactoryFunction: TypeAlias = Callable[..., ParameterValueType]
 
 CommandFunctionRunParameters: TypeAlias = dict[
-    str, ParameterValueType | Context | Console | Logger
+    str, ParameterValueType | None | Context | Console | Logger
 ]
 
 
@@ -92,7 +93,7 @@ class RuntimeParameterInput(TypedDict, total=False):
     negation_words: tuple[str, ...] | None
     short: tuple[str, ...]
     truthy_flag_values: tuple[str, ...] | None
-    validators: tuple["ParameterValidatorFunctionType", ...]
+    validators: tuple["ValidatorFunction", ...]
 
 
 @dataclass(slots=True, frozen=True)
@@ -116,9 +117,7 @@ class RuntimeParameter:
     negation_words: tuple[str, ...] | None = None
     short: tuple[str, ...] = field(default_factory=tuple)
     truthy_flag_values: tuple[str, ...] | None = None
-    validators: tuple["ParameterValidatorFunctionType", ...] = field(
-        default_factory=tuple
-    )
+    validators: tuple["ValidatorFunction", ...] = field(default_factory=tuple)
 
     _metadata_by_type: "MetadataByType | None" = field(
         default=None, init=False, repr=False
@@ -222,12 +221,14 @@ class RuntimeCommandInput(TypedDict, total=False):
     name: str
     run_func: CommandFunctionType
     converters: "ConverterRegistry"
-    validators: "ParameterValidatorRegistry"
     aliases: tuple[str, ...]
+    validations: tuple["BaseMetadata", ...]
+    command_validators: "ValidatorRegistry | None"
     console: "Console | None"
     console_param: str | None
     context_param: str | None
     error_config: "ErrorConfiguration"
+    parameter_validators: "ValidatorRegistry | None"
     parameters: "Mapping[str, RuntimeParameter]"
     is_async: bool
     logger: Logger
@@ -244,12 +245,14 @@ class RuntimeCommand:
     name: str
     run_func: CommandFunctionType
     converters: "ConverterRegistry" = field(repr=False)
-    validators: "ParameterValidatorRegistry" = field(repr=False)
+    validations: tuple["BaseMetadata", ...] = field(default_factory=tuple)
     aliases: tuple[str, ...] = field(default_factory=tuple)
+    command_validators: "ValidatorRegistry | None" = field(repr=False, default=None)
     console: "Console | None" = None
     console_param: str | None = None
     context_param: str | None = None
     error_config: "ErrorConfiguration" = field(default_factory=ErrorConfiguration)
+    parameter_validators: "ValidatorRegistry | None" = field(repr=False, default=None)
     parameters: "Mapping[str, RuntimeParameter]" = field(
         default_factory=lambda: MappingProxyType({})
     )
@@ -331,6 +334,7 @@ class RuntimeCommand:
         parameters, conversion_errors = self._convert_parameters(
             parse_result, self.parameters
         )
+
         errors = self._validate_parameters(
             parameters, self.parameters, conversion_errors
         )
@@ -451,9 +455,9 @@ class RuntimeCommand:
 
     def _convert_parameters(
         self, parse_result: "ParseResult", parameters: "Mapping[str, RuntimeParameter]"
-    ) -> tuple[dict[str, "ParameterValueType"], dict[str, str]]:
+    ) -> tuple[ParameterValueMappingType, dict[str, str]]:
         raw: dict[str, ParsedParameterValue] = {}
-        converted: dict[str, ParameterValueType] = {}
+        converted: dict[str, ParameterValueType | None] = {}
         errors: dict[str, str] = {}
 
         for name, parsed in parse_result.options.items():
@@ -462,15 +466,36 @@ class RuntimeCommand:
             raw[name] = parsed.value
 
         for name, parameter in parameters.items():
-            if name not in raw and parameter.default is not None:
+            # Check if we should use the default value
+            # This happens when:
+            # 1. Parameter not in raw (wasn't parsed), OR
+            # 2. Parameter is positional with empty value (arity min=0,
+            #    no value provided)
+            #    - Empty tuple for multi-value arities (max > 1 or unbounded)
+            #    - Empty string for single-value arities (max = 1)
+            value = raw.get(name)
+            should_use_default = name not in raw or (
+                parameter.kind == ParameterKind.POSITIONAL
+                and parameter.arity is not None
+                and parameter.arity.min == 0
+                and value in ((), "")
+            )
+
+            # Apply default if we should use it
+            # Check if a default exists by looking at arity (min=0 implies
+            # optional with default) or explicit default/default_factory
+            has_default = parameter.default_factory is not None or (
+                parameter.arity is not None and parameter.arity.min == 0
+            )
+            if should_use_default and has_default:
                 if parameter.default_factory is not None:
                     converted[name] = parameter.default_factory()
                 else:
+                    # Use the default value (which can be None)
                     converted[name] = parameter.default
                 continue
 
             type_expr = parameter.value_type
-            value = raw.get(name)
             if value is None:
                 continue
             try:
@@ -487,10 +512,15 @@ class RuntimeCommand:
 
     def _validate_parameters(
         self,
-        raw: dict[str, "ParameterValueType"],
+        raw: ParameterValueMappingType,
         parameters: "Mapping[str, RuntimeParameter]",
         conversion_errors: dict[str, str],
     ) -> dict[str, tuple[str, ...]]:
+        command_validators = self.command_validators or default_command_validators()
+        parameter_validators = (
+            self.parameter_validators or default_parameter_validators()
+        )
+
         errors: dict[str, tuple[str, ...]] = {}
         for name, parameter in parameters.items():
             if name in conversion_errors:
@@ -510,12 +540,16 @@ class RuntimeCommand:
             if value is None:
                 continue
 
-            value_errors: tuple[str, ...] | None = self.validators.validate(
-                value, raw, parameter.metadata
+            value_errors: tuple[str, ...] | None = parameter_validators.validate(
+                value, parameter.metadata
             )
 
             if value_errors:
                 errors[name] = tuple(value_errors)
+
+        command_errors = command_validators.validate(raw, self.validations)
+        if command_errors:
+            errors["__command__"] = command_errors
 
         return errors
 

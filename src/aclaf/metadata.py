@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, TypeAlias
@@ -33,8 +32,17 @@ MetadataType: TypeAlias = BaseMetadata | str | int
 MetadataByType: TypeAlias = MappingProxyType[type[BaseMetadata], BaseMetadata]
 
 
+@dataclass(slots=True, frozen=True)
+class CommandMetadata(BaseMetadata):
+    """Base class for command-scoped metadata."""
+
+
+@dataclass(slots=True, frozen=True)
 class ParameterMetadata(BaseMetadata):
-    pass
+    """Base class for parameter-scoped metadata."""
+
+
+# Parsing
 
 
 class Arg(ParameterMetadata):
@@ -127,6 +135,12 @@ class MetaVar(ParameterMetadata):
 # Validations
 
 
+## Command-level validations
+
+
+## Presence validations
+
+
 @dataclass(slots=True, frozen=True)
 class Required(BaseMetadata):
     required: bool = True
@@ -139,103 +153,4 @@ class Required(BaseMetadata):
 ## String validations
 
 
-@dataclass(slots=True, frozen=True)
-class NotBlank(BaseMetadata):
-    not_blank: bool = True
-
-    @override
-    def __hash__(self) -> int:
-        return hash(self.not_blank)
-
-
-@dataclass(slots=True, frozen=True)
-class Pattern(ParameterMetadata):
-    pattern: str
-
-
-@dataclass(slots=True, frozen=True)
-class Choices(ParameterMetadata):
-    choices: tuple[str, ...]
-
-
-@dataclass(slots=True, frozen=True)
-class StartsWith(ParameterMetadata):
-    prefix: str
-
-
-@dataclass(slots=True, frozen=True)
-class EndsWith(ParameterMetadata):
-    suffix: str
-
-
-@dataclass(slots=True, frozen=True)
-class Contains(ParameterMetadata):
-    substring: str
-
-
-@dataclass(slots=True, frozen=True)
-class Lowercase(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class Uppercase(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class Alphanumeric(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class Alpha(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class Numeric(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class Printable(ParameterMetadata):
-    pass
-
-
 ## Path validations
-
-
-@dataclass(slots=True, frozen=True)
-class PathExists(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class IsFile(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class IsDirectory(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class IsReadable(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class IsWritable(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class IsExecutable(ParameterMetadata):
-    pass
-
-
-@dataclass(slots=True, frozen=True)
-class HasExtensions(ParameterMetadata):
-    extensions: str | Iterable[str]

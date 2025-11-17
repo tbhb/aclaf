@@ -14,10 +14,10 @@ from ._runtime import (
     RuntimeCommand,
     RuntimeParameter,
 )
-from ._validation import ParameterValidatorFunctionType, ParameterValidatorRegistry
 from .console import Console
 from .logging import Logger
 from .types import ParameterValueType
+from .validators import ValidatorFunction, ValidatorRegistry
 
 __all__ = [
     "EMPTY_COMMAND_FUNCTION",
@@ -36,12 +36,12 @@ __all__ = [
     "ParameterKind",
     "ParameterSource",
     "ParameterSourceMapping",
-    "ParameterValidatorFunctionType",
-    "ParameterValidatorRegistry",
     "ParameterValueType",
     "RespondFunctionProtocol",
     "ResponderProtocol",
     "RuntimeCommand",
     "RuntimeParameter",
+    "ValidatorFunction",
+    "ValidatorRegistry",
     "app",
 ]

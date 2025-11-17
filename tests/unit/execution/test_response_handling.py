@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 
 class TestSyncResponseHandling:
-
     def test_none_result_does_nothing(self):
         output = StringIO()
         console = BasicConsole(file=output)
@@ -146,7 +145,6 @@ class TestSyncResponseHandling:
 
 
 class TestAsyncResponseHandling:
-
     @pytest.mark.asyncio
     async def test_none_result_does_nothing(self):
         output = StringIO()
@@ -281,7 +279,6 @@ class TestAsyncResponseHandling:
 
 
 class TestProtocolDispatch:
-
     def test_supports_console_protocol(self):
         output = StringIO()
         console = BasicConsole(file=output)
@@ -302,7 +299,7 @@ class TestProtocolDispatch:
             command="test", command_path=("test",), parse_result=parse_result
         )
 
-        responder._print_value(custom, context)
+        responder._render_value(custom, context)
 
         assert custom.console_called is True
 
@@ -328,7 +325,7 @@ class TestProtocolDispatch:
             command="test", command_path=("test",), parse_result=parse_result
         )
 
-        responder._print_value(custom, context)
+        responder._render_value(custom, context)
 
         assert custom.response_called is True
 
@@ -347,7 +344,7 @@ class TestProtocolDispatch:
             command="test", command_path=("test",), parse_result=parse_result
         )
 
-        responder._print_value(custom, context)
+        responder._render_value(custom, context)
 
         assert "Custom string representation" in output.getvalue()
 
@@ -378,7 +375,7 @@ class TestProtocolDispatch:
             command="test", command_path=("test",), parse_result=parse_result
         )
 
-        responder._print_value(custom, context)
+        responder._render_value(custom, context)
 
         # SupportsConsole should be called, NOT SupportsResponder
         assert custom.console_called is True
@@ -409,7 +406,7 @@ class TestProtocolDispatch:
             command="test", command_path=("test",), parse_result=parse_result
         )
 
-        responder._print_value(custom, context)
+        responder._render_value(custom, context)
 
         # SupportsResponder should be called, NOT __str__
         assert custom.response_called is True
@@ -425,6 +422,6 @@ class TestProtocolDispatch:
             command="test", command_path=("test",), parse_result=parse_result
         )
 
-        responder._print_value(None, context)
+        responder._render_value(None, context)
 
         assert output.getvalue() == ""

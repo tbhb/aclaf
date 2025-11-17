@@ -61,13 +61,13 @@ class ConsoleResponder:
                 while True:
                     value = cast("SupportsResponseType | None", next(result))
                     if value is not None:
-                        self._print_value(value, context)
+                        self._render_value(value, context)
             except StopIteration as stop:
                 stop_value = cast("SupportsResponseType | None", stop.value)
                 if stop_value is not None:
-                    self._print_value(stop_value, context)
+                    self._render_value(stop_value, context)
         elif result is not None:
-            self._print_value(result, context)
+            self._render_value(result, context)
 
     async def respond_async(
         self, result: "AsyncResponseType | None", context: "Context"
@@ -79,18 +79,18 @@ class ConsoleResponder:
             async_gen = cast("AsyncGenerator[SupportsResponseType, None]", result)
             async for value in async_gen:
                 if value is not None:
-                    self._print_value(value, context)
+                    self._render_value(value, context)
         elif inspect.iscoroutine(result):
             coroutine = cast(
                 "Coroutine[object, object, SupportsResponseType | None]", result
             )
             awaited_result = await coroutine
             if awaited_result is not None:
-                self._print_value(awaited_result, context)
+                self._render_value(awaited_result, context)
         elif result is not None:
-            self._print_value(result, context)
+            self._render_value(result, context)
 
-    def _print_value(
+    def _render_value(
         self,
         value: SupportsResponseType | None,
         context: "Context",

@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from annotated_types import BaseMetadata, Ge, Gt
+from annotated_types import BaseMetadata, Ge, GroupedMetadata, Gt
 
 from aclaf._validation import (
     ParameterValidatorFunctionType,
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 def simple_validator(
     value: "ParameterValueType | None",
     _other_parameters: "Mapping[str, ParameterValueType | None]",
-    _metadata: BaseMetadata,
+    _metadata: "BaseMetadata | GroupedMetadata",
 ) -> tuple[str, ...] | None:
     if value is None:
         return ("value cannot be None",)
@@ -28,7 +28,7 @@ def simple_validator(
 def always_valid_validator(
     _value: "ParameterValueType | None",
     _other_parameters: "Mapping[str, ParameterValueType | None]",
-    _metadata: BaseMetadata,
+    _metadata: "BaseMetadata | GroupedMetadata",
 ) -> tuple[str, ...] | None:
     return None
 
@@ -36,7 +36,7 @@ def always_valid_validator(
 def always_invalid_validator(
     _value: "ParameterValueType | None",
     _other_parameters: "Mapping[str, ParameterValueType | None]",
-    _metadata: BaseMetadata,
+    _metadata: "BaseMetadata | GroupedMetadata",
 ) -> tuple[str, ...] | None:
     return ("always fails",)
 
@@ -57,7 +57,7 @@ class TestValidatorProtocol:
         def capturing_validator(
             value: "ParameterValueType | None",
             _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
+            _metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             received_value.append(value)
             return None
@@ -76,7 +76,7 @@ class TestValidatorProtocol:
         def capturing_validator(
             _value: "ParameterValueType | None",
             other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
+            _metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             received_params.append(other_parameters)
             return None
@@ -92,12 +92,12 @@ class TestValidatorProtocol:
         assert received_params[0] == other_params
 
     def test_validator_receives_metadata_parameter(self):
-        received_metadata: list[BaseMetadata] = []
+        received_metadata: list[BaseMetadata | GroupedMetadata] = []
 
         def capturing_validator(
             _value: "ParameterValueType | None",
             _other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata: BaseMetadata,
+            metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             received_metadata.append(metadata)
             return None
@@ -134,7 +134,7 @@ class TestValidatorProtocol:
         def single_error_validator(
             _value: "ParameterValueType | None",
             _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
+            _metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             return ("single error",)
 
@@ -151,7 +151,7 @@ class TestValidatorProtocol:
         def multi_error_validator(
             _value: "ParameterValueType | None",
             _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
+            _metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             return ("error 1", "error 2", "error 3")
 
@@ -176,7 +176,7 @@ class TestValidatorProtocol:
         def bound_validator(
             value: "ParameterValueType | None",
             _other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata: BaseMetadata,
+            metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             if not isinstance(metadata, ValueBoundMetadata):
                 return ("wrong metadata type",)
@@ -208,7 +208,7 @@ class TestValidatorProtocol:
         def dependent_validator(
             value: "ParameterValueType | None",
             other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata: BaseMetadata,
+            metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             if not isinstance(metadata, DependentMetadata):
                 return ("wrong metadata type",)
@@ -246,7 +246,7 @@ class TestValidatorProtocol:
         def first_validator(
             _value: "ParameterValueType | None",
             _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
+            _metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             call_order.append("first")
             return None
@@ -254,7 +254,7 @@ class TestValidatorProtocol:
         def second_validator(
             _value: "ParameterValueType | None",
             _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
+            _metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             call_order.append("second")
             return None
@@ -271,7 +271,7 @@ class TestValidatorProtocol:
         def none_accepting_validator(
             value: "ParameterValueType | None",
             _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
+            _metadata: "BaseMetadata | GroupedMetadata",
         ) -> tuple[str, ...] | None:
             if value is None:
                 return None

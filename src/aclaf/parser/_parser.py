@@ -933,8 +933,9 @@ class Parser(BaseParser):
                 consumed_values = remaining_positionals[:to_consume]
                 remaining_positionals = remaining_positionals[to_consume:]
 
-                # For EXACTLY_ONE arity, return scalar; otherwise tuple
-                if current_positional_spec.arity == EXACTLY_ONE_ARITY:
+                # Return scalar for single-value arities (max=1), tuple otherwise
+                # This handles both EXACTLY_ONE (1,1) and optional single (0,1)
+                if current_positional_spec.arity.max == 1:
                     parsed_value: str | tuple[str, ...] = (
                         consumed_values[0] if consumed_values else ""
                     )

@@ -6,6 +6,11 @@ from aclaf._parameters import extract_function_parameters
 from aclaf._runtime import is_async_command_function
 from aclaf.console import Console, DefaultConsole
 from aclaf.logging import Logger, NullLogger, create_logger
+from aclaf.validators import (
+    ValidatorRegistry,
+    default_command_validators,
+    default_parameter_validators,
+)
 
 from ._command import Command
 
@@ -26,6 +31,8 @@ class App(Command):
         is_async: bool = False,
         logger: "Logger | str | None" = None,
         parser_config: "ParserConfiguration | None" = None,
+        command_validators: "ValidatorRegistry | None" = None,
+        parameter_validators: "ValidatorRegistry | None" = None,
     ) -> None:
         name = name or Path(sys.argv[0]).stem
         logger = create_logger(logger, name=name)
@@ -36,6 +43,8 @@ class App(Command):
             parser_config=parser_config,
             is_async=is_async,
             logger=logger or NullLogger(),
+            command_validators=command_validators or default_command_validators(),
+            parameter_validators=parameter_validators or default_parameter_validators(),
         )
 
 
