@@ -304,7 +304,7 @@ def _create_default_parameter_validators() -> ValidatorRegistry:
     # String validators - DISABLED: All are placeholders with no implementation
     # TODO(@maintainer): Implement and re-enable when ready
     # registry.register(NotBlank, validate_not_blank)
-    # registry.register(Pattern, validate_pattern)
+    registry.register(Pattern, validate_pattern)
     # registry.register(Printable, validate_printable)
     # registry.register(StartsWith, validate_starts_with)
     # registry.register(EndsWith, validate_ends_with)
