@@ -370,9 +370,9 @@ site/
 
 # Hack to find libcairo
 *.dylib
-research/
-reviews/
-specs/
+research
+reviews
+specs
 temp/
 tmp/
 
@@ -383,3 +383,5 @@ tmp/
 !.vale/config/vocabularies/
 .vale/config/vocabularies/*
 !.vale/config/vocabularies/Aclaf/
+
+coverage.json

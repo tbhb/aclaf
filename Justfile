@@ -8,7 +8,7 @@ default:
 
 # Install all dependencies (Python + Node.js)
 install:
-  uv sync --frozen
+  uv sync --frozen --all-packages --all-groups --all-extras
   pnpm install
 
 # Build the Python package
@@ -127,3 +127,15 @@ dev-docs:
 # Compile mermaid diagrams
 mermaid *args:
   pnpm exec mmdc {{args}}
+
+# Generate module dependency graph (depth: 1=top-level only, 2=submodules, etc.)
+deps-graph output="docs/diagrams/module-dependencies.svg" depth="2": install
+  #!/bin/sh
+  mkdir -p "$(dirname {{output}})"
+  uv run --frozen pydeps src/aclaf \
+    --only aclaf \
+    --max-module-depth {{depth}} \
+    --cluster \
+    --no-show \
+    -o {{output}}
+  echo "Module dependency graph generated: {{output}}"
