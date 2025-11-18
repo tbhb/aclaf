@@ -9,8 +9,9 @@ from annotated_types import Ge, Le
 from aclaf.conversion import ConversionError, ConverterRegistry, convert_bool
 
 if TYPE_CHECKING:
-    from aclaf.types import ParameterValueMappingType, ParameterValueType
-    from aclaf.validation import ValidatorMetadataType
+    from annotated_types import BaseMetadata
+
+    from aclaf.types import ParsedParameterValue
 
 
 class TestRegistryBasics:
@@ -52,8 +53,8 @@ class TestCustomConverterRegistration:
                 self.value = value
 
         def convert_custom(
-            value: "ParameterValueType | ParameterValueMappingType | None",
-            metadata: "ValidatorMetadataType",
+            value: "ParsedParameterValue | None",
+            metadata: tuple["BaseMetadata", ...] | None,
         ):
             return CustomType(str(value))
 
@@ -68,8 +69,8 @@ class TestCustomConverterRegistration:
                 self.value = value
 
         def convert_custom(
-            value: "ParameterValueType | ParameterValueMappingType | None",
-            metadata: "ValidatorMetadataType",
+            value: "ParsedParameterValue | None",
+            metadata: tuple["BaseMetadata", ...] | None,
         ):
             return CustomType(str(value))
 
@@ -82,14 +83,14 @@ class TestCustomConverterRegistration:
         registry = ConverterRegistry()
 
         def convert_str_1(
-            value: "ParameterValueType | ParameterValueMappingType | None",
-            metadata: "ValidatorMetadataType",
+            value: "ParsedParameterValue | None",
+            metadata: tuple["BaseMetadata", ...] | None,
         ):
             return str(value)
 
         def convert_str_2(
-            value: "ParameterValueType | ParameterValueMappingType | None",
-            metadata: "ValidatorMetadataType",
+            value: "ParsedParameterValue | None",
+            metadata: tuple["BaseMetadata", ...] | None,
         ):
             return str(value).upper()
 
@@ -106,8 +107,8 @@ class TestConverterUnregistration:
             pass
 
         def convert_custom(
-            value: "ParameterValueType | ParameterValueMappingType | None",
-            metadata: "ValidatorMetadataType",
+            value: "ParsedParameterValue | None",
+            metadata: tuple["BaseMetadata", ...] | None,
         ):
             return CustomType()
 
@@ -187,8 +188,8 @@ class TestConvertMethod:
             pass
 
         def convert_custom(
-            value: "ParameterValueType | ParameterValueMappingType | None",
-            metadata: "ValidatorMetadataType",
+            value: "ParsedParameterValue | None",
+            metadata: tuple["BaseMetadata", ...] | None,
         ):
             msg = "Custom error"
             raise ValueError(msg)
@@ -208,8 +209,8 @@ class TestConvertMethod:
             pass
 
         def convert_custom(
-            value: "ParameterValueType | ParameterValueMappingType | None",
-            metadata: "ValidatorMetadataType",
+            value: "ParsedParameterValue | None",
+            metadata: tuple["BaseMetadata", ...] | None,
         ):
             msg = "Custom type error"
             raise TypeError(msg)
@@ -229,8 +230,8 @@ class TestConvertMethod:
             pass
 
         def convert_custom(
-            value: "ParameterValueType | ParameterValueMappingType | None",
-            metadata: "ValidatorMetadataType",
+            value: "ParsedParameterValue | None",
+            metadata: tuple["BaseMetadata", ...] | None,
         ):
             raise ConversionError(value, CustomType, "Original error")
 
@@ -264,11 +265,11 @@ class TestAnnotatedTypeHandling:
             @classmethod
             def convert(
                 cls,
-                value: "ParameterValueType | ParameterValueMappingType | None",
-                metadata: "ValidatorMetadataType",
+                value: "ParsedParameterValue | None",
+                metadata: tuple["BaseMetadata", ...] | None,
             ):
                 cls.metadata_received = metadata
-                return int(value)
+                return int(str(value) if value is not None else "0")
 
         registry.register(int, RecordingConverter.convert)
 
@@ -307,8 +308,8 @@ class TestConverterCaching:
             @classmethod
             def from_cli_value(
                 cls,
-                value: "ParameterValueType | ParameterValueMappingType | None",
-                metadata: "ValidatorMetadataType",
+                value: "ParsedParameterValue",
+                metadata: tuple["BaseMetadata", ...] | None = None,
             ):
                 return cls(value=str(value))
 
@@ -329,8 +330,8 @@ class TestConverterWithMetadata:
             @classmethod
             def convert(
                 cls,
-                value: "ParameterValueType | ParameterValueMappingType | None",
-                metadata: "ValidatorMetadataType",
+                value: "ParsedParameterValue | None",
+                metadata: tuple["BaseMetadata", ...] | None,
             ):
                 cls.metadata_received = metadata
                 return CustomType()
@@ -349,8 +350,8 @@ class TestConverterWithMetadata:
             @classmethod
             def convert(
                 cls,
-                value: "ParameterValueType | ParameterValueMappingType | None",
-                metadata: "ValidatorMetadataType",
+                value: "ParsedParameterValue | None",
+                metadata: tuple["BaseMetadata", ...] | None,
             ):
                 cls.metadata_received = metadata
                 return CustomType()

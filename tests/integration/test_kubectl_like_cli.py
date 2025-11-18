@@ -53,8 +53,7 @@ def kubectl_get_cli(console: MockConsole) -> App:
     app = App("kubectl", console=console)
 
     @app.command()
-    def get(  # pyright: ignore[reportUnusedFunction]
-        resource_type: str,
+    def get(        resource_type: str,
         resource_names: Annotated[tuple[str, ...], ZeroOrMore()] = (),
         output: Annotated[str | None, "-o"] = None,
         watch: Annotated[bool, "-w"] = False,
@@ -96,8 +95,7 @@ def kubectl_exec_cli(console: MockConsole) -> App:
     app = App("kubectl", console=console)
 
     @app.command()
-    def exec(  # pyright: ignore[reportUnusedFunction]
-        pod_name: str,
+    def exec(        pod_name: str,
         command: Annotated[tuple[str, ...], ZeroOrMore()] = (),
         interactive: Annotated[bool, "-i"] = False,
         tty: Annotated[bool, "-t"] = False,
@@ -209,8 +207,7 @@ class TestKubectlDeleteCommand:
         app = App("kubectl", console=console)
 
         @app.command()
-        def delete(  # pyright: ignore[reportUnusedFunction]
-            resource_type: str, resource_names: Annotated[tuple[str, ...], AtLeastOne()]
+        def delete(            resource_type: str, resource_names: Annotated[tuple[str, ...], AtLeastOne()]
         ):
             console.print(f"[delete] resource_type={resource_type}")
             console.print(f"[delete] resource_names={resource_names!r}")
@@ -226,8 +223,7 @@ class TestKubectlDeleteCommand:
         app = App("kubectl", console=console)
 
         @app.command()
-        def delete(  # pyright: ignore[reportUnusedFunction]
-            resource_type: str, resource_names: Annotated[tuple[str, ...], AtLeastOne()]
+        def delete(            resource_type: str, resource_names: Annotated[tuple[str, ...], AtLeastOne()]
         ):
             console.print(f"[delete] resource_type={resource_type}")
             console.print(f"[delete] resource_names={resource_names!r}")
@@ -242,8 +238,7 @@ class TestKubectlDeleteCommand:
         app = App("kubectl", console=console)
 
         @app.command()
-        def delete(  # pyright: ignore[reportUnusedFunction]
-            resource_type: str, resource_names: Annotated[tuple[str, ...], AtLeastOne()]
+        def delete(            resource_type: str, resource_names: Annotated[tuple[str, ...], AtLeastOne()]
         ):
             console.print(f"[delete] resource_type={resource_type}")
             console.print(f"[delete] resource_names={resource_names!r}")
@@ -440,8 +435,7 @@ class TestKubectlGlobalFlags:
         app = App("kubectl", console=console)
 
         @app.handler()
-        def kubectl(  # pyright: ignore[reportUnusedFunction]
-            namespace: Annotated[str | None, "-n"] = None,
+        def kubectl(            namespace: Annotated[str | None, "-n"] = None,
             context: Annotated[str | None, Opt()] = None,
         ):
             if namespace:
@@ -766,8 +760,7 @@ class TestComplexKubectlScenarios:
         app = App("kubectl", console=console)
 
         @app.handler()
-        def kubectl(  # pyright: ignore[reportUnusedFunction]
-            namespace: Annotated[str | None, "-n"] = None,
+        def kubectl(            namespace: Annotated[str | None, "-n"] = None,
             context: Annotated[str | None, Opt()] = None,
             kubeconfig: Annotated[str | None, Opt()] = None,
         ):
@@ -779,8 +772,7 @@ class TestComplexKubectlScenarios:
                 console.print(f"[kubectl] kubeconfig={kubeconfig}")
 
         @app.command()
-        def get(  # pyright: ignore[reportUnusedFunction]
-            resource_type: str,
+        def get(            resource_type: str,
             resource_names: Annotated[tuple[str, ...], ZeroOrMore()] = (),
             output: Annotated[str | None, "-o"] = None,
             watch: Annotated[bool, "-w"] = False,
@@ -802,8 +794,7 @@ class TestComplexKubectlScenarios:
             console.print(f"[describe] resource_name={resource_name}")
 
         @app.command()
-        def delete(  # pyright: ignore[reportUnusedFunction]
-            resource_type: str, resource_names: Annotated[tuple[str, ...], AtLeastOne()]
+        def delete(            resource_type: str, resource_names: Annotated[tuple[str, ...], AtLeastOne()]
         ):
             console.print(f"[delete] resource_type={resource_type}")
             console.print(f"[delete] resource_names={resource_names!r}")
@@ -819,8 +810,7 @@ class TestComplexKubectlScenarios:
                 console.print("[logs] follow=True")
 
         @app.command()
-        def exec(  # pyright: ignore[reportUnusedFunction]
-            pod_name: str,
+        def exec(            pod_name: str,
             command: Annotated[tuple[str, ...], ZeroOrMore()] = (),
             interactive: Annotated[bool, "-i"] = False,
             tty: Annotated[bool, "-t"] = False,
@@ -885,8 +875,7 @@ class TestComplexKubectlScenarios:
         app = App("kubectl", console=console)
 
         @app.command()
-        def get(  # pyright: ignore[reportUnusedFunction]
-            resource_type: str,
+        def get(            resource_type: str,
             all_namespaces: Annotated[bool, "-A"] = False,
             output: Annotated[str | None, "-o"] = None,
         ):
@@ -908,8 +897,7 @@ class TestComplexKubectlScenarios:
         app = App("kubectl", console=console)
 
         @app.command()
-        def exec(  # pyright: ignore[reportUnusedFunction]
-            pod_name: str,
+        def exec(            pod_name: str,
             command: Annotated[tuple[str, ...], ZeroOrMore()] = (),
             interactive: Annotated[bool, "-i"] = False,
             tty: Annotated[bool, "-t"] = False,
@@ -955,8 +943,7 @@ class TestComplexKubectlScenarios:
                 console.print(f"[kubectl] namespace={namespace}")
 
         @app.command()
-        def get(  # pyright: ignore[reportUnusedFunction]
-            resource_type: str,
+        def get(            resource_type: str,
             output: Annotated[str | None, "-o"] = None,
             watch: Annotated[bool, "-w"] = False,
         ):

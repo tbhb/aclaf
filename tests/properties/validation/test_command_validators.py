@@ -150,7 +150,7 @@ def test_mutually_exclusive_fails_iff_multiple_provided(
     metadata = MutuallyExclusive(parameter_names=param_names)
 
     # Generate mapping
-    value = data.draw(parameter_mapping_strategy(param_names=param_names))
+    value = data.draw(parameter_mapping_strategy(param_names=tuple(param_names)))
 
     # Count provided parameters (non-None)
     provided_count = sum(1 for name in param_names if value.get(name) is not None)
@@ -175,7 +175,7 @@ def test_exactly_one_of_passes_iff_exactly_one_provided(
     metadata = ExactlyOneOf(parameter_names=param_names)
 
     # Generate mapping
-    value = data.draw(parameter_mapping_strategy(param_names=param_names))
+    value = data.draw(parameter_mapping_strategy(param_names=tuple(param_names)))
 
     # Count provided parameters (non-None)
     provided_count = sum(1 for name in param_names if value.get(name) is not None)
@@ -200,7 +200,7 @@ def test_at_least_one_of_passes_iff_one_or_more_provided(
     metadata = AtLeastOneOf(parameter_names=param_names)
 
     # Generate mapping
-    value = data.draw(parameter_mapping_strategy(param_names=param_names))
+    value = data.draw(parameter_mapping_strategy(param_names=tuple(param_names)))
 
     # Count provided parameters (non-None)
     provided_count = sum(1 for name in param_names if value.get(name) is not None)
@@ -225,7 +225,7 @@ def test_at_most_one_of_passes_iff_zero_or_one_provided(
     metadata = AtMostOneOf(parameter_names=param_names)
 
     # Generate mapping
-    value = data.draw(parameter_mapping_strategy(param_names=param_names))
+    value = data.draw(parameter_mapping_strategy(param_names=tuple(param_names)))
 
     # Count provided parameters (non-None)
     provided_count = sum(1 for name in param_names if value.get(name) is not None)
@@ -254,7 +254,7 @@ def test_mutually_exclusive_ignores_extra_parameters(
 
     # Generate base mapping
     value = data.draw(
-        parameter_mapping_strategy(param_names=param_names, include_extra=False)
+        parameter_mapping_strategy(param_names=tuple(param_names), include_extra=False)
     )
 
     # Add many extra parameters with non-None values
@@ -297,7 +297,7 @@ def test_requires_no_validation_when_source_not_provided(
     metadata = Requires(source=source, required=required)
 
     # Create mapping where source is None
-    value = {source: None}
+    value: dict[str, bool | None] = {source: None}
     # Add some required params (may or may not be None)
     for req in required:
         value[req] = data.draw(st.one_of(st.none(), st.booleans()))
@@ -330,7 +330,7 @@ def test_forbids_no_validation_when_source_not_provided(
     metadata = Forbids(source=source, forbidden=forbidden)
 
     # Create mapping where source is None
-    value = {source: None}
+    value: dict[str, bool | None] = {source: None}
     # Add forbidden params (can be anything)
     for forb in forbidden:
         value[forb] = data.draw(st.one_of(st.none(), st.booleans()))
@@ -412,7 +412,7 @@ def test_conflicts_with_equivalent_to_mutually_exclusive(
     mutually_exclusive_meta = MutuallyExclusive(parameter_names=param_names)
 
     # Generate mapping
-    value = data.draw(parameter_mapping_strategy(param_names=param_names))
+    value = data.draw(parameter_mapping_strategy(param_names=tuple(param_names)))
 
     conflicts_result = validate_conflicts_with(value, conflicts_meta)
     mutually_exclusive_result = validate_mutually_exclusive(

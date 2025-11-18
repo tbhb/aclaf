@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 
 def validate_predicate(
-    value: "ParameterValueType | ParameterValueMappingType | None",
+    _value: "ParameterValueType | ParameterValueMappingType | None",
     metadata: "ValidatorMetadataType",
 ) -> tuple[str, ...] | None:
     """Placeholder for Predicate validator.

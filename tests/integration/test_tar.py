@@ -89,8 +89,8 @@ class TestBundledSyntax:
         app = App("tar", console=console)
 
         @app.command()
-        def tar(  # pyright: ignore[reportUnusedFunction]
-            files: Annotated[tuple[str, ...], ZeroOrMore()] = (),
+        def tar(
+            _files: Annotated[tuple[str, ...], ZeroOrMore()] = (),
             list_contents: Annotated[bool, "-t"] = False,
             verbose: Annotated[bool, "-v"] = False,
             file: Annotated[str | None, "-f"] = None,
@@ -233,8 +233,8 @@ class TestCompressionOptions:
         app = App("tar", console=console)
 
         @app.command()
-        def tar(  # pyright: ignore[reportUnusedFunction]
-            files: Annotated[tuple[str, ...], ZeroOrMore()] = (),
+        def tar(
+            _files: Annotated[tuple[str, ...], ZeroOrMore()] = (),
             extract: Annotated[bool, "-x"] = False,
             verbose: Annotated[bool, "-v"] = False,
             file: Annotated[str | None, "-f"] = None,

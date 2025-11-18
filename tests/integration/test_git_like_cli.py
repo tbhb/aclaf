@@ -41,7 +41,7 @@ def git_cli(console: MockConsole) -> App:
     app = App("git", console=console)
 
     @app.command()
-    def commit(  # pyright: ignore[reportUnusedFunction]
+    def commit(
         message: Annotated[str, "-m"],
         all: Annotated[bool, "-a"] = False,
         amend: bool = False,
@@ -53,7 +53,7 @@ def git_cli(console: MockConsole) -> App:
             console.print("[commit] amend=True")
 
     @app.command()
-    def log(  # pyright: ignore[reportUnusedFunction]
+    def log(
         oneline: bool = False,
         graph: bool = False,
         all: bool = False,
@@ -94,7 +94,7 @@ def git_cli(console: MockConsole) -> App:
             console.print("[checkout] branch=True")
 
     @app.command()
-    def add(  # pyright: ignore[reportUnusedFunction]
+    def add(
         files: Annotated[tuple[str, ...], AtLeastOne()],
         all: Annotated[bool, "-A"] = False,
         patch: Annotated[bool, "-p"] = False,
@@ -164,7 +164,7 @@ class TestGitBranchCommand:
         app = App("git", console=console)
 
         @app.command()
-        def branch(  # pyright: ignore[reportUnusedFunction]
+        def branch(
             branches: tuple[str, ...],
             delete: Annotated[bool, "-d"] = False,
             force_delete: Annotated[bool, "-D"] = False,
@@ -506,7 +506,7 @@ class TestComplexGitScenarios:
         app = App("git", console=console)
 
         @app.handler()
-        def git(  # pyright: ignore[reportUnusedFunction]
+        def git(
             verbose: Annotated[int, "-v", Flag(count=True)] = 0,
             quiet: Annotated[bool, "-q"] = False,
         ):
