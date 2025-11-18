@@ -9,8 +9,8 @@ from aclaf.parser import (
     Parser,
     ParseResult,
 )
-from aclaf.parser.constants import DEFAULT_FALSEY_VALUES, DEFAULT_TRUTHY_VALUES
-from aclaf.parser.exceptions import (
+from aclaf.parser._constants import DEFAULT_FALSEY_VALUES, DEFAULT_TRUTHY_VALUES
+from aclaf.parser._exceptions import (
     FlagWithValueError,
     InvalidFlagValueError,
     ParserConfigurationError,

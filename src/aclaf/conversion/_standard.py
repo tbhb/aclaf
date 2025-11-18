@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from aclaf.exceptions import ConversionError
+from ._exceptions import ConversionError
 
 if TYPE_CHECKING:
     from annotated_types import BaseMetadata

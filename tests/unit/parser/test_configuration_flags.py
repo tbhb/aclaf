@@ -7,7 +7,7 @@ from aclaf.parser import (
     Parser,
     PositionalSpec,
 )
-from aclaf.parser.exceptions import (
+from aclaf.parser._exceptions import (
     AmbiguousOptionError,
     AmbiguousSubcommandError,
     ParserConfigurationError,
@@ -15,7 +15,7 @@ from aclaf.parser.exceptions import (
     UnknownOptionError,
     UnknownSubcommandError,
 )
-from aclaf.parser.types import (
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
     ZERO_ARITY,
 )

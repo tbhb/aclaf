@@ -8,9 +8,9 @@ from aclaf.parser import (
     Parser,
     PositionalSpec,
 )
-from aclaf.parser.constants import DEFAULT_NEGATIVE_NUMBER_PATTERN
-from aclaf.parser.exceptions import ParserConfigurationError, UnknownOptionError
-from aclaf.parser.types import (
+from aclaf.parser._constants import DEFAULT_NEGATIVE_NUMBER_PATTERN
+from aclaf.parser._exceptions import ParserConfigurationError, UnknownOptionError
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
     ZERO_ARITY,
     ZERO_OR_MORE_ARITY,

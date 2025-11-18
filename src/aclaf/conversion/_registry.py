@@ -19,11 +19,11 @@ from typing_inspection import typing_objects
 from typing_inspection.introspection import AnnotationSource
 
 from aclaf._internal._inspect import inspect_annotation
-from aclaf.exceptions import ConversionError
 from aclaf.logging import Logger, NullLogger
 from aclaf.parser import ParsedParameterValue
 from aclaf.types import FromArgument
 
+from ._exceptions import ConversionError
 from ._standard import (
     convert_bool,
     convert_float,

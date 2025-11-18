@@ -1,5 +1,6 @@
 """A command line application framework."""
 
+from ._application import App, app
 from .console import Console
 from .conversion import ConverterFunctionType, ConverterRegistry
 from .execution import (
@@ -12,7 +13,7 @@ from .execution import (
     RuntimeParameter,
 )
 from .logging import Logger
-from .registration import App, Command, CommandInput, CommandParameter, Parameter, app
+from .registration import Command, CommandInput, CommandParameter, Parameter
 from .types import ParameterKind, ParameterValueType
 from .validation import ValidatorFunction, ValidatorRegistry
 

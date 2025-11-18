@@ -1,10 +1,10 @@
 import pytest
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser, ParseResult, PositionalSpec
-from aclaf.parser.exceptions import (
+from aclaf.parser._exceptions import (
     InsufficientPositionalArgumentsError,
 )
-from aclaf.parser.types import (
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
     ONE_OR_MORE_ARITY,
     ZERO_OR_MORE_ARITY,

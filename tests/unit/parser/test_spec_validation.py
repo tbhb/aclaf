@@ -5,7 +5,7 @@ from aclaf.parser import (
     OptionSpec,
     PositionalSpec,
 )
-from aclaf.parser.types import Arity
+from aclaf.parser._types import Arity
 
 
 class TestCommandSpecNameValidation:

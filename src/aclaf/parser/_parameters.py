@@ -3,7 +3,7 @@ import warnings
 from dataclasses import dataclass, field
 from typing import TypedDict
 
-from .types import AccumulationMode, Arity
+from ._types import AccumulationMode, Arity
 
 LONG_NAME_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z-_]*[a-zA-Z0-9]$")
 SHORT_NAME_REGEX = re.compile(r"^[a-zA-Z0-9]$")

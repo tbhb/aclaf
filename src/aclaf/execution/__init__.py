@@ -7,7 +7,7 @@ from ._command import (
 )
 from ._context import Context, ContextInput
 from ._exceptions import DefaultFactoryError, ExecutionError
-from ._hooks import Hook, HookRegistry
+from ._hook_registry import Hook, HookRegistry
 from ._parameter import RuntimeParameter, RuntimeParameterInput
 from ._types import (
     CommandFunctionType,

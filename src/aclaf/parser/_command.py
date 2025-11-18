@@ -3,8 +3,8 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, TypedDict
 from typing_extensions import override
 
-from .constants import COMMAND_NAME_REGEX
-from .exceptions import (
+from ._constants import COMMAND_NAME_REGEX
+from ._exceptions import (
     AmbiguousOptionError,
     AmbiguousSubcommandError,
     UnknownOptionError,

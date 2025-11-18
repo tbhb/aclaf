@@ -1,4 +1,4 @@
-from .constants import COMMAND_NAME_REGEX
+from ._constants import COMMAND_NAME_REGEX
 
 
 def validate_command_name(name: str) -> None:

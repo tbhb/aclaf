@@ -11,7 +11,7 @@ from typing import (
 from typing_extensions import override
 
 from aclaf.console import Console, DefaultConsole, SupportsConsole
-from aclaf.exceptions import ConversionError, ValidationError
+from aclaf.conversion import ConversionError
 from aclaf.logging import Logger, NullLogger
 from aclaf.parser import (
     BaseParser,
@@ -21,6 +21,7 @@ from aclaf.parser import (
 )
 from aclaf.types import ParameterValueType
 from aclaf.validation import (
+    ValidationError,
     ValidatorMetadataType,
     default_command_validators,
     default_parameter_validators,
@@ -31,7 +32,6 @@ from ._context import Context
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Coroutine, Mapping, Sequence
 
-    from aclaf._hooks import HookRegistry
     from aclaf.conversion import ConverterRegistry
     from aclaf.parser import ParsedParameterValue, ParseResult
     from aclaf.response import (
@@ -44,6 +44,7 @@ if TYPE_CHECKING:
         ValidatorRegistry,
     )
 
+    from ._hook_registry import HookRegistry
     from ._parameter import RuntimeParameter
     from ._types import CommandFunctionType
 

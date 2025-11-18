@@ -1,5 +1,5 @@
 from aclaf.parser import ZERO_ARITY, CommandSpec, OptionSpec, Parser
-from aclaf.parser.types import (
+from aclaf.parser._types import (
     AccumulationMode,
 )
 

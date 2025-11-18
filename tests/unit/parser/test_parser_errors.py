@@ -1,7 +1,7 @@
 import pytest
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
-from aclaf.parser.exceptions import (
+from aclaf.parser._exceptions import (
     DuplicateOptionError,
     FlagWithValueError,
     InsufficientOptionValuesError,
@@ -12,7 +12,7 @@ from aclaf.parser.exceptions import (
     UnknownOptionError,
     UnknownSubcommandError,
 )
-from aclaf.parser.types import (
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
     ZERO_ARITY,
     ZERO_OR_MORE_ARITY,

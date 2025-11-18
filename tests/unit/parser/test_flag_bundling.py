@@ -6,12 +6,12 @@ from aclaf.parser import (
     Parser,
     PositionalSpec,
 )
-from aclaf.parser.exceptions import (
+from aclaf.parser._exceptions import (
     InsufficientOptionValuesError,
     InvalidFlagValueError,
     UnknownOptionError,
 )
-from aclaf.parser.types import (
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
     ONE_OR_MORE_ARITY,
     ZERO_ARITY,

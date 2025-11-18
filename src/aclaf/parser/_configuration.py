@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from typing import Final, TypedDict
 
-from .exceptions import ParserConfigurationError
+from ._exceptions import ParserConfigurationError
 
 
 class ParserConfigurationInput(TypedDict, total=False):

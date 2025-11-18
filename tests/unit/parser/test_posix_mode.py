@@ -1,5 +1,5 @@
 from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
-from aclaf.parser.types import (
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
     ZERO_OR_MORE_ARITY,
 )

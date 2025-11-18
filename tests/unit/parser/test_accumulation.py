@@ -8,8 +8,8 @@ from aclaf.parser import (
     Parser,
     ParseResult,
 )
-from aclaf.parser.exceptions import DuplicateOptionError
-from aclaf.parser.types import (
+from aclaf.parser._exceptions import DuplicateOptionError
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
     ONE_OR_MORE_ARITY,
     ZERO_ARITY,

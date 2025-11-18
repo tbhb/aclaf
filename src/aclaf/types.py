@@ -8,7 +8,7 @@ from typing_extensions import override
 
 from annotated_types import BaseMetadata, Ge, Gt, Le, Lt
 
-from aclaf.parser.types import (
+from aclaf.parser._types import (
     ParsedParameterValue,
 )
 

@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from ._command import CommandSpec
-    from .types import ParsedOptionValue, ParsedPositionalValue
+    from ._types import ParsedOptionValue, ParsedPositionalValue
 
 
 @dataclass(slots=True, frozen=True, unsafe_hash=True)

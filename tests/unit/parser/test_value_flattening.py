@@ -1,7 +1,7 @@
 import warnings
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser
-from aclaf.parser.types import AccumulationMode, Arity
+from aclaf.parser._types import AccumulationMode, Arity
 
 
 class TestBasicFlattening:

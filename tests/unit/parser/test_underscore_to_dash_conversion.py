@@ -5,8 +5,8 @@ from aclaf.parser import (
     OptionSpec,
     Parser,
 )
-from aclaf.parser.exceptions import UnknownOptionError
-from aclaf.parser.types import (
+from aclaf.parser._exceptions import UnknownOptionError
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
     ZERO_ARITY,
     AccumulationMode,

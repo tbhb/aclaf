@@ -1,10 +1,10 @@
 import pytest
 
 from aclaf.parser import CommandSpec, OptionSpec, Parser
-from aclaf.parser.exceptions import (
+from aclaf.parser._exceptions import (
     UnknownOptionError,
 )
-from aclaf.parser.types import (
+from aclaf.parser._types import (
     EXACTLY_ONE_ARITY,
 )
 

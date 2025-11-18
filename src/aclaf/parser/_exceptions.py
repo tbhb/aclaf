@@ -4,7 +4,7 @@ from aclaf.exceptions import AclafError
 
 if TYPE_CHECKING:
     from ._parameters import OptionSpec
-    from .types import Arity
+    from ._types import Arity
 
 
 def _format_option_name(name: str) -> str:
