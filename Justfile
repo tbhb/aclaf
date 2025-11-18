@@ -119,3 +119,7 @@ deploy-docs-pr number: (build-docs-pr number)
 # Develop the documentation site locally
 dev-docs:
   uv run mkdocs serve --livereload
+
+# Compile mermaid diagrams
+mermaid *args:
+  pnpm exec mmdc {{args}}
