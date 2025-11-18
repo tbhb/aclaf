@@ -142,7 +142,7 @@ root_package = "aclaf"
 # layers provide foundational functionality and higher layers build on them.
 #
 # Layer hierarchy (from lowest to highest):
-#   0. Utilities: _internal (runtime type inspection, zero aclaf dependencies)
+#   0. Utilities: _internal (runtime type inspection utilities only)
 #   1. Foundation: exceptions, protocols, types
 #   2. Infrastructure: console, logging, parser
 #   3. Core logic: conversion, validation, metadata
@@ -151,9 +151,10 @@ root_package = "aclaf"
 #   6. Application: _application (orchestration)
 #
 # _internal is a special utility layer that sits below foundation. It provides
-# runtime type inspection capabilities (wrapping typing-extensions, typing-inspection,
+# runtime type inspection utilities (wrapping typing-extensions, typing-inspection,
 # annotated-types) and must remain completely independent of all aclaf modules.
-# Only conversion and registration layers should import from _internal.
+# After the metadata refactoring, _internal only contains _inspect.py (runtime
+# type inspection). Only conversion and registration layers should import from _internal.
 
 [[tool.importlinter.contracts]]
 name = "Parser must remain isolated from business logic"
@@ -241,6 +242,9 @@ forbidden_modules = [
   "aclaf.response",
   "aclaf._application",
 ]
+# Metadata provides command/parameter metadata extraction and manipulation utilities.
+# It can import from foundation layers and parser, but must not import from conversion,
+# validation, or higher layers to maintain clean architectural separation.
 
 [[tool.importlinter.contracts]]
 name = "Execution layer must not import from registration"
@@ -267,15 +271,17 @@ forbidden_modules = [
   "aclaf.logging",
   "aclaf.conversion",
   "aclaf.validation",
+  "aclaf.metadata",
   "aclaf.execution",
   "aclaf.registration",
   "aclaf.response",
   "aclaf._application",
 ]
-# _internal provides runtime type inspection utilities and should minimize dependencies.
-# It can import from foundation layers (exceptions, protocols, types, metadata) for
-# type annotations, but must not import from infrastructure or higher layers.
-# This keeps _internal lightweight while allowing necessary type hints.
+# _internal provides runtime type inspection utilities (_inspect.py) and must remain
+# completely independent of all aclaf modules. It can import from foundation layers
+# (exceptions, protocols, types) for type annotations, but must not import from
+# metadata, infrastructure, or higher layers. This keeps _internal minimal and
+# prevents circular dependencies.
 
 [[tool.importlinter.contracts]]
 name = "Internal utilities should only be directly imported by conversion and registration"
