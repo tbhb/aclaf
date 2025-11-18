@@ -1,10 +1,14 @@
 
 import pytest
 
-from aclaf import EMPTY_COMMAND_FUNCTION, ParameterKind, RuntimeParameter
+from aclaf import (
+    EMPTY_COMMAND_FUNCTION,
+    ParameterKind,
+    RuntimeParameter,
+    ValidatorRegistry,
+)
 from aclaf._conversion import ConverterRegistry
 from aclaf._runtime import RuntimeCommand
-from aclaf._validation import ParameterValidatorRegistry
 from aclaf.parser import (
     EXACTLY_ONE_ARITY,
     ONE_OR_MORE_ARITY,
@@ -22,7 +26,7 @@ class TestCommandSpecConversion:
             name="test",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
         spec = cmd.to_command_spec()
 
@@ -38,7 +42,7 @@ class TestCommandSpecConversion:
             name="test",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             aliases=("t", "tst"),
         )
         spec = cmd.to_command_spec()
@@ -50,7 +54,7 @@ class TestCommandSpecConversion:
             name="test",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
 
         spec1 = cmd.to_command_spec()
@@ -63,13 +67,13 @@ class TestCommandSpecConversion:
             name="child",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             subcommands={"child": child},
         )
 
@@ -84,20 +88,20 @@ class TestCommandSpecConversion:
             name="leaf",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
         mid = RuntimeCommand(
             name="mid",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             subcommands={"leaf": leaf},
         )
         root = RuntimeCommand(
             name="root",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             subcommands={"mid": mid},
         )
 
@@ -275,7 +279,7 @@ class TestCommandWithParameterSpecConversion:
             name="test",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"verbose": opt1, "output": opt2},
         )
 
@@ -304,7 +308,7 @@ class TestCommandWithParameterSpecConversion:
             name="test",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"source": pos1, "dest": pos2},
         )
 
@@ -334,7 +338,7 @@ class TestCommandWithParameterSpecConversion:
             name="test",
             run_func=EMPTY_COMMAND_FUNCTION,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"verbose": opt, "file": pos},
         )
 

@@ -63,8 +63,8 @@ from .parser import (
 if TYPE_CHECKING:
     from ._conversion import ConverterFunctionType
     from ._runtime import DefaultFactoryFunction
-    from ._validation import ParameterValidatorFunctionType
     from .types import ParameterValueType
+    from .validation import ValidatorFunction
 
 
 class SpecialParameters(TypedDict, total=False):
@@ -142,7 +142,7 @@ class CommandParameterInput(TypedDict, total=False):
     short: tuple[str, ...]
     truthy_flag_values: tuple[str, ...] | None
     value_type: "type[ParameterValueType] | None"
-    validators: tuple["ParameterValidatorFunctionType", ...]
+    validators: tuple["ValidatorFunction", ...]
 
 
 @dataclass(slots=True)
@@ -167,7 +167,7 @@ class CommandParameter(Parameter):
     value_type: "type[ParameterValueType] | None" = None
 
     converter: "ConverterFunctionType | None" = None
-    validators: tuple["ParameterValidatorFunctionType", ...] = field(
+    validators: tuple["ValidatorFunction", ...] = field(
         default_factory=tuple
     )
 

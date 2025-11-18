@@ -18,12 +18,19 @@ from annotated_types import BaseMetadata
 from typing_inspection import typing_objects
 from typing_inspection.introspection import AnnotationSource
 
+from aclaf._internal._inspect import inspect_annotation
+from aclaf.exceptions import ConversionError
 from aclaf.logging import Logger, NullLogger
+from aclaf.parser import ParsedParameterValue
+from aclaf.types import ConvertibleProtocol
 
-from ._internal._inspect import inspect_annotation
-from .exceptions import ConversionError
-from .parser import ParsedParameterValue
-from .types import ConvertibleProtocol
+from ._standard import (
+    convert_bool,
+    convert_float,
+    convert_int,
+    convert_path,
+    convert_str,
+)
 
 T = TypeVar("T")
 K = TypeVar("K")
@@ -51,7 +58,7 @@ class ConverterRegistry:
         all runtime type errors.
     """
 
-    converters: dict[type[Any], ConverterFunctionType] = field(
+    _converters: dict[type[Any], ConverterFunctionType] = field(
         default_factory=dict, init=False, repr=False
     )
     logger: Logger = field(default_factory=NullLogger)
@@ -75,12 +82,12 @@ class ConverterRegistry:
         Raises:
             ValueError: If a converter for this type is already registered
         """
-        if type_ in self.converters:
+        if type_ in self._converters:
             msg = f"Converter for type '{type_.__name__}' is already registered."
             raise ValueError(msg)
         # Cast is needed because we store all converters as returning Any,
         # even though this specific converter returns T
-        self.converters[type_] = cast("ConverterFunctionType", converter)
+        self._converters[type_] = cast("ConverterFunctionType", converter)
 
     def unregister(self, type_: type[Any]) -> None:
         """Remove a registered converter for a type.
@@ -91,7 +98,7 @@ class ConverterRegistry:
         Raises:
             KeyError: If no converter is registered for this type
         """
-        del self.converters[type_]
+        del self._converters[type_]
 
     def merge_from(self, other: "ConverterRegistry") -> None:
         """Merge converters from another registry into this one.
@@ -106,9 +113,9 @@ class ConverterRegistry:
         Args:
             other: The registry to merge converters from
         """
-        for type_, converter in other.converters.items():
-            if type_ not in self.converters:
-                self.converters[type_] = converter
+        for type_, converter in other._converters.items():
+            if type_ not in self._converters:
+                self._converters[type_] = converter
 
     def get_converter(  # noqa: PLR0911
         self, type_: Any
@@ -157,8 +164,8 @@ class ConverterRegistry:
 
                 return annotated_converter
 
-        if type_ in self.converters:
-            return self.converters[type_]
+        if type_ in self._converters:
+            return self._converters[type_]
 
         converter = self._try_enum_converter(type_)
         if converter is not None:
@@ -335,7 +342,7 @@ class ConverterRegistry:
         """
         converter = self.get_converter(target_type)
         if converter is None:
-            type_name = getattr(target_type, '__name__', repr(target_type))
+            type_name = getattr(target_type, "__name__", repr(target_type))
             msg = f"No converter registered for type '{type_name}'."
             raise TypeError(msg)
 
@@ -562,125 +569,3 @@ class ConverterRegistry:
         self.register(float, convert_float)
         self.register(bool, convert_bool)
         self.register(Path, convert_path)
-
-
-def convert_str(
-    value: ParsedParameterValue | None,
-    _metadata: tuple[BaseMetadata, ...] | None = None,
-) -> str:
-    """Convert a parsed value to string.
-
-    Args:
-        value: The value to convert (None returns empty string)
-        _metadata: Unused metadata parameter
-
-    Returns:
-        The value as a string
-    """
-    if value is None:
-        return ""
-    if isinstance(value, str):
-        return value
-    return str(value)
-
-
-def convert_int(
-    value: ParsedParameterValue | None,
-    _metadata: tuple[BaseMetadata, ...] | None = None,
-) -> int:
-    """Convert a parsed value to integer.
-
-    Args:
-        value: The value to convert
-        _metadata: Unused metadata parameter
-
-    Returns:
-        The value as an integer
-
-    Raises:
-        ValueError: If the value cannot be converted to int or is None
-    """
-    if value is None:
-        msg = "Cannot convert None to int"
-        raise ValueError(msg)
-    if isinstance(value, int):
-        return value
-    # Type ignore: ParsedParameterValue includes tuples, but converter registry
-    # ensures this is only called for convertible values (str, bool, int)
-    return int(value)  # pyright: ignore[reportArgumentType]
-
-
-def convert_float(
-    value: ParsedParameterValue | None,
-    _metadata: tuple[BaseMetadata, ...] | None = None,
-) -> float:
-    """Convert a parsed value to float.
-
-    Args:
-        value: The value to convert
-        _metadata: Unused metadata parameter
-
-    Returns:
-        The value as a float
-
-    Raises:
-        ValueError: If the value cannot be converted to float or is None
-    """
-    if value is None:
-        msg = "Cannot convert None to float"
-        raise ValueError(msg)
-    if isinstance(value, float):
-        return value
-    # Type ignore: ParsedParameterValue includes tuples, but converter registry
-    # ensures this is only called for convertible values (str, bool, int, float)
-    return float(value)  # pyright: ignore[reportArgumentType]
-
-
-def convert_bool(
-    value: ParsedParameterValue | None,
-    _metadata: tuple[BaseMetadata, ...] | None = None,
-) -> bool:
-    """Convert a parsed value to boolean.
-
-    Recognizes common boolean string representations:
-    - True: 'true', '1', 'yes', 'on' (case-insensitive)
-    - False: 'false', '0', 'no', 'off' (case-insensitive)
-
-    Args:
-        value: The value to convert
-        _metadata: Unused metadata parameter
-
-    Returns:
-        The value as a boolean
-
-    Raises:
-        ValueError: If the value cannot be recognized as a boolean or is None
-    """
-    if value is None:
-        msg = "Cannot convert None to bool"
-        raise ValueError(msg)
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, int):
-        return bool(value)  # 0 → False, non-zero → True
-    if isinstance(value, str):
-        val_lower = value.lower()
-        if val_lower in ("true", "1", "yes", "on"):
-            return True
-        if val_lower in ("false", "0", "no", "off"):
-            return False
-    msg = f"Cannot convert '{value}' to bool."
-    raise ValueError(msg)
-
-
-def convert_path(
-    value: ParsedParameterValue | None,
-    _metadata: tuple[BaseMetadata, ...] | None = None,
-) -> Path:
-    if value is None:
-        raise ConversionError(None, Path, "Cannot convert None to Path")
-    if isinstance(value, Path):
-        return value
-    if isinstance(value, str):
-        return Path(value)
-    raise ConversionError(value, Path, f"Cannot convert {type(value).__name__} to Path")

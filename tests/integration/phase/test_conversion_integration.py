@@ -3,7 +3,7 @@
 Tests end-to-end: CLI args → parsed → converted → verified.
 """
 
-# ruff: noqa: TC001, TC003
+# ruff: noqa: TC001
 
 from enum import Enum
 from pathlib import Path

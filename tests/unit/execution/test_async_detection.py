@@ -1,9 +1,8 @@
 
 import pytest
 
-from aclaf import RuntimeCommand
+from aclaf import RuntimeCommand, ValidatorRegistry
 from aclaf._conversion import ConverterRegistry
-from aclaf._validation import ParameterValidatorRegistry
 from aclaf.parser import ParseResult
 
 
@@ -18,7 +17,7 @@ class TestAsyncDetection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
         )
         parse_result = ParseResult(command="test", options={}, positionals={})
@@ -34,7 +33,7 @@ class TestAsyncDetection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
         )
         parse_result = ParseResult(command="test", options={}, positionals={})
@@ -50,7 +49,7 @@ class TestAsyncDetection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
         )
         parse_result = ParseResult(
@@ -77,14 +76,14 @@ class TestAsyncPropagationFromSubcommands:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
             subcommands={"child": child},
         )
@@ -110,14 +109,14 @@ class TestAsyncPropagationFromSubcommands:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
             subcommands={"child": child},
         )
@@ -143,14 +142,14 @@ class TestAsyncPropagationFromSubcommands:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
             subcommands={"child": child},
         )
@@ -183,14 +182,14 @@ class TestNestedAsyncPropagation:
             name="leaf",
             run_func=leaf_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
         )
         mid = RuntimeCommand(
             name="mid",
             run_func=mid_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
             subcommands={"leaf": leaf},
         )
@@ -198,7 +197,7 @@ class TestNestedAsyncPropagation:
             name="root",
             run_func=root_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
             subcommands={"mid": mid},
         )
@@ -232,14 +231,14 @@ class TestNestedAsyncPropagation:
             name="leaf",
             run_func=leaf_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
         )
         mid = RuntimeCommand(
             name="mid",
             run_func=mid_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
             subcommands={"leaf": leaf},
         )
@@ -247,7 +246,7 @@ class TestNestedAsyncPropagation:
             name="root",
             run_func=root_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
             subcommands={"mid": mid},
         )
@@ -278,7 +277,7 @@ class TestAsyncDetectionErrorHandling:
             name="parent",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             subcommands={},
         )
 
@@ -305,13 +304,13 @@ class TestAsyncDetectionErrorHandling:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             subcommands={"child": child},
         )
 

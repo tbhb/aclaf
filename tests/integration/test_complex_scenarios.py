@@ -35,11 +35,14 @@ Note: This file intentionally uses patterns that trigger linting warnings:
 
 from typing import Annotated
 
+import pytest
+from annotated_types import Interval
+
 from aclaf import App, Context
 from aclaf.console import MockConsole
+from aclaf.exceptions import ValidationError
 from aclaf.metadata import AtLeastOne, Collect, Flag, ZeroOrMore
 from aclaf.parser import ParserConfiguration
-from aclaf.validators import Interval
 
 # Type aliases for build tools and complex scenarios
 ThreadCount = Annotated[int, Interval(ge=1, le=128)]
@@ -473,3 +476,114 @@ class TestDatabaseCLIPatterns:
         assert "[db] port=5432" in output
         assert "[db] username=admin" in output
         assert "[db] database=mydb" in output
+
+
+class TestComplexCommandValidators:
+    """Test command-scoped validators for complex scenarios."""
+
+    def test_build_jobs_and_serial_mutually_exclusive(self, console: MockConsole):
+        """Test --jobs and --serial are mutually exclusive."""
+        from aclaf.validation.command import MutuallyExclusive
+
+        app = App("build", console=console)
+
+        @app.command()
+        def build(
+            targets: Annotated[tuple[str, ...], ZeroOrMore()] = (),
+            jobs: Annotated[JobCount | None, "-j"] = None,
+            serial: Annotated[bool, "-s"] = False,
+        ):  # pyright: ignore[reportUnusedFunction]
+            console.print(f"[build] targets={targets!r}")
+            if jobs:
+                console.print(f"[build] jobs={jobs}")
+            if serial:
+                console.print("[build] serial=True")
+
+        # Add validation to the command instance
+        build.validate(MutuallyExclusive(parameter_names=("jobs", "serial")))
+
+        with pytest.raises(ValidationError) as exc_info:
+            app(["build", "-j", "4", "-s", "all"])
+
+        assert "mutually exclusive" in str(exc_info.value).lower()
+
+    def test_build_load_average_requires_jobs(self, console: MockConsole):
+        """Test --load-average requires --jobs."""
+        from aclaf.validation.command import Requires
+
+        app = App("build", console=console)
+
+        @app.command()
+        def build(
+            targets: Annotated[tuple[str, ...], ZeroOrMore()] = (),
+            jobs: Annotated[JobCount | None, "-j"] = None,
+            load_average: Annotated[float | None, "-l"] = None,
+        ):  # pyright: ignore[reportUnusedFunction]
+            console.print(f"[build] targets={targets!r}")
+            if jobs:
+                console.print(f"[build] jobs={jobs}")
+            if load_average:
+                console.print(f"[build] load_average={load_average}")
+
+        # Add validation to the command instance
+        build.validate(Requires(source="load_average", required=("jobs",)))
+
+        with pytest.raises(ValidationError) as exc_info:
+            app(["build", "-l", "2.5", "all"])
+
+        assert "requires" in str(exc_info.value).lower()
+
+    def test_npm_install_save_dev_and_global_mutually_exclusive(self, console: MockConsole):
+        """Test npm --save-dev and --global are mutually exclusive."""
+        from aclaf.validation.command import MutuallyExclusive
+
+        app = App("npm", console=console)
+
+        @app.command()
+        def install(
+            packages: Annotated[tuple[str, ...], ZeroOrMore()] = (),
+            save_dev: Annotated[bool, "-D"] = False,
+            global_install: Annotated[bool, "-g"] = False,
+        ):  # pyright: ignore[reportUnusedFunction]
+            console.print("[install] invoked")
+            if packages:
+                console.print(f"[install] packages={packages!r}")
+            if save_dev:
+                console.print("[install] save_dev=True")
+            if global_install:
+                console.print("[install] global=True")
+
+        # Add validation to the command instance
+        install.validate(MutuallyExclusive(parameter_names=("save_dev", "global_install")))
+
+        with pytest.raises(ValidationError) as exc_info:
+            app(["install", "-D", "-g", "typescript"])
+
+        assert "mutually exclusive" in str(exc_info.value).lower()
+
+    def test_mysql_raw_conflicts_with_tables(self, console: MockConsole):
+        """Test mysql -r conflicts with inline table names."""
+        from aclaf.validation.command import ConflictsWith
+
+        app = App("mysql", console=console)
+
+        @app.command()
+        def mysql(
+            tables: Annotated[tuple[str, ...], ZeroOrMore()] = (),
+            raw: Annotated[bool, "-r"] = False,
+            database: Annotated[str | None, "-D"] = None,
+        ):  # pyright: ignore[reportUnusedFunction]
+            if database:
+                console.print(f"[mysql] database={database}")
+            if raw:
+                console.print("[mysql] raw=True")
+            if tables:
+                console.print(f"[mysql] tables={tables!r}")
+
+        # Add validation to the command instance
+        mysql.validate(ConflictsWith(parameter_names=("raw", "tables")))
+
+        with pytest.raises(ValidationError) as exc_info:
+            app(["mysql", "-D", "mydb", "-r", "users", "posts"])
+
+        assert "conflict" in str(exc_info.value).lower()

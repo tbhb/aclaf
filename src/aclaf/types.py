@@ -1,5 +1,6 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence, Set as AbstractSet
 from dataclasses import dataclass
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Annotated, Protocol, TypeAlias, runtime_checkable
 from typing_extensions import override
@@ -96,6 +97,13 @@ ParameterValueType: TypeAlias = (
     | Path
     | ParsedParameterValue
     | ConvertibleProtocol
+    | date
+    | datetime
+    | time
+    | timedelta
+    | Sequence[PrimitiveType | Sequence[PrimitiveType]]
+    | AbstractSet[PrimitiveType]
+    | Mapping[str | int, PrimitiveType | Sequence[PrimitiveType]]
 )
 
 ParameterValueMappingType: TypeAlias = Mapping[str, ParameterValueType | None]

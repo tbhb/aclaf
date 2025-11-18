@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 
 from aclaf import (
     ConverterRegistry,
-    ParameterValidatorRegistry,
     RuntimeCommand,
+    ValidatorRegistry,
 )
 from aclaf.exceptions import ConversionError
 from aclaf.parser import EXACTLY_ONE_ARITY, ParsedOption, ParsedPositional, ParseResult
@@ -30,7 +30,7 @@ class TestBasicConversion:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 
@@ -57,7 +57,7 @@ class TestBasicConversion:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"ratio": param},
         )
 
@@ -84,7 +84,7 @@ class TestBasicConversion:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"verbose": param},
         )
 
@@ -111,7 +111,7 @@ class TestBasicConversion:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"files": param},
         )
 
@@ -147,7 +147,7 @@ class TestCustomConverter:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 
@@ -179,7 +179,7 @@ class TestDefaultValues:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 
@@ -209,7 +209,7 @@ class TestDefaultValues:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"items": param},
         )
 
@@ -233,7 +233,7 @@ class TestDefaultValues:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 
@@ -263,7 +263,7 @@ class TestDefaultValues:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"items": param},
         )
 
@@ -289,7 +289,7 @@ class TestConversionErrors:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 
@@ -320,7 +320,7 @@ class TestConversionErrors:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": count_param, "ratio": ratio_param},
         )
 
@@ -355,7 +355,7 @@ class TestConversionErrors:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": count_param, "name": name_param},
         )
 
@@ -389,7 +389,7 @@ class TestConversionErrors:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 
@@ -419,7 +419,7 @@ class TestPositionalConversion:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 
@@ -450,7 +450,7 @@ class TestPositionalConversion:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"verbose": opt_param, "count": pos_param},
         )
 
@@ -481,7 +481,7 @@ class TestEdgeCases:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"optional": param},
         )
 
@@ -509,7 +509,7 @@ class TestEdgeCases:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 
@@ -532,7 +532,7 @@ class TestEdgeCases:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"count": param},
         )
 

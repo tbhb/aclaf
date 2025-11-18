@@ -1,6 +1,6 @@
 import inspect
 import sys
-from collections.abc import Callable
+from collections.abc import AsyncGenerator, Callable, Coroutine, Generator
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from types import MappingProxyType
@@ -10,23 +10,21 @@ from typing import (
     TypeAlias,
     TypedDict,
     cast,
+    runtime_checkable,
 )
 from typing_extensions import override
 
 from aclaf._errors import ErrorConfiguration
 from aclaf.exceptions import ConversionError, ValidationError
 from aclaf.logging import Logger, NullLogger
-from aclaf.validation import default_command_validators, default_parameter_validators
+from aclaf.validation import (
+    ValidatorMetadataType,
+    default_command_validators,
+    default_parameter_validators,
+)
 
 from ._context import Context
-from ._response import (
-    AsyncResponseType,
-    ConsoleResponder,
-    ResponderProtocol,
-    ResponseType,
-    SyncResponseType,
-)
-from .console import Console, DefaultConsole
+from .console import Console, DefaultConsole, SupportsConsole
 from .parser import (
     AccumulationMode,
     Arity,
@@ -45,6 +43,7 @@ if TYPE_CHECKING:
     from annotated_types import BaseMetadata
 
     from aclaf._conversion import ConverterRegistry
+    from aclaf._hooks import HookRegistry
     from aclaf.metadata import MetadataByType
     from aclaf.validation import (
         ValidatorFunction,
@@ -54,18 +53,43 @@ if TYPE_CHECKING:
     from ._conversion import ConverterFunctionType
     from .parser import ParsedParameterValue, ParseResult
 
+DefaultFactoryFunction: TypeAlias = Callable[..., ParameterValueType]
+
+
+@runtime_checkable
+class SupportsPrint(Protocol):
+    @override
+    def __str__(self) -> str: ...
+
+
+@runtime_checkable
+class SupportsResponse(Protocol):
+    def __response__(self, context: "Context") -> None: ...
+
+
+SupportsResponseType: TypeAlias = SupportsPrint | SupportsConsole | SupportsResponse
+
+SyncResponseType: TypeAlias = (
+    SupportsResponseType
+    | Generator[SupportsResponseType, None, SupportsResponseType | None]
+)
+
+AsyncResponseType: TypeAlias = (
+    SupportsResponseType | AsyncGenerator[SupportsResponseType, None]
+)
+
+ResponseType: TypeAlias = SyncResponseType | AsyncResponseType
+
 SyncCommandFunctionType: TypeAlias = Callable[..., SyncResponseType]
 AsyncCommandFunctionType: TypeAlias = Callable[..., AsyncResponseType]
 
 CommandFunctionType: TypeAlias = SyncCommandFunctionType | AsyncCommandFunctionType
 
-EMPTY_COMMAND_FUNCTION: CommandFunctionType = lambda: None  # noqa: E731
-
-DefaultFactoryFunction: TypeAlias = Callable[..., ParameterValueType]
-
 CommandFunctionRunParameters: TypeAlias = dict[
     str, ParameterValueType | None | Context | Console | Logger
 ]
+
+EMPTY_COMMAND_FUNCTION: CommandFunctionType = lambda: None  # noqa: E731
 
 
 class ParameterKind(IntEnum):
@@ -195,39 +219,18 @@ class RuntimeParameter:
         return PositionalSpec(name=self.name, arity=self.arity)
 
 
-class RespondFunctionProtocol(Protocol):
-    def __call__(
-        self,
-        result: ResponseType | None,
-        context: Context,
-        command: "RuntimeCommand",
-    ) -> ResponderProtocol: ...
-
-
-DEFAULT_RESPONDER_KEY = "default"
-
-
-def default_respond(
-    result: ResponseType | None,  # noqa: ARG001  # pyright: ignore[reportUnusedParameter]
-    context: Context,
-    command: "RuntimeCommand",
-) -> ResponderProtocol:
-    if command.responders and DEFAULT_RESPONDER_KEY in command.responders:
-        return command.responders[DEFAULT_RESPONDER_KEY]
-    return ConsoleResponder(console=context.console)
-
-
 class RuntimeCommandInput(TypedDict, total=False):
     name: str
     run_func: CommandFunctionType
     converters: "ConverterRegistry"
     aliases: tuple[str, ...]
-    validations: tuple["BaseMetadata", ...]
+    validations: tuple[ValidatorMetadataType, ...]
     command_validators: "ValidatorRegistry | None"
     console: "Console | None"
     console_param: str | None
     context_param: str | None
     error_config: "ErrorConfiguration"
+    hooks: "HookRegistry | None"
     parameter_validators: "ValidatorRegistry | None"
     parameters: "Mapping[str, RuntimeParameter]"
     is_async: bool
@@ -235,8 +238,6 @@ class RuntimeCommandInput(TypedDict, total=False):
     logger_param: str | None
     parser_cls: type[BaseParser]
     parser_config: ParserConfiguration | None
-    respond: RespondFunctionProtocol
-    responders: "Mapping[str, ResponderProtocol]"
     subcommands: "Mapping[str, RuntimeCommand]"
 
 
@@ -245,13 +246,14 @@ class RuntimeCommand:
     name: str
     run_func: CommandFunctionType
     converters: "ConverterRegistry" = field(repr=False)
-    validations: tuple["BaseMetadata", ...] = field(default_factory=tuple)
+    validations: tuple[ValidatorMetadataType, ...] = field(default_factory=tuple)
     aliases: tuple[str, ...] = field(default_factory=tuple)
     command_validators: "ValidatorRegistry | None" = field(repr=False, default=None)
     console: "Console | None" = None
     console_param: str | None = None
     context_param: str | None = None
     error_config: "ErrorConfiguration" = field(default_factory=ErrorConfiguration)
+    hooks: "HookRegistry | None" = None
     parameter_validators: "ValidatorRegistry | None" = field(repr=False, default=None)
     parameters: "Mapping[str, RuntimeParameter]" = field(
         default_factory=lambda: MappingProxyType({})
@@ -261,10 +263,6 @@ class RuntimeCommand:
     logger_param: str | None = None
     parser_cls: type[BaseParser] = Parser
     parser_config: ParserConfiguration | None = None
-    respond: RespondFunctionProtocol = default_respond
-    responders: "Mapping[str, ResponderProtocol]" = field(
-        default_factory=lambda: MappingProxyType({})
-    )
     subcommands: "Mapping[str, RuntimeCommand]" = field(
         default_factory=lambda: MappingProxyType({})
     )
@@ -272,11 +270,9 @@ class RuntimeCommand:
     _cached_spec: CommandSpec | None = field(default=None, init=False, repr=False)
 
     def __post_init__(self) -> None:
-        for attr in ("parameters", "responders", "subcommands"):
-            value: Mapping[
-                str, ConsoleResponder | RuntimeParameter | RuntimeCommand
-            ] = cast(
-                "Mapping[str, ConsoleResponder | RuntimeParameter | RuntimeCommand]",
+        for attr in ("parameters", "subcommands"):
+            value: Mapping[str, RuntimeParameter | RuntimeCommand] = cast(
+                "Mapping[str, RuntimeParameter | RuntimeCommand]",
                 getattr(self, attr),
             )
             if not isinstance(value, MappingProxyType):
@@ -320,37 +316,26 @@ class RuntimeCommand:
             f" parameters={self.parameters!r},"
             f" parser_cls={self.parser_cls!r},"
             f" parser_config={self.parser_config!r},"
-            f" responders={self.responders!r},"
             f" run_func={self.run_func!r},"
             f" subcommands={self.subcommands!r},"
             ")"
         )
 
     def invoke(self, args: "Sequence[str] | None" = None) -> None:
-        spec = self.to_command_spec()
-        parser = self.parser_cls(spec, self.parser_config)
-
-        parse_result = parser.parse(args or sys.argv[1:])
+        parse_result = self._parse_arguments(args)
         parameters, conversion_errors = self._convert_parameters(
             parse_result, self.parameters
         )
 
         errors = self._validate_parameters(
-            parameters, self.parameters, conversion_errors
+            parameters, self.parameters, conversion_errors, self.validations
         )
 
-        context = Context(
-            command=self.name,
-            command_path=(self.name,),
-            console=self.console or DefaultConsole(),
-            console_param=self.console_param,
-            context_param=self.context_param,
-            errors=errors,
-            is_async=self.check_async(parse_result),
-            logger=self.logger,
-            logger_param=self.logger_param,
-            parameters=parameters,
+        context = self._prepare_root_context(
+            args=args or (),
             parse_result=parse_result,
+            parameters=parameters,
+            errors=errors,
         )
 
         if context.is_async:
@@ -375,8 +360,7 @@ class RuntimeCommand:
     def dispatch(self, context: Context) -> None:
         self._check_context_errors(context)
         result = self._execute_run_func(context)
-        responder = self.respond(result, context, self)
-        responder.respond(result, context)
+        self._respond(result, context)
 
         if subcommand_dispatch := self._prepare_subcommand_dispatch(context):
             subcommand, subcommand_context = subcommand_dispatch
@@ -384,16 +368,15 @@ class RuntimeCommand:
 
     async def dispatch_async(self, context: Context) -> None:
         self._check_context_errors(context)
-        responder = self.respond(None, context, self)
         result = self._execute_run_func(context)
         if self.is_async:
             if inspect.isasyncgen(result) or inspect.iscoroutine(result):
-                await responder.respond_async(result, context)
+                await self._respond_async(result, context)
             else:
                 msg = "Async command returned non-awaitable result"
                 raise TypeError(msg)
         else:
-            responder.respond(result, context)
+            self._respond(result, context)
 
         if subcommand_dispatch := self._prepare_subcommand_dispatch(context):
             subcommand, subcommand_context = subcommand_dispatch
@@ -434,24 +417,32 @@ class RuntimeCommand:
                 context.parse_result.subcommand, subcommand.parameters
             )
             errors = self._validate_parameters(
-                parameters, subcommand.parameters, conversion_errors
+                parameters,
+                subcommand.parameters,
+                conversion_errors,
+                subcommand.validations,
             )
 
             subcommand_context = Context(
-                parent=context,
                 command=subcommand.name,
                 command_path=(*context.command_path, subcommand.name),
+                console=context.console,
                 console_param=self.console_param,
                 context_param=self.context_param,
-                logger_param=self.logger_param,
-                parse_result=context.parse_result.subcommand,
-                parameters=parameters,
                 errors=errors,
-                console=context.console,
                 logger=context.logger,
+                logger_param=self.logger_param,
+                parameters=parameters,
+                parent=context,
+                parse_result=context.parse_result.subcommand,
             )
             return (subcommand, subcommand_context)
         return None
+
+    def _parse_arguments(self, args: "Sequence[str] | None" = None) -> "ParseResult":
+        spec = self.to_command_spec()
+        parser = self.parser_cls(spec, self.parser_config)
+        return parser.parse(args or sys.argv[1:])
 
     def _convert_parameters(
         self, parse_result: "ParseResult", parameters: "Mapping[str, RuntimeParameter]"
@@ -515,6 +506,7 @@ class RuntimeCommand:
         raw: ParameterValueMappingType,
         parameters: "Mapping[str, RuntimeParameter]",
         conversion_errors: dict[str, str],
+        validations: tuple[ValidatorMetadataType, ...] | None = None,
     ) -> dict[str, tuple[str, ...]]:
         command_validators = self.command_validators or default_command_validators()
         parameter_validators = (
@@ -547,11 +539,36 @@ class RuntimeCommand:
             if value_errors:
                 errors[name] = tuple(value_errors)
 
-        command_errors = command_validators.validate(raw, self.validations)
+        command_validations = (
+            validations if validations is not None else self.validations
+        )
+        command_errors = command_validators.validate(raw, command_validations)
         if command_errors:
             errors["__command__"] = command_errors
 
         return errors
+
+    def _prepare_root_context(
+        self,
+        args: "Sequence[str]",
+        parse_result: "ParseResult",
+        parameters: ParameterValueMappingType,
+        errors: dict[str, tuple[str, ...]],
+    ) -> Context:
+        return Context(
+            args=tuple(args),
+            command=self.name,
+            command_path=(self.name,),
+            console=self.console or DefaultConsole(),
+            console_param=self.console_param,
+            context_param=self.context_param,
+            errors=errors,
+            is_async=self.check_async(parse_result),
+            logger=self.logger,
+            logger_param=self.logger_param,
+            parameters=parameters,
+            parse_result=parse_result,
+        )
 
     def _collect_errors(
         self, context: Context
@@ -563,6 +580,59 @@ class RuntimeCommand:
             parent_errors = self._collect_errors(context.parent)
             errors.update(parent_errors)
         return errors
+
+    def _respond(self, result: "SyncResponseType | None", context: "Context") -> None:
+        if result is None:
+            return
+
+        if inspect.isgenerator(result):
+            try:
+                while True:
+                    value = cast("SupportsResponseType | None", next(result))
+                    if value is not None:
+                        self._render_value(value, context)
+            except StopIteration as stop:
+                stop_value = cast("SupportsResponseType | None", stop.value)
+                if stop_value is not None:
+                    self._render_value(stop_value, context)
+        elif result is not None:
+            self._render_value(result, context)
+
+    async def _respond_async(
+        self, result: "AsyncResponseType | None", context: "Context"
+    ) -> None:
+        if result is None:
+            return
+
+        if inspect.isasyncgen(result):
+            async_gen = cast("AsyncGenerator[SupportsResponseType, None]", result)
+            async for value in async_gen:
+                if value is not None:
+                    self._render_value(value, context)
+        elif inspect.iscoroutine(result):
+            coroutine = cast(
+                "Coroutine[object, object, SupportsResponseType | None]", result
+            )
+            awaited_result = await coroutine
+            if awaited_result is not None:
+                self._render_value(awaited_result, context)
+        elif result is not None:
+            self._render_value(result, context)
+
+    def _render_value(
+        self,
+        value: SupportsResponseType | None,
+        context: "Context",
+    ) -> None:
+        if value is None:
+            return
+
+        if isinstance(value, SupportsConsole):
+            value.__console__(context.console)
+        elif isinstance(value, SupportsResponse):
+            value.__response__(context)
+        else:
+            context.console.print(value)
 
     def to_command_spec(self) -> CommandSpec:
         if self._cached_spec is None:

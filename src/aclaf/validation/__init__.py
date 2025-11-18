@@ -1,8 +1,8 @@
-"""Validator re-exports from annotated-types for convenience.
+"""Validation infrastructure for command-line applications.
 
-This module re-exports commonly used validators from annotated-types to provide
-a convenient import location for users of the framework. The actual validation
-logic is implemented in aclaf._validation.
+This module provides the validation system with support for both parameter-scoped
+and command-scoped validators. Parameter validators validate individual parameter
+values, while command validators validate relationships between multiple parameters.
 """
 
 from ._registry import (
@@ -13,13 +13,116 @@ from ._registry import (
 )
 from ._shared import validate_predicate
 from .command import default_command_validators
-from .parameter import default_parameter_validators
+from .parameter import (
+    AfterDate,
+    AfterDatetime,
+    AllMatch,
+    Alpha,
+    Alphanumeric,
+    AnyMatch,
+    BeforeDate,
+    BeforeDatetime,
+    Contains,
+    DateRange,
+    DatetimeRange,
+    EndsWith,
+    ForbiddenKeys,
+    HasExtensions,
+    IsDirectory,
+    IsExecutable,
+    IsFile,
+    IsInteger,
+    IsNegative,
+    IsNonNegative,
+    IsNonPositive,
+    IsPositive,
+    IsReadable,
+    IsWritable,
+    ItemType,
+    KeyPattern,
+    Lowercase,
+    MaxKeys,
+    MaxTimedelta,
+    MinKeys,
+    MinTimedelta,
+    NoneMatch,
+    NotBlank,
+    Numeric,
+    PathExists,
+    Pattern,
+    Precision,
+    Printable,
+    RequiredKeys,
+    SequenceContains,
+    StartsWith,
+    StringValidations,
+    TimedeltaRange,
+    UniqueItems,
+    Uppercase,
+    ValuePattern,
+    ValueType,
+    default_parameter_validators,
+)
 
 __all__ = [
+    # Datetime domain metadata classes
+    "AfterDate",
+    "AfterDatetime",
+    # Sequence domain metadata classes
+    "AllMatch",
+    # String domain metadata classes
+    "Alpha",
+    "Alphanumeric",
+    "AnyMatch",
+    "BeforeDate",
+    "BeforeDatetime",
+    "Contains",
+    "DateRange",
+    "DatetimeRange",
+    "EndsWith",
+    # Mapping domain metadata classes
+    "ForbiddenKeys",
+    # Path domain metadata classes
+    "HasExtensions",
+    "IsDirectory",
+    "IsExecutable",
+    "IsFile",
+    # Numeric domain metadata classes
+    "IsInteger",
+    "IsNegative",
+    "IsNonNegative",
+    "IsNonPositive",
+    "IsPositive",
+    "IsReadable",
+    "IsWritable",
+    "ItemType",
+    "KeyPattern",
+    "Lowercase",
+    "MaxKeys",
+    "MaxTimedelta",
+    "MinKeys",
+    "MinTimedelta",
+    "NoneMatch",
+    "NotBlank",
+    "Numeric",
+    "PathExists",
+    "Pattern",
+    "Precision",
+    "Printable",
+    "RequiredKeys",
+    "SequenceContains",
+    "StartsWith",
+    "StringValidations",
+    "TimedeltaRange",
+    "UniqueItems",
+    "Uppercase",
+    # Registry and core types
     "ValidatorFunction",
     "ValidatorMetadataType",
     "ValidatorRegistry",
     "ValidatorRegistryKey",
+    "ValuePattern",
+    "ValueType",
     "default_command_validators",
     "default_parameter_validators",
     "validate_predicate",

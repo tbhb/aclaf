@@ -44,6 +44,23 @@ class ValidatorRegistry:
     def unregister(self, key: ValidatorRegistryKey) -> None:
         del self.validators[key]
 
+    def merge_from(self, other: "ValidatorRegistry") -> None:
+        """Merge validators from another registry into this one.
+
+        Validators from the other registry are added to this registry.
+        If a validator for a key already exists in this registry, it is
+        preserved (current registry values take precedence).
+
+        This implements a "child wins" merge strategy where existing validators
+        in this registry are not overwritten by validators from the other registry.
+
+        Args:
+            other: The registry to merge validators from
+        """
+        for key, validator in other.validators.items():
+            if key not in self.validators:
+                self.validators[key] = validator
+
     def get_validator(
         self,
         key: ValidatorRegistryKey,

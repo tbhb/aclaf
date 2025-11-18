@@ -1,16 +1,16 @@
 import pytest
 
-from aclaf._validation import ParameterValidatorRegistry
+from aclaf.validation import ValidatorRegistry
 
 
 @pytest.fixture
-def registry() -> ParameterValidatorRegistry:
-    return ParameterValidatorRegistry()
+def registry() -> ValidatorRegistry:
+    return ValidatorRegistry()
 
 
 @pytest.fixture
-def empty_registry() -> ParameterValidatorRegistry:
-    reg = ParameterValidatorRegistry()
+def empty_registry() -> ValidatorRegistry:
+    reg = ValidatorRegistry()
     # Clear built-in validators for isolated testing
-    reg._validators.clear()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    reg.validators.clear()
     return reg

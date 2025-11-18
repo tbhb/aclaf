@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from aclaf import Context, ConverterRegistry, ParameterValidatorRegistry, RuntimeCommand
+from aclaf import Context, ConverterRegistry, RuntimeCommand, ValidatorRegistry
 from aclaf.exceptions import ValidationError
 from aclaf.parser import ParseResult
 
@@ -20,14 +20,14 @@ class TestErrorChecking:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
         cmd = RuntimeCommand(
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -53,14 +53,14 @@ class TestErrorChecking:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
         cmd = RuntimeCommand(
             name="parent",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -85,14 +85,14 @@ class TestErrorChecking:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int)
         cmd = RuntimeCommand(
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -112,7 +112,7 @@ class TestErrorChecking:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         count_param = runtime_option_factory(
             name="count", value_type=int, is_required=True
@@ -124,7 +124,7 @@ class TestErrorChecking:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": count_param, "ratio": ratio_param},
         )
 
@@ -154,14 +154,14 @@ class TestErrorCollection:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
         cmd = RuntimeCommand(
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -182,14 +182,14 @@ class TestErrorCollection:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
         cmd = RuntimeCommand(
             name="child",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -224,14 +224,14 @@ class TestErrorCollection:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
         cmd = RuntimeCommand(
             name="grandchild",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -278,7 +278,7 @@ class TestErrorCollection:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         count_param = runtime_option_factory(
             name="count", value_type=int, is_required=True
@@ -290,7 +290,7 @@ class TestErrorCollection:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": count_param, "name": name_param},
         )
 
@@ -319,14 +319,14 @@ class TestErrorCollection:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int)
         cmd = RuntimeCommand(
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 

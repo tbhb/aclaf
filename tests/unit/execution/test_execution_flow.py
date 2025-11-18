@@ -3,9 +3,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from aclaf import Context, RuntimeCommand
+from aclaf import Context, RuntimeCommand, ValidatorRegistry
 from aclaf._conversion import ConverterRegistry
-from aclaf._validation import ParameterValidatorRegistry
 from aclaf.parser import ParseResult
 
 if TYPE_CHECKING:
@@ -24,7 +23,7 @@ class TestSyncDispatch:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
 
         parse_result = ParseResult(command="test", options={}, positionals={})
@@ -44,7 +43,7 @@ class TestSyncDispatch:
             name="parent",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
 
         parse_result = ParseResult(command="parent", options={}, positionals={})
@@ -69,13 +68,13 @@ class TestSyncDispatch:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             subcommands={"child": child},
         )
 
@@ -106,13 +105,13 @@ class TestSyncDispatch:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             subcommands={"child": child},
         )
 
@@ -146,7 +145,7 @@ class TestAsyncDispatch:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
         )
 
@@ -173,7 +172,7 @@ class TestAsyncDispatch:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
         )
 
@@ -198,14 +197,14 @@ class TestAsyncDispatch:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
             subcommands={"child": child},
         )
@@ -241,14 +240,14 @@ class TestAsyncDispatch:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=False,
             subcommands={"child": child},
         )
@@ -279,7 +278,7 @@ class TestAsyncDispatch:
             name="test",
             run_func=sync_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
         )
 
@@ -302,13 +301,13 @@ class TestSubcommandContextCreation:
     def test_prepare_subcommand_dispatch_returns_none_without_subcommand(
         self,
         converters: "ConverterRegistry",
-        validators: "ParameterValidatorRegistry",
+        parameter_validators: "ValidatorRegistry",
     ):
         cmd = RuntimeCommand(
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
         )
 
         parse_result = ParseResult(command="test", options={}, positionals={})
@@ -321,19 +320,19 @@ class TestSubcommandContextCreation:
     def test_prepare_subcommand_dispatch_returns_subcommand_and_context(
         self,
         converters: "ConverterRegistry",
-        validators: "ParameterValidatorRegistry",
+        parameter_validators: "ValidatorRegistry",
     ):
         child = RuntimeCommand(
             name="child",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             subcommands={"child": child},
         )
 
@@ -359,19 +358,19 @@ class TestSubcommandContextCreation:
         self,
         console: "BasicConsole",
         converters: "ConverterRegistry",
-        validators: "ParameterValidatorRegistry",
+        parameter_validators: "ValidatorRegistry",
     ) -> None:
         child = RuntimeCommand(
             name="child",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             subcommands={"child": child},
         )
 

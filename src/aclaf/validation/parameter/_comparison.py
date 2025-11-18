@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     )
 
     from aclaf.types import ParameterValueMappingType, ParameterValueType
-    from aclaf.validators._registry import ValidatorMetadataType
+    from aclaf.validation._registry import ValidatorMetadataType
 
 
 def validate_gt(

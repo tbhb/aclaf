@@ -7,6 +7,7 @@ from typing_extensions import override
 
 from aclaf._conversion import ConverterFunctionType, ConverterRegistry
 from aclaf._errors import ErrorConfiguration
+from aclaf._hooks import Hook, HookRegistry
 from aclaf._parameters import (
     CommandParameter,
     Parameter,
@@ -25,6 +26,9 @@ from ._runtime import (
 )
 from .exceptions import CommandFunctionAlreadyDefinedError, DuplicateCommandError
 from .parser.utils import validate_command_name
+
+# Maximum depth allowed for command hierarchy to prevent infinite recursion
+MAX_COMMAND_HIERARCHY_DEPTH = 900
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -77,6 +81,7 @@ class Command:
     context_param: "str | None" = None
     converters: ConverterRegistry = field(default_factory=ConverterRegistry, repr=False)
     error_config: "ErrorConfiguration" = field(default_factory=ErrorConfiguration)
+    hooks: "HookRegistry | None" = None
     is_async: bool = False
     is_mounted: bool = False
     logger: Logger = field(default_factory=NullLogger)
@@ -178,6 +183,7 @@ class Command:
             command_validators=self.command_validators,
             console=self.console,
             error_config=self.error_config,
+            hooks=self.hooks,
             logger=self.logger,
             parameter_validators=self.parameter_validators,
             parameters=parameters,
@@ -194,6 +200,7 @@ class Command:
             console_param=self.console_param,
             context_param=self.context_param,
             logger_param=self.logger_param,
+            validations=tuple(self.validations),
         )
 
     def _check_run_func_async(self) -> bool:
@@ -269,25 +276,105 @@ class Command:
         name = name or command.name
         command.name = name
         command.parent_command = self
-        # TODO(tony): All of this needs to cascade recursively to subcommands of the
-        # mounted command
-        command.root_command = self.root_command or self
         command.is_mounted = True
-        command.command_validators = self.command_validators
-        command.parameter_validators = self.parameter_validators
-        command.converters = self.converters
-        command.logger = self.logger
 
         if ignore_existing and name in self.subcommands:
             del self.subcommands[name]
 
         self._add_subcommand(name, command)
+        self._cascade_config_recursive(command)
         return command
 
     def _add_subcommand(self, name: str, command: "Command") -> None:
         if name in self.subcommands:
             raise DuplicateCommandError(name)
         self.subcommands[name] = command
+
+    def _cascade_config_to_command(self, command: "Command") -> None:
+        """Apply this command's configuration to the target command.
+
+        This merges the parent command's configuration into the child command.
+        For converters and validators, parent values are merged INTO child
+        registries, with child values taking precedence (child wins).
+
+        Configuration that is merged:
+        - Converters: Parent converters added to child, child converters
+          preserved
+        - Command validators: Parent validators added to child, child
+          validators preserved
+        - Parameter validators: Parent validators added to child, child
+          validators preserved
+        - Logger: Set to parent's logger if child has default logger
+        - Parser config: Set to parent's parser config if child has none
+        - Root command: Set to parent's root (or parent itself)
+
+        Args:
+            command: The command to cascade configuration to.
+        """
+        command.root_command = self.root_command or self
+
+        # Merge parent's converters into child's registry (child wins)
+        command.converters.merge_from(self.converters)
+
+        # Merge parent's command validators into child's registry (child wins)
+        if self.command_validators is not None:
+            if command.command_validators is None:
+                command.command_validators = default_command_validators()
+            command.command_validators.merge_from(self.command_validators)
+
+        # Merge parent's parameter validators into child's registry (child wins)
+        if self.parameter_validators is not None:
+            if command.parameter_validators is None:
+                command.parameter_validators = default_parameter_validators()
+            command.parameter_validators.merge_from(self.parameter_validators)
+
+        # Always set logger to parent's logger for consistent logging
+        command.logger = self.logger
+
+        # Set parser config if child doesn't have one
+        if command.parser_config is None:
+            command.parser_config = self.parser_config
+
+    def _cascade_config_recursive(self, command: "Command", depth: int = 0) -> None:
+        """Cascade configuration from this command to a target and its subcommands.
+
+        This method recursively applies this command's configuration to the target
+        command and all of its nested subcommands. Configuration is merged using
+        a "child wins" strategy where child-specific converters and validators
+        are preserved.
+
+        Configuration that is merged:
+        - Converters: Parent converters added to child, child converters preserved
+        - Validators: Parent validators added to child, child validators preserved
+        - Logger: Set to parent's logger if child has default logger
+        - Parser config: Set to parent's parser config if child has none
+        - Root command: Set to parent's root (or parent itself)
+
+        Hooks are intentionally NOT cascaded as they should remain command-specific.
+
+        Args:
+            command: The command to cascade configuration to (must be a direct
+                subcommand of self).
+            depth: Current recursion depth (internal use only).
+
+        Raises:
+            RecursionError: If the command hierarchy exceeds the maximum depth,
+                indicating a potentially infinite recursion or excessively deep
+                command structure.
+        """
+        if depth > MAX_COMMAND_HIERARCHY_DEPTH:
+            msg = (
+                f"Command hierarchy exceeds maximum depth of "
+                f"{MAX_COMMAND_HIERARCHY_DEPTH} levels. "
+                f"This indicates either an excessively deep command structure or "
+                f"a circular reference in the command tree."
+            )
+            raise RecursionError(msg)
+
+        self._cascade_config_to_command(command)
+
+        for subcommand in command.subcommands.values():
+            self._cascade_config_recursive(subcommand, depth + 1)
 
     def converter(
         self, type_: type
@@ -308,7 +395,9 @@ class Command:
         ) -> "ValidatorFunction":
             if self.command_validators is None:
                 self.command_validators = default_command_validators()
-            self.command_validators.register(key, func)
+            # Capture in local variable for type narrowing
+            validators = self.command_validators
+            validators.register(key, func)
             return func
 
         return decorator
@@ -321,10 +410,17 @@ class Command:
         ) -> "ValidatorFunction":
             if self.parameter_validators is None:
                 self.parameter_validators = default_parameter_validators()
-            self.parameter_validators.register(key, func)
+            # Capture in local variable for type narrowing
+            validators = self.parameter_validators
+            validators.register(key, func)
             return func
 
         return decorator
 
     def validate(self, *validations: "ValidatorMetadataType") -> None:
         self.validations.extend(validations)
+
+    def hook(self, hook: "Hook") -> None:
+        if self.hooks is None:
+            self.hooks = HookRegistry()
+        self.hooks.register(hook)

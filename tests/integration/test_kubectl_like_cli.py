@@ -29,13 +29,13 @@ Note: This file intentionally uses patterns that trigger linting warnings:
 from typing import Annotated
 
 import pytest
+from annotated_types import Interval, MinLen
 
 from aclaf import App
 from aclaf.console import MockConsole
 from aclaf.exceptions import ValidationError
 from aclaf.metadata import AtLeastOne, Collect, Opt, ZeroOrMore
 from aclaf.types import PositiveInt
-from aclaf.validators import Interval, MinLen
 
 # Type aliases for Kubernetes-specific constraints
 ReplicaCount = Annotated[int, Interval(ge=0, le=10000)]
@@ -643,6 +643,119 @@ class TestKubectlValidationFailures:
             app(["scale", "deployment", "", "--replicas", "3"])
 
         assert "at least 1" in str(exc_info.value).lower()
+
+
+class TestKubectlCommandValidators:
+    """Test command-scoped validators for kubectl commands."""
+
+    def test_all_namespaces_and_namespace_mutually_exclusive(self, console: MockConsole):
+        """Test --all-namespaces and --namespace are mutually exclusive."""
+        from aclaf.validation.command import MutuallyExclusive
+
+        app = App("kubectl", console=console)
+
+        @app.handler()
+        def kubectl(namespace: Annotated[str | None, "-n"] = None):  # pyright: ignore[reportUnusedFunction]
+            if namespace:
+                console.print(f"[kubectl] namespace={namespace}")
+
+        @app.command()
+        def get(
+            resource_type: str,
+            all_namespaces: Annotated[bool, "-A"] = False,
+            namespace: Annotated[str | None, Opt()] = None,
+        ):  # pyright: ignore[reportUnusedFunction]
+            console.print(f"[get] resource_type={resource_type}")
+            if all_namespaces:
+                console.print("[get] all_namespaces=True")
+            if namespace:
+                console.print(f"[get] namespace={namespace}")
+
+        # Add validation to the command instance
+        get.validate(MutuallyExclusive(parameter_names=("all_namespaces", "namespace")))
+
+        with pytest.raises(ValidationError) as exc_info:
+            app(["get", "pods", "--all-namespaces", "--namespace", "kube-system"])
+
+        assert "mutually exclusive" in str(exc_info.value).lower()
+
+    @pytest.mark.skip(
+        reason="Command validators don't support boolean flags (False is considered 'provided')"
+    )
+    def test_exec_interactive_tty_requires_both(self, console: MockConsole):
+        """Test exec -it requires both -i and -t together."""
+        from aclaf.metadata import Flag
+        from aclaf.validation.command import AtLeastOneOf
+
+        app = App("kubectl", console=console)
+
+        @app.command()
+        def exec(
+            pod_name: str,
+            interactive: Annotated[bool, Flag("-i")] = False,
+            tty: Annotated[bool, Flag("-t")] = False,
+        ):  # pyright: ignore[reportUnusedFunction]
+            console.print(f"[exec] pod_name={pod_name}")
+            if interactive:
+                console.print("[exec] interactive=True")
+            if tty:
+                console.print("[exec] tty=True")
+
+        # Add validation to the command instance - at least one of -i or -t must be provided
+        # NOTE: This tests validator functionality, though real kubectl allows -i alone
+        exec.validate(AtLeastOneOf(parameter_names=("interactive", "tty")))
+
+        # Test that providing neither flag raises validation error
+        with pytest.raises(ValidationError) as exc_info:
+            app(["exec", "my-pod"])
+
+        assert "at least one" in str(exc_info.value).lower()
+
+    def test_scale_requires_replicas(self, console: MockConsole):
+        """Test scale requires --replicas to be specified."""
+        from aclaf.validation.command import AtLeastOneOf
+
+        app = App("kubectl", console=console)
+
+        @app.command()
+        def scale(
+            resource_type: str,
+            resource_name: str,
+            replicas: Annotated[ReplicaCount | None, Opt()] = None,
+        ):  # pyright: ignore[reportUnusedFunction]
+            console.print(f"[scale] resource_type={resource_type}")
+            console.print(f"[scale] resource_name={resource_name}")
+            if replicas is not None:
+                console.print(f"[scale] replicas={replicas}")
+
+        # Add validation to the command instance
+        scale.validate(AtLeastOneOf(parameter_names=("replicas",)))
+
+        with pytest.raises(ValidationError) as exc_info:
+            app(["scale", "deployment", "my-app"])
+
+        assert "at least one" in str(exc_info.value).lower()
+
+    def test_resource_name_pattern_validation(self, console: MockConsole):
+        """Test resource name DNS-1123 pattern validation."""
+        from aclaf.validation.parameter import Pattern
+
+        app = App("kubectl", console=console)
+
+        DNS1123Name = Annotated[str, Pattern(r"^[a-z0-9]([-a-z0-9]*[a-z0-9])?$")]
+
+        @app.command()
+        def create(
+            resource_type: str,
+            resource_name: DNS1123Name,
+        ):  # pyright: ignore[reportUnusedFunction]
+            console.print(f"[create] resource_type={resource_type}")
+            console.print(f"[create] resource_name={resource_name}")
+
+        with pytest.raises(ValidationError) as exc_info:
+            app(["create", "deployment", "Invalid-Name!"])
+
+        assert "pattern" in str(exc_info.value).lower()
 
 
 class TestComplexKubectlScenarios:

@@ -7,7 +7,6 @@ from aclaf import (
     Context,
     ConverterRegistry,
     ParameterKind,
-    ParameterValidatorRegistry,
     RuntimeCommand,
     RuntimeParameter,
 )
@@ -26,6 +25,8 @@ from aclaf.parser import (
     PositionalSpec,
     PositionalSpecInput,
 )
+from aclaf.validation import ValidatorRegistry
+from aclaf.validation.parameter import default_parameter_validators
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -178,8 +179,15 @@ def converters() -> ConverterRegistry:
 
 
 @pytest.fixture
-def validators() -> ParameterValidatorRegistry:
-    return ParameterValidatorRegistry()
+def validators() -> ValidatorRegistry:
+    """Parameter validator registry for backward compatibility."""
+    return default_parameter_validators()
+
+
+@pytest.fixture
+def parameter_validators() -> ValidatorRegistry:
+    """Provide a ValidatorRegistry for parameter validation testing."""
+    return default_parameter_validators()
 
 
 @pytest.fixture
@@ -288,7 +296,7 @@ def runtime_positional(
 def runtime_command_factory(
     converters: ConverterRegistry,
     logger: "Logger",
-    validators: ParameterValidatorRegistry,
+    validators: ValidatorRegistry,
     empty_command_function: "Callable[[], None]",
 ) -> "Callable[..., RuntimeCommand]":
     def factory(**kwargs: Unpack["RuntimeCommandInput"]) -> RuntimeCommand:
@@ -301,7 +309,7 @@ def runtime_command_factory(
             parameters=kwargs.get("parameters", {}),
             parser_config=kwargs.get("parser_config"),
             run_func=kwargs.get("run_func", empty_command_function),
-            validators=validators,
+            parameter_validators=validators,
         )
 
     return factory
@@ -354,7 +362,7 @@ def mock_converters(mocker: "MockerFixture") -> "MagicMock":
 
 @pytest.fixture
 def mock_validators(mocker: "MockerFixture") -> "MagicMock":
-    return mocker.Mock(spec=ParameterValidatorRegistry)
+    return mocker.Mock(spec=ValidatorRegistry)
 
 
 @pytest.fixture

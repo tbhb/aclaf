@@ -6,8 +6,8 @@ from annotated_types import MinLen
 
 from aclaf import (
     ConverterRegistry,
-    ParameterValidatorRegistry,
     RuntimeCommand,
+    ValidatorRegistry,
 )
 from aclaf.parser import EXACTLY_ONE_ARITY
 
@@ -24,7 +24,7 @@ class TestConversionErrorHandling:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
             name="count", value_type=int, arity=EXACTLY_ONE_ARITY
@@ -33,7 +33,7 @@ class TestConversionErrorHandling:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -52,7 +52,7 @@ class TestConversionErrorHandling:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         # Validator that should NOT be called when conversion fails
         validator_called: list[bool] = []
@@ -73,7 +73,7 @@ class TestConversionErrorHandling:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -89,7 +89,7 @@ class TestConversionErrorHandling:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         count_param = runtime_option_factory(
             name="count", value_type=int, arity=EXACTLY_ONE_ARITY
@@ -101,7 +101,7 @@ class TestConversionErrorHandling:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": count_param, "ratio": ratio_param},
         )
 
@@ -127,7 +127,7 @@ class TestRequiredParameterValidation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
             name="count", value_type=int, is_required=True, arity=EXACTLY_ONE_ARITY
@@ -136,7 +136,7 @@ class TestRequiredParameterValidation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -154,7 +154,7 @@ class TestRequiredParameterValidation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
             name="count", value_type=int, is_required=True, arity=EXACTLY_ONE_ARITY
@@ -163,7 +163,7 @@ class TestRequiredParameterValidation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -181,7 +181,7 @@ class TestRequiredParameterValidation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
             name="count", value_type=int, is_required=False, arity=EXACTLY_ONE_ARITY
@@ -190,7 +190,7 @@ class TestRequiredParameterValidation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -208,7 +208,7 @@ class TestRequiredParameterValidation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
             name="count", value_type=int, is_required=False, arity=EXACTLY_ONE_ARITY
@@ -217,7 +217,7 @@ class TestRequiredParameterValidation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -239,7 +239,7 @@ class TestValidatorErrorCollection:
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
     ):
-        validators = ParameterValidatorRegistry()
+        parameter_validators = ValidatorRegistry()
 
         param = runtime_option_factory(
             name="email",
@@ -252,7 +252,7 @@ class TestValidatorErrorCollection:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"email": param},
         )
 
@@ -273,9 +273,9 @@ class TestValidatorInvocation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
-        # The ParameterValidatorRegistry is what actually validates
+        # The ValidatorRegistry is what actually validates
         # based on metadata, not RuntimeParameter.validators field
         param = runtime_option_factory(
             name="count",
@@ -286,7 +286,7 @@ class TestValidatorInvocation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -304,7 +304,7 @@ class TestValidatorInvocation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         # Validators are called via the registry based on metadata
         param = runtime_option_factory(
@@ -316,7 +316,7 @@ class TestValidatorInvocation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -337,7 +337,7 @@ class TestErrorAggregation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
             name="count", value_type=int, arity=EXACTLY_ONE_ARITY
@@ -346,7 +346,7 @@ class TestErrorAggregation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param},
         )
 
@@ -363,7 +363,7 @@ class TestErrorAggregation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         param1 = runtime_option_factory(
             name="count",
@@ -381,7 +381,7 @@ class TestErrorAggregation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": param1, "ratio": param2},
         )
 
@@ -403,7 +403,7 @@ class TestErrorAggregation:
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
-        validators: ParameterValidatorRegistry,
+        parameter_validators: ValidatorRegistry,
     ):
         count_param = runtime_option_factory(
             name="count", value_type=int, is_required=True, arity=EXACTLY_ONE_ARITY
@@ -415,7 +415,7 @@ class TestErrorAggregation:
             name="test",
             run_func=lambda: None,
             converters=converters,
-            validators=validators,
+            parameter_validators=parameter_validators,
             parameters={"count": count_param, "name": name_param},
         )
 

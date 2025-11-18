@@ -29,6 +29,7 @@ ParameterSourceMapping: TypeAlias = Mapping[str, ParameterSource]
 
 
 class ContextInput(TypedDict, total=False):
+    args: tuple[str]
     command: str
     command_path: tuple[str, ...]
     parse_result: "ParseResult"
@@ -49,6 +50,7 @@ class Context:
     command: str
     command_path: tuple[str, ...]
     parse_result: "ParseResult"
+    args: tuple[str, ...] = field(default_factory=tuple)
     errors: "Mapping[str, tuple[str, ...]]" = field(
         default_factory=lambda: MappingProxyType({})
     )

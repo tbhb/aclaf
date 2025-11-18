@@ -53,6 +53,7 @@ dev = [
   "mkdocs-rss-plugin>=1.17.4",
   "mkdocstrings[python]>=0.30.1",
   "prek>=0.2.12",
+  "py-spy>=0.4.1",
   "pytest-asyncio>=1.2.0",
   "pytest-benchmark>=5.2.2",
   "pytest-cov>=7.0.0",
@@ -202,7 +203,7 @@ ignore-variadic-names = true
 
 [tool.ruff.lint.per-file-ignores]
 "**/__main__.py" = ["D100"]
-"**/tests/**" = ["D", "PLR2004", "S101"]
+"**/tests/**" = ["D", "PLR2004", "S101", "TC003"]  # TC003: Path is used at runtime in fixtures
 "examples/**" = ["T201"]                 # Allow print in examples
 
 [tool.uv.sources]

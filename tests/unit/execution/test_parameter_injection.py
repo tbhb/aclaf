@@ -2,9 +2,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from aclaf import Context, ParameterKind, RuntimeCommand, RuntimeParameter
+from aclaf import (
+    Context,
+    ParameterKind,
+    RuntimeCommand,
+    RuntimeParameter,
+    ValidatorRegistry,
+)
 from aclaf._conversion import ConverterRegistry
-from aclaf._validation import ParameterValidatorRegistry
 from aclaf.console import MockConsole
 from aclaf.logging import MockLogger
 from aclaf.parser import EXACTLY_ONE_ARITY, ParsedOption, ParseResult
@@ -27,7 +32,7 @@ class TestContextParameterInjection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             context_param="ctx",
         )
 
@@ -49,7 +54,7 @@ class TestContextParameterInjection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             context_param=None,
         )
 
@@ -76,7 +81,7 @@ class TestConsoleParameterInjection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             console_param="con",
         )
 
@@ -103,7 +108,7 @@ class TestConsoleParameterInjection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             console_param=None,
         )
 
@@ -130,7 +135,7 @@ class TestLoggerParameterInjection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             logger_param="log",
         )
 
@@ -157,7 +162,7 @@ class TestLoggerParameterInjection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             logger_param=None,
         )
 
@@ -189,7 +194,7 @@ class TestMultipleSpecialParametersInjection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             context_param="ctx",
             console_param="con",
             logger_param="log",
@@ -222,7 +227,7 @@ class TestMultipleSpecialParametersInjection:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             context_param=None,
             console_param="con",
             logger_param=None,
@@ -267,7 +272,7 @@ class TestSpecialParamsMixedWithConvertedParams:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"value": param},
             console_param="con",
         )
@@ -320,7 +325,7 @@ class TestSpecialParamsMixedWithConvertedParams:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             parameters={"ctx": param},
             context_param="ctx",
         )
@@ -361,13 +366,13 @@ class TestSpecialParamsWithSubcommands:
             name="child",
             run_func=child_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
         )
         parent = RuntimeCommand(
             name="parent",
             run_func=parent_handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             subcommands={"child": child},
             console_param="con",
             logger_param="log",
@@ -413,7 +418,7 @@ class TestSpecialParamsWithSubcommands:
             name="test",
             run_func=handler,
             converters=ConverterRegistry(),
-            validators=ParameterValidatorRegistry(),
+            parameter_validators=ValidatorRegistry(),
             is_async=True,
             context_param="ctx",
             console_param="con",

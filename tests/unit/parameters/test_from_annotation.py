@@ -149,7 +149,7 @@ class TestUnionMetadataExtraction:
     def test_from_annotation_nested_union_with_metadata(self):
         inner1 = Annotated[int, Gt(0)]
         inner2 = Annotated[str, Lt(100)]
-        annotation = Annotated[Union[inner1, inner2], Opt()]  # type: ignore[misc]
+        annotation = Annotated[inner1 | inner2, Opt()]  # type: ignore[misc]
         param = CommandParameter.from_annotation(
             "value", annotation, AnnotationSource.BARE
         )

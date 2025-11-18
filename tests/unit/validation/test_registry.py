@@ -1,297 +1,374 @@
-# pyright: reportAny=false, reportExplicitAny=false
-
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
 import pytest
-from annotated_types import BaseMetadata, Ge, Gt
+from annotated_types import BaseMetadata
 
-from aclaf._validation import ParameterValidatorRegistry
-from aclaf.logging import NullLogger
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    from aclaf.types import ParameterValueType
+from aclaf.validation._registry import ValidatorRegistry
 
 
-class CustomMetadata(BaseMetadata):
-    """Custom metadata for testing."""
-
-    min_value: int
-
-    def __init__(self, min_value: int) -> None:
-        self.min_value = min_value
+@dataclass(frozen=True, slots=True)
+class MetadataA(BaseMetadata):
+    value: str
 
 
-def custom_validator(
-    value: "ParameterValueType | None",
-    _other_parameters: "Mapping[str, ParameterValueType | None]",
-    metadata: BaseMetadata,
-) -> tuple[str, ...] | None:
-    custom_meta = metadata if isinstance(metadata, CustomMetadata) else None
-    if custom_meta is None:
-        return ("invalid metadata type",)
-    if not isinstance(value, int):
-        return ("value must be an integer",)
-    if value < custom_meta.min_value:
-        return (f"value must be at least {custom_meta.min_value}",)
+@dataclass(frozen=True, slots=True)
+class MetadataB(BaseMetadata):
+    value: int
+
+
+@dataclass(frozen=True, slots=True)
+class MetadataC(BaseMetadata):
+    value: float
+
+
+def validator_always_passes(_value, _metadata):
     return None
 
 
-class TestParameterValidatorRegistry:
-    def test_registry_initializes_with_default_validators(self):
-        registry = ParameterValidatorRegistry()
-        assert registry.has_validator(Gt)
-        assert registry.has_validator(Ge)
+def validator_always_fails(_value, _metadata):
+    return ("Error message 1",)
 
-    def test_registry_initializes_with_logger(self):
-        logger = NullLogger()
-        registry = ParameterValidatorRegistry(logger=logger)
-        assert registry.logger is logger
 
-    def test_registry_register_custom_validator_succeeds(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        empty_registry.register(CustomMetadata, custom_validator)
-        assert empty_registry.has_validator(CustomMetadata)
+def validator_multiple_errors(_value, _metadata):
+    return ("Error 1", "Error 2", "Error 3")
 
-    def test_registry_register_duplicate_key_raises_value_error(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
+
+def validator_conditional(value, _metadata):
+    if isinstance(value, str) and len(value) > 5:
+        return ("String too long",)
+    return None
+
+
+class TestValidatorRegistryRegistration:
+    def test_register_validator_succeeds(self):
+        registry = ValidatorRegistry()
+
+        registry.register(MetadataA, validator_always_passes)
+
+        assert registry.has_validator(MetadataA)
+        assert registry.get_validator(MetadataA) is validator_always_passes
+
+    def test_register_multiple_validators_succeeds(self):
+        registry = ValidatorRegistry()
+
+        registry.register(MetadataA, validator_always_passes)
+        registry.register(MetadataB, validator_always_fails)
+        registry.register(MetadataC, validator_multiple_errors)
+
+        assert registry.has_validator(MetadataA)
+        assert registry.has_validator(MetadataB)
+        assert registry.has_validator(MetadataC)
+        assert registry.get_validator(MetadataA) is validator_always_passes
+        assert registry.get_validator(MetadataB) is validator_always_fails
+        assert registry.get_validator(MetadataC) is validator_multiple_errors
+
+    def test_register_duplicate_key_raises_value_error(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+
         with pytest.raises(ValueError, match="already registered"):
-            registry.register(Gt, custom_validator)
+            registry.register(MetadataA, validator_always_fails)
 
-    def test_registry_unregister_existing_key_succeeds(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        registry.unregister(Gt)
-        assert not registry.has_validator(Gt)
+    def test_register_duplicate_preserves_original_validator(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
 
-    def test_registry_unregister_nonexistent_key_raises_key_error(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
+        with pytest.raises(ValueError):
+            registry.register(MetadataA, validator_always_fails)
+
+        assert registry.get_validator(MetadataA) is validator_always_passes
+
+    def test_unregister_existing_validator_succeeds(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+
+        registry.unregister(MetadataA)
+
+        assert not registry.has_validator(MetadataA)
+        assert registry.get_validator(MetadataA) is None
+
+    def test_unregister_nonexistent_validator_raises_key_error(self):
+        registry = ValidatorRegistry()
+
         with pytest.raises(KeyError):
-            empty_registry.unregister(CustomMetadata)
+            registry.unregister(MetadataA)
 
-    def test_registry_get_validator_for_existing_key_returns_function(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        validator = registry.get_validator(Gt)
-        assert validator is not None
-        assert callable(validator)
+    def test_unregister_then_reregister_same_key_succeeds(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+        registry.unregister(MetadataA)
 
-    def test_registry_get_validator_for_nonexistent_key_returns_none(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        validator = empty_registry.get_validator(CustomMetadata)
-        assert validator is None
+        registry.register(MetadataA, validator_always_fails)
 
-    def test_registry_has_validator_for_existing_key_returns_true(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        assert registry.has_validator(Gt)
+        assert registry.has_validator(MetadataA)
+        assert registry.get_validator(MetadataA) is validator_always_fails
 
-    def test_registry_has_validator_for_nonexistent_key_returns_false(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        assert not empty_registry.has_validator(CustomMetadata)
+    def test_get_validator_returns_none_for_nonexistent_key(self):
+        registry = ValidatorRegistry()
 
-    def test_registry_validate_with_no_metadata_returns_none(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(42, {}, ())
+        result = registry.get_validator(MetadataA)
+
         assert result is None
 
-    def test_registry_validate_with_single_valid_metadata_returns_none(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(10, {}, (Gt(5),))
+    def test_get_validator_returns_correct_validator_for_existing_key(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+
+        result = registry.get_validator(MetadataA)
+
+        assert result is validator_always_passes
+
+    def test_has_validator_returns_false_for_nonexistent_key(self):
+        registry = ValidatorRegistry()
+
+        result = registry.has_validator(MetadataA)
+
+        assert result is False
+
+    def test_has_validator_returns_true_for_existing_key(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+
+        result = registry.has_validator(MetadataA)
+
+        assert result is True
+
+
+class TestValidatorRegistryValidation:
+    def test_validate_with_no_validators_registered_returns_none(self):
+        registry = ValidatorRegistry()
+        metadata = (MetadataA(value="test"),)
+
+        result = registry.validate("test_value", metadata)
+
         assert result is None
 
-    def test_registry_validate_with_single_invalid_metadata_returns_errors(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(3, {}, (Gt(5),))
+    def test_validate_with_no_metadata_returns_none(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+
+        result = registry.validate("test_value", ())
+
+        assert result is None
+
+    def test_validate_with_single_passing_validator_returns_none(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+        metadata = (MetadataA(value="test"),)
+
+        result = registry.validate("test_value", metadata)
+
+        assert result is None
+
+    def test_validate_with_single_failing_validator_returns_errors(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_fails)
+        metadata = (MetadataA(value="test"),)
+
+        result = registry.validate("test_value", metadata)
+
         assert result is not None
         assert len(result) == 1
-        assert "must be greater than 5" in result[0]
+        assert result[0] == "Error message 1"
 
-    def test_registry_validate_with_multiple_valid_metadata_returns_none(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(10, {}, (Gt(5), Ge(10)))
+    def test_validate_with_multiple_passing_validators_returns_none(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+        registry.register(MetadataB, validator_always_passes)
+        metadata = (MetadataA(value="test"), MetadataB(value=42))
+
+        result = registry.validate("test_value", metadata)
+
         assert result is None
 
-    def test_registry_validate_with_multiple_metadata_some_invalid_returns_errors(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(10, {}, (Gt(5), Gt(15)))
+    def test_validate_with_multiple_failing_validators_aggregates_errors(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_fails)
+        registry.register(MetadataB, validator_multiple_errors)
+        metadata = (MetadataA(value="test"), MetadataB(value=42))
+
+        result = registry.validate("test_value", metadata)
+
+        assert result is not None
+        assert len(result) == 4
+        assert result[0] == "Error message 1"
+        assert result[1] == "Error 1"
+        assert result[2] == "Error 2"
+        assert result[3] == "Error 3"
+
+    def test_validate_with_mixed_validators_returns_only_errors(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+        registry.register(MetadataB, validator_always_fails)
+        registry.register(MetadataC, validator_multiple_errors)
+        metadata = (
+            MetadataA(value="test"),
+            MetadataB(value=42),
+            MetadataC(value=3.14),
+        )
+
+        result = registry.validate("test_value", metadata)
+
+        assert result is not None
+        assert len(result) == 4
+        assert "Error message 1" in result
+        assert "Error 1" in result
+        assert "Error 2" in result
+        assert "Error 3" in result
+
+    def test_validate_with_unregistered_metadata_skips_validation(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_fails)
+        metadata = (MetadataA(value="test"), MetadataB(value=42))
+
+        result = registry.validate("test_value", metadata)
+
         assert result is not None
         assert len(result) == 1
-        assert "must be greater than 15" in result[0]
+        assert result[0] == "Error message 1"
 
-    def test_registry_validate_with_all_invalid_metadata_returns_all_errors(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(3, {}, (Gt(5), Ge(10)))
-        assert result is not None
-        assert len(result) == 2
-        assert any("must be greater than 5" in err for err in result)
-        assert any("must be greater than or equal to 10" in err for err in result)
+    def test_validate_calls_validator_with_correct_arguments(self):
+        registry = ValidatorRegistry()
+        called_with = []
 
-    def test_registry_validate_skips_metadata_without_validator(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        result = empty_registry.validate(42, {}, (CustomMetadata(10),))
+        def capture_args(value, metadata):
+            called_with.append((value, metadata))
+
+        registry.register(MetadataA, capture_args)
+        test_value = "test_value"
+        test_metadata = MetadataA(value="test")
+        metadata = (test_metadata,)
+
+        registry.validate(test_value, metadata)
+
+        assert len(called_with) == 1
+        assert called_with[0][0] == test_value
+        assert called_with[0][1] == test_metadata
+
+    def test_validate_with_conditional_validator_passes_short_string(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_conditional)
+        metadata = (MetadataA(value="test"),)
+
+        result = registry.validate("short", metadata)
+
         assert result is None
 
-    def test_registry_validate_with_custom_validator_succeeds(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        empty_registry.register(CustomMetadata, custom_validator)
-        result = empty_registry.validate(15, {}, (CustomMetadata(10),))
-        assert result is None
+    def test_validate_with_conditional_validator_fails_long_string(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_conditional)
+        metadata = (MetadataA(value="test"),)
 
-    def test_registry_validate_with_custom_validator_fails(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        empty_registry.register(CustomMetadata, custom_validator)
-        result = empty_registry.validate(5, {}, (CustomMetadata(10),))
-        assert result is not None
-        assert len(result) == 1
-        assert "value must be at least 10" in result[0]
+        result = registry.validate("very_long_string", metadata)
 
-    def test_registry_validate_passes_other_parameters_to_validator(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        other_params: dict[str, ParameterValueType | None] = {
-            "param1": 10,
-            "param2": "test",
-        }
-        captured_params: dict[str, ParameterValueType | None] = {}
-
-        def capturing_validator(
-            _value: "ParameterValueType | None",
-            other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
-        ) -> tuple[str, ...] | None:
-            captured_params.update(other_parameters)
-            return None
-
-        empty_registry.register(CustomMetadata, capturing_validator)
-        _ = empty_registry.validate(42, other_params, (CustomMetadata(10),))
-
-        assert captured_params == other_params
-
-    def test_registry_validate_with_mixed_registered_and_unregistered_metadata(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(10, {}, (Gt(5), CustomMetadata(10)))
-        assert result is None
-
-    def test_registry_allows_reregistration_after_unregister(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        original_validator = registry.get_validator(Gt)
-        registry.unregister(Gt)
-        assert not registry.has_validator(Gt)
-
-        def new_validator(
-            _value: "ParameterValueType | None",
-            _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
-        ) -> tuple[str, ...] | None:
-            return ("always fails",)
-
-        registry.register(Gt, new_validator)
-        assert registry.has_validator(Gt)
-        assert registry.get_validator(Gt) is not original_validator
-
-        result = registry.validate(100, {}, (Gt(5),))
         assert result is not None
         assert len(result) == 1
-        assert "always fails" in result[0]
+        assert result[0] == "String too long"
 
+    def test_validate_preserves_error_order(self):
+        registry = ValidatorRegistry()
 
-class TestParameterValidatorRegistryEdgeCases:
-    def test_registry_validate_with_empty_metadata_tuple_returns_none(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(42, {}, ())
-        assert result is None
+        def validator_errors_ordered(_value, _metadata):
+            return ("Error A", "Error B", "Error C")
 
-    def test_registry_validate_with_none_value_and_no_metadata_returns_none(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        result = registry.validate(None, {}, ())
-        assert result is None
+        registry.register(MetadataA, validator_errors_ordered)
+        metadata = (MetadataA(value="test"),)
 
-    def test_registry_validate_preserves_error_order(
-        self,
-        registry: ParameterValidatorRegistry,
-    ):
-        from annotated_types import Le, Lt  # noqa: PLC0415
+        result = registry.validate("test_value", metadata)
 
-        result = registry.validate(150, {}, (Gt(0), Lt(100), Le(50)))
         assert result is not None
-        errors = list(result)
-        # Errors should appear in order of metadata
-        assert "must be less than 100" in errors[0]
-        assert "must be less than or equal to 50" in errors[1]
+        assert result == ("Error A", "Error B", "Error C")
 
-    def test_registry_handles_validator_returning_empty_tuple(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        def empty_error_validator(
-            _value: "ParameterValueType | None",
-            _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
-        ) -> tuple[str, ...] | None:
-            return ()
+    def test_validate_with_none_value(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_passes)
+        metadata = (MetadataA(value="test"),)
 
-        empty_registry.register(CustomMetadata, empty_error_validator)
-        result = empty_registry.validate(42, {}, (CustomMetadata(10),))
-        # Empty tuple should be treated as no errors
+        result = registry.validate(None, metadata)
+
         assert result is None
 
-    def test_registry_handles_validator_returning_multiple_errors(
-        self,
-        empty_registry: ParameterValidatorRegistry,
-    ):
-        def multi_error_validator(
-            _value: "ParameterValueType | None",
-            _other_parameters: "Mapping[str, ParameterValueType | None]",
-            _metadata: BaseMetadata,
-        ) -> tuple[str, ...] | None:
-            return ("error 1", "error 2", "error 3")
+    def test_validate_returns_tuple_not_list(self):
+        registry = ValidatorRegistry()
+        registry.register(MetadataA, validator_always_fails)
+        metadata = (MetadataA(value="test"),)
 
-        empty_registry.register(CustomMetadata, multi_error_validator)
-        result = empty_registry.validate(42, {}, (CustomMetadata(10),))
-        assert result is not None
-        assert len(result) == 3
-        assert result[0] == "error 1"
-        assert result[1] == "error 2"
-        assert result[2] == "error 3"
+        result = registry.validate("test_value", metadata)
+
+        assert isinstance(result, tuple)
+        assert not isinstance(result, list)
+
+
+class TestValidatorRegistryMerge:
+    def test_merge_from_adds_validators_from_other_registry(self):
+        registry1 = ValidatorRegistry()
+        registry2 = ValidatorRegistry()
+        registry2.register(MetadataA, validator_always_passes)
+        registry2.register(MetadataB, validator_always_fails)
+
+        registry1.merge_from(registry2)
+
+        assert registry1.has_validator(MetadataA)
+        assert registry1.has_validator(MetadataB)
+        assert registry1.get_validator(MetadataA) is validator_always_passes
+        assert registry1.get_validator(MetadataB) is validator_always_fails
+
+    def test_merge_from_preserves_existing_validators_child_wins(self):
+        registry1 = ValidatorRegistry()
+        registry1.register(MetadataA, validator_always_fails)
+        registry2 = ValidatorRegistry()
+        registry2.register(MetadataA, validator_always_passes)
+
+        registry1.merge_from(registry2)
+
+        assert registry1.get_validator(MetadataA) is validator_always_fails
+
+    def test_merge_from_empty_registry_has_no_effect(self):
+        registry1 = ValidatorRegistry()
+        registry1.register(MetadataA, validator_always_passes)
+        registry2 = ValidatorRegistry()
+
+        registry1.merge_from(registry2)
+
+        assert registry1.has_validator(MetadataA)
+        assert registry1.get_validator(MetadataA) is validator_always_passes
+        assert not registry1.has_validator(MetadataB)
+
+    def test_merge_from_into_empty_registry_copies_all_validators(self):
+        registry1 = ValidatorRegistry()
+        registry2 = ValidatorRegistry()
+        registry2.register(MetadataA, validator_always_passes)
+        registry2.register(MetadataB, validator_always_fails)
+
+        registry1.merge_from(registry2)
+
+        assert registry1.has_validator(MetadataA)
+        assert registry1.has_validator(MetadataB)
+        assert registry1.get_validator(MetadataA) is validator_always_passes
+        assert registry1.get_validator(MetadataB) is validator_always_fails
+
+    def test_merge_from_partial_overlap_merges_correctly(self):
+        registry1 = ValidatorRegistry()
+        registry1.register(MetadataA, validator_always_fails)
+        registry1.register(MetadataB, validator_conditional)
+        registry2 = ValidatorRegistry()
+        registry2.register(MetadataA, validator_always_passes)
+        registry2.register(MetadataC, validator_multiple_errors)
+
+        registry1.merge_from(registry2)
+
+        assert registry1.get_validator(MetadataA) is validator_always_fails
+        assert registry1.get_validator(MetadataB) is validator_conditional
+        assert registry1.get_validator(MetadataC) is validator_multiple_errors
+
+    def test_merge_from_does_not_modify_source_registry(self):
+        registry1 = ValidatorRegistry()
+        registry1.register(MetadataA, validator_always_fails)
+        registry2 = ValidatorRegistry()
+        registry2.register(MetadataB, validator_always_passes)
+
+        registry1.merge_from(registry2)
+
+        assert not registry2.has_validator(MetadataA)
+        assert registry2.has_validator(MetadataB)
+        assert registry2.get_validator(MetadataB) is validator_always_passes
