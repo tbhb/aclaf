@@ -12,9 +12,9 @@ from annotated_types import Ge, Gt, Interval, Le, Lt, MaxLen, MinLen, MultipleOf
 
 from aclaf import App
 from aclaf.console import MockConsole
-from aclaf.exceptions import ValidationError
 from aclaf.metadata import ZeroOrMore
 from aclaf.types import PositiveInt
+from aclaf.validation import ValidationError
 
 
 class TestIntervalValidator:

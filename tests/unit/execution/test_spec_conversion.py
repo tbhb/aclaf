@@ -6,8 +6,8 @@ from aclaf import (
     RuntimeParameter,
     ValidatorRegistry,
 )
-from aclaf._conversion import ConverterRegistry
-from aclaf._runtime import RuntimeCommand
+from aclaf.conversion import ConverterRegistry
+from aclaf.execution import RuntimeCommand
 from aclaf.parser import (
     EXACTLY_ONE_ARITY,
     ONE_OR_MORE_ARITY,

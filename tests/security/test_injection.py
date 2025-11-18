@@ -1,7 +1,6 @@
 import pytest
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser
-from aclaf.parser.types import EXACTLY_ONE_ARITY
+from aclaf.parser import EXACTLY_ONE_ARITY, CommandSpec, OptionSpec, Parser
 
 
 @pytest.mark.security

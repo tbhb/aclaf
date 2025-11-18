@@ -12,13 +12,13 @@ from annotated_types import Gt, Interval
 
 from aclaf import App
 from aclaf.console import MockConsole
-from aclaf.exceptions import ValidationError
 from aclaf.metadata import Arg, AtLeastOne
-from aclaf.parser.exceptions import (
+from aclaf.parser._exceptions import (
     InsufficientPositionalArgumentsError,
     UnknownOptionError,
 )
 from aclaf.types import PositiveInt
+from aclaf.validation import ValidationError
 
 
 class TestParsingErrors:

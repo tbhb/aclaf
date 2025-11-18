@@ -1,7 +1,7 @@
 import pytest
 
 from aclaf import EMPTY_COMMAND_FUNCTION, Command
-from aclaf.exceptions import (
+from aclaf.registration import (
     CommandFunctionAlreadyDefinedError,
     DuplicateCommandError,
 )

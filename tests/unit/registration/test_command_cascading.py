@@ -1,6 +1,4 @@
-# pyright: reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnusedFunction=false, reportUnusedParameter=false, reportUnusedCallResult=false, reportUninitializedInstanceVariable=false, reportUnannotatedClassAttribute=false
-# ruff: noqa: ARG001
-
+# pyright: reportUnusedFunction=false, reportUnusedParameter=false, reportUnusedCallResult=false
 from typing import TYPE_CHECKING
 
 import pytest
@@ -11,14 +9,13 @@ from aclaf.logging import MockLogger
 from aclaf.validation import ValidatorRegistry
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from aclaf.logging import Logger
-    from aclaf.types import ParameterValueType
 
 
 class CascadeInt:
     """Custom type for cascading tests."""
+
+    value: int
 
     def __init__(self, value: int) -> None:
         self.value = value
@@ -27,12 +24,16 @@ class CascadeInt:
 class CascadeStr:
     """Custom type for cascading tests."""
 
+    value: str
+
     def __init__(self, value: str) -> None:
         self.value = value
 
 
 class CascadeFloat:
     """Custom type for cascading tests."""
+
+    value: float
 
     def __init__(self, value: float) -> None:
         self.value = value
@@ -41,37 +42,37 @@ class CascadeFloat:
 class CascadeMetadata1(BaseMetadata):
     """Custom metadata for cascading tests."""
 
-    value: int
+    value: int = 0
 
 
 class CascadeMetadata2(BaseMetadata):
     """Custom metadata for cascading tests."""
 
-    min_value: int
+    min_value: int = 0
 
 
 class CascadeMetadata3(BaseMetadata):
     """Custom metadata for cascading tests."""
 
-    max_value: int
+    max_value: int = 0
 
 
 class CascadeMetadata4(BaseMetadata):
     """Custom metadata for cascading tests."""
 
-    threshold: int
+    threshold: int = 0
 
 
 class CascadeMetadata5(BaseMetadata):
     """Custom metadata for cascading tests."""
 
-    limit: int
+    limit: int = 0
 
 
 class CascadeMetadata6(BaseMetadata):
     """Custom metadata for cascading tests."""
 
-    count: int
+    count: int = 0
 
 
 class TestConverterCascading:
@@ -136,11 +137,7 @@ class TestValidatorCascading:
         parent = Command(name="parent")
 
         @parent.parameter_validator(CascadeMetadata1)
-        def validate_cascade1(
-            value: "ParameterValueType | None",
-            other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata,
-        ):
+        def validate_cascade1(value, metadata):
             return None
 
         child = Command(name="child", run_func=EMPTY_COMMAND_FUNCTION)
@@ -162,25 +159,18 @@ class TestValidatorCascading:
         )
 
         @parent.parameter_validator(CascadeMetadata6)
-        def parent_validator(
-            value: "ParameterValueType | None",
-            other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata,
-        ):
+        def parent_validator(value, metadata):
             return None
 
         @child.parameter_validator(CascadeMetadata2)
-        def child_validator(
-            value: "ParameterValueType | None",
-            other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata,
-        ):
+        def child_validator(value, metadata):
             return None
 
         # Child has its own registry before mounting
         assert child.parameter_validators is child_registry
         assert child.parameter_validators is not parent.parameter_validators
         assert child.parameter_validators.has_validator(CascadeMetadata2)
+        assert parent.parameter_validators is not None
         assert parent.parameter_validators.has_validator(CascadeMetadata6)
 
         # Mount merges parent's validators into child's registry
@@ -189,6 +179,7 @@ class TestValidatorCascading:
         # After merge, child keeps its own registry but gains parent's validators
         assert child.parameter_validators is child_registry
         assert child.parameter_validators is not parent.parameter_validators
+        assert parent.parameter_validators is not None
         assert child.parameter_validators.has_validator(CascadeMetadata6)
         # Child's original validator is preserved (child wins)
         assert child.parameter_validators.has_validator(CascadeMetadata2)
@@ -197,11 +188,7 @@ class TestValidatorCascading:
         parent = Command(name="parent")
 
         @parent.parameter_validator(CascadeMetadata3)
-        def validate_cascade3(
-            value: "ParameterValueType | None",
-            other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata,
-        ):
+        def validate_cascade3(value, metadata):
             return None
 
         @parent.command()
@@ -261,11 +248,7 @@ class TestDeepHierarchyCascading:
             return CascadeInt(int(value) * 10)
 
         @root.parameter_validator(CascadeMetadata4)
-        def validate_cascade4(
-            value: "ParameterValueType | None",
-            other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata,
-        ):
+        def validate_cascade4(value, metadata):
             return None
 
         @root.command()
@@ -350,11 +333,7 @@ class TestDeepHierarchyCascading:
             return CascadeInt(int(value))
 
         @parent.parameter_validator(CascadeMetadata5)
-        def validate_cascade5(
-            value: "ParameterValueType | None",
-            other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata,
-        ):
+        def validate_cascade5(value, metadata):
             return None
 
         # Create a command with its own subcommand
@@ -473,11 +452,7 @@ class TestDeepHierarchyCascading:
         parent = Command(name="parent")
 
         @parent.command_validator(CascadeMetadata1)
-        def validate_command(
-            value: "ParameterValueType | None",
-            other_parameters: "Mapping[str, ParameterValueType | None]",
-            metadata,
-        ):
+        def validate_command(value, metadata):
             return None
 
         child = Command(name="child", run_func=EMPTY_COMMAND_FUNCTION)
@@ -546,18 +521,12 @@ class TestMergeSemantics:
         child_called = False
 
         @parent.parameter_validator(CascadeMetadata1)
-        def parent_validator(
-            value: "ParameterValueType | None",
-            metadata,
-        ):
+        def parent_validator(value, metadata):
             nonlocal parent_called
             parent_called = True
 
         @child.parameter_validator(CascadeMetadata1)
-        def child_validator(
-            value: "ParameterValueType | None",
-            metadata,
-        ):
+        def child_validator(value, metadata):
             nonlocal child_called
             child_called = True
 
@@ -567,7 +536,7 @@ class TestMergeSemantics:
         assert child.parameter_validators is not None
         # Create metadata instance (BaseMetadata subclass with no __init__)
         metadata_instance = CascadeMetadata1()
-        metadata_instance.value = 10  # pyright: ignore[reportAttributeAccessIssue]
+        metadata_instance.value = 10
         child.parameter_validators.validate(42, (metadata_instance,))
 
         assert child_called
@@ -606,24 +575,15 @@ class TestMergeSemantics:
         child.parameter_validators = ValidatorRegistry()
 
         @parent.parameter_validator(CascadeMetadata1)
-        def parent_validator1(
-            value: "ParameterValueType | None",
-            metadata,
-        ):
+        def parent_validator1(value, metadata):
             return None
 
         @parent.parameter_validator(CascadeMetadata2)
-        def parent_validator2(
-            value: "ParameterValueType | None",
-            metadata,
-        ):
+        def parent_validator2(value, metadata):
             return None
 
         @child.parameter_validator(CascadeMetadata3)
-        def child_validator(
-            value: "ParameterValueType | None",
-            metadata,
-        ):
+        def child_validator(value, metadata):
             return None
 
         parent.mount(child)
@@ -696,8 +656,8 @@ class TestMergeSemantics:
             return CascadeFloat(float(value) * 1.5)
 
         # Mount in chain
-        root.mount(middle)
-        middle.mount(leaf)
+        _ = root.mount(middle)
+        _ = middle.mount(leaf)
 
         # Leaf should have all three converters
         assert leaf.converters.has_converter(CascadeInt)

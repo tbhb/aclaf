@@ -2,8 +2,7 @@ import warnings
 
 from hypothesis import given, strategies as st
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser
-from aclaf.parser.types import AccumulationMode, Arity
+from aclaf.parser import AccumulationMode, Arity, CommandSpec, OptionSpec, Parser
 
 # Strategy for generating valid value counts (1-10 values per occurrence)
 value_counts = st.integers(min_value=1, max_value=10)

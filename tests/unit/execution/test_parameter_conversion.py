@@ -7,13 +7,13 @@ from aclaf import (
     RuntimeCommand,
     ValidatorRegistry,
 )
-from aclaf.exceptions import ConversionError
+from aclaf.conversion import ConversionError
 from aclaf.parser import EXACTLY_ONE_ARITY, ParsedOption, ParsedPositional, ParseResult
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from aclaf import RuntimeParameter
+    from aclaf.execution import RuntimeParameter
 
 
 class TestBasicConversion:
@@ -375,7 +375,7 @@ class TestConversionErrors:
         runtime_option_factory: "Callable[..., RuntimeParameter]",
         converters: ConverterRegistry,
     ):
-        def failing_converter(value: str, metadata: object) -> int:  # noqa: ARG001
+        def failing_converter(value: str, metadata: object) -> int:
             raise ConversionError(value, int, "Custom error message")
 
         param = runtime_option_factory(

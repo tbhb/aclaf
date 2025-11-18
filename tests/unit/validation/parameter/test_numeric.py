@@ -2,7 +2,7 @@
 
 from annotated_types import Interval, MultipleOf
 
-from aclaf.validation.parameter._numeric import (
+from aclaf.validation.parameter import (
     IsInteger,
     IsNegative,
     IsNonNegative,

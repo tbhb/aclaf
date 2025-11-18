@@ -18,8 +18,15 @@ identify performance bottlenecks across the entire architecture.
 # pyright: reportMissingParameterType=false, reportUnusedCallResult=false
 # Note: Type checking disabled for benchmark fixtures which don't have type stubs
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
-from aclaf.parser.types import ZERO_OR_MORE_ARITY, AccumulationMode, Arity
+from aclaf.parser import (
+    ZERO_OR_MORE_ARITY,
+    AccumulationMode,
+    Arity,
+    CommandSpec,
+    OptionSpec,
+    Parser,
+    PositionalSpec,
+)
 
 
 def test_benchmark_aws_like_massive_subcommands_build(benchmark):

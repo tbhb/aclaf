@@ -1,6 +1,6 @@
 """Unit tests for mapping parameter validators."""
 
-from aclaf.validation.parameter._mapping import (
+from aclaf.validation.parameter import (
     ForbiddenKeys,
     KeyPattern,
     MaxKeys,

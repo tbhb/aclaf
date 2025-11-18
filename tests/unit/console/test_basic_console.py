@@ -1,8 +1,7 @@
 import sys
 from io import StringIO
 
-from aclaf.console._base import DEFAULT_END, DEFAULT_SEP
-from aclaf.console._basic import BasicConsole
+from aclaf.console import DEFAULT_END, DEFAULT_SEP, BasicConsole
 
 
 class TestBasicConsoleCreation:

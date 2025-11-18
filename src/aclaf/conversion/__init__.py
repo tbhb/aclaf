@@ -1,3 +1,4 @@
+from ._exceptions import ConversionError
 from ._registry import ConverterFunctionType, ConverterRegistry
 from ._standard import (
     convert_bool,
@@ -8,6 +9,7 @@ from ._standard import (
 )
 
 __all__ = [
+    "ConversionError",
     "ConverterFunctionType",
     "ConverterRegistry",
     "convert_bool",

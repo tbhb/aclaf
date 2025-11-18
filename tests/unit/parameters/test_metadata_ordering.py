@@ -4,8 +4,8 @@ from typing import Annotated
 from annotated_types import Ge, Gt, Le, Lt, MaxLen, MinLen
 from typing_inspection.introspection import AnnotationSource
 
-from aclaf._parameters import CommandParameter
 from aclaf.metadata import Opt, ZeroOrMore
+from aclaf.registration import CommandParameter
 
 
 def test_simple_metadata_order_preserved():

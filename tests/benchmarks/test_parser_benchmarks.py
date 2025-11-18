@@ -5,8 +5,15 @@
 
 import contextlib
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
-from aclaf.parser.types import ZERO_OR_MORE_ARITY, AccumulationMode, Arity
+from aclaf.parser import (
+    ZERO_OR_MORE_ARITY,
+    AccumulationMode,
+    Arity,
+    CommandSpec,
+    OptionSpec,
+    Parser,
+    PositionalSpec,
+)
 
 
 def test_benchmark_simple_parsing(benchmark):

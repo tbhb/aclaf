@@ -1,10 +1,7 @@
-from collections.abc import Mapping
 from dataclasses import dataclass, field
-from enum import Enum
 from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
-    TypeAlias,
     TypedDict,
     cast,
 )
@@ -13,19 +10,13 @@ from aclaf.console import DefaultConsole
 from aclaf.logging import Logger, NullLogger
 
 if TYPE_CHECKING:
-    from .console import Console
-    from .parser import ParseResult
-    from .types import ParameterValueType
+    from collections.abc import Mapping
 
+    from aclaf.console import Console
+    from aclaf.parser import ParseResult
+    from aclaf.types import ParameterValueType
 
-class ParameterSource(Enum):
-    COMMAND_LINE = "command_line"
-    DEFAULT = "default"
-    CONFIG_FILE = "config_file"
-    ENVIRONMENT = "environment"
-
-
-ParameterSourceMapping: TypeAlias = Mapping[str, ParameterSource]
+    from ._types import ParameterSourceMapping
 
 
 class ContextInput(TypedDict, total=False):
@@ -33,9 +24,9 @@ class ContextInput(TypedDict, total=False):
     command: str
     command_path: tuple[str, ...]
     parse_result: "ParseResult"
-    errors: Mapping[str, tuple[str, ...]]
-    parameters: Mapping[str, "ParameterValueType | None"]
-    parameter_sources: ParameterSourceMapping
+    errors: "Mapping[str, tuple[str, ...]]"
+    parameters: "Mapping[str, ParameterValueType | None]"
+    parameter_sources: "ParameterSourceMapping"
     parent: "Context"
     is_async: bool
     console: "Console"
@@ -54,10 +45,10 @@ class Context:
     errors: "Mapping[str, tuple[str, ...]]" = field(
         default_factory=lambda: MappingProxyType({})
     )
-    parameters: Mapping[str, "ParameterValueType | None"] = field(
+    parameters: "Mapping[str, ParameterValueType | None]" = field(
         default_factory=lambda: MappingProxyType({})
     )
-    parameter_sources: ParameterSourceMapping = field(
+    parameter_sources: "ParameterSourceMapping" = field(
         default_factory=lambda: MappingProxyType({})
     )
     parent: "Context | None" = None

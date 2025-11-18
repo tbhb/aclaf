@@ -2,23 +2,21 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from aclaf._parameters import extract_function_parameters
-from aclaf._runtime import is_async_command_function
 from aclaf.console import Console, DefaultConsole
+from aclaf.execution import is_async_command_function
 from aclaf.logging import Logger, NullLogger, create_logger
+from aclaf.registration import Command, extract_function_parameters
 from aclaf.validation import (
     ValidatorRegistry,
     default_command_validators,
     default_parameter_validators,
 )
 
-from ._command import Command
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
-    from ._runtime import CommandFunctionType
-    from .parser import ParserConfiguration
+    from aclaf.execution import CommandFunctionType
+    from aclaf.parser import ParserConfiguration
 
 
 class App(Command):

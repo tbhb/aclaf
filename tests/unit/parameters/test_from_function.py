@@ -4,9 +4,9 @@ from typing import Annotated, Literal
 import pytest
 from annotated_types import Gt, Le
 
-from aclaf._parameters import CommandParameter
-from aclaf._runtime import ParameterKind
 from aclaf.metadata import Arg, Default, Flag, Opt
+from aclaf.registration import CommandParameter
+from aclaf.types import ParameterKind
 
 
 class TestBasicParameterKinds:

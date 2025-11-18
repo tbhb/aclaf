@@ -2,8 +2,15 @@ import time
 
 import pytest
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
-from aclaf.parser.types import EXACTLY_ONE_ARITY, ONE_OR_MORE_ARITY, ZERO_OR_MORE_ARITY
+from aclaf.parser import (
+    EXACTLY_ONE_ARITY,
+    ONE_OR_MORE_ARITY,
+    ZERO_OR_MORE_ARITY,
+    CommandSpec,
+    OptionSpec,
+    Parser,
+    PositionalSpec,
+)
 
 
 @pytest.mark.security

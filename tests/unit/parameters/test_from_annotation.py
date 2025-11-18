@@ -4,9 +4,9 @@ from typing import Annotated
 from annotated_types import Ge, Gt, Le, Lt
 from typing_inspection.introspection import AnnotationSource
 
-from aclaf._parameters import CommandParameter
-from aclaf._runtime import ParameterKind
 from aclaf.metadata import Arg, Default, ExactlyOne, Flag, Opt, ZeroOrMore
+from aclaf.registration import CommandParameter
+from aclaf.types import ParameterKind
 
 
 class TestAnnotationSources:
@@ -149,7 +149,9 @@ class TestUnionMetadataExtraction:
     def test_from_annotation_nested_union_with_metadata(self):
         inner1 = Annotated[int, Gt(0)]
         inner2 = Annotated[str, Lt(100)]
-        annotation = Annotated[inner1 | inner2, Opt()]  # type: ignore[misc]
+        annotation = Annotated[
+            inner1 | inner2, Opt()  # pyright: ignore[reportOperatorIssue]
+        ]
         param = CommandParameter.from_annotation(
             "value", annotation, AnnotationSource.BARE
         )
@@ -169,7 +171,7 @@ class TestUnionMetadataExtraction:
     def test_union_metadata_extraction_complex(self):
         type1 = Annotated[int, Gt(0)]
         type2 = Annotated[float, Lt(100.0)]
-        union_type = type1 | type2  # type: ignore[misc]
+        union_type = type1 | type2  #   # pyright: ignore[reportOperatorIssue]
         outer = Annotated[union_type, Opt()]  # type: ignore[misc]
         param = CommandParameter.from_annotation("value", outer, AnnotationSource.BARE)
         gt_found = any(isinstance(m, Gt) for m in param.metadata)

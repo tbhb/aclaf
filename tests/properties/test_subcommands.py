@@ -3,8 +3,14 @@ import string
 import pytest
 from hypothesis import given, strategies as st
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser, ParserConfiguration
-from aclaf.parser.exceptions import AmbiguousSubcommandError, UnknownSubcommandError
+from aclaf.parser import (
+    AmbiguousSubcommandError,
+    CommandSpec,
+    OptionSpec,
+    Parser,
+    ParserConfiguration,
+    UnknownSubcommandError,
+)
 
 from .strategies import option_lists
 

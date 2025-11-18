@@ -3,11 +3,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from aclaf import EMPTY_COMMAND_FUNCTION, RuntimeCommand, RuntimeParameter
-from aclaf._errors import ErrorConfiguration
-from aclaf._runtime import ParameterKind
+from aclaf.execution import EMPTY_COMMAND_FUNCTION, RuntimeCommand, RuntimeParameter
 from aclaf.logging import NullLogger
 from aclaf.parser import Parser
+from aclaf.types import ParameterKind
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -38,13 +37,12 @@ class TestRuntimeCommand:
             name="test",
             run_func=handler,
             converters=mock_converters,
-            validators=mock_validators,
+            parameter_validators=mock_validators,
         )
 
         assert cmd.aliases == ()
         assert cmd.console_param is None
         assert cmd.context_param is None
-        assert isinstance(cmd.error_config, ErrorConfiguration)
         assert isinstance(cmd.parameters, MappingProxyType)
         assert cmd.parameters == {}
         assert cmd.is_async is False
@@ -80,7 +78,7 @@ class TestRuntimeCommand:
             subcommands=subcommands,
             context_param="ctx",
             converters=mock_converters,
-            validators=mock_validators,
+            parameter_validators=mock_validators,
         )
 
         assert cmd.name == "test"

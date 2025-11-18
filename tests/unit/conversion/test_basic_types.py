@@ -5,7 +5,8 @@ from typing import TypeAlias
 
 import pytest
 
-from aclaf._conversion import (
+from aclaf.conversion import (
+    ConversionError,
     ConverterRegistry,
     convert_bool,
     convert_float,
@@ -13,7 +14,6 @@ from aclaf._conversion import (
     convert_path,
     convert_str,
 )
-from aclaf.exceptions import ConversionError
 
 
 class TestStringConversion:

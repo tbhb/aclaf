@@ -1,6 +1,6 @@
 """Unit tests for command conflict validators."""
 
-from aclaf.validation.command._conflict import (
+from aclaf.validation.command import (
     ConflictsWith,
     validate_conflicts_with,
 )

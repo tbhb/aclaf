@@ -1,7 +1,7 @@
 import pytest
 
 from aclaf import RuntimeCommand, ValidatorRegistry
-from aclaf._conversion import ConverterRegistry
+from aclaf.conversion import ConverterRegistry
 from aclaf.parser import ParseResult
 
 

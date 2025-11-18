@@ -4,21 +4,22 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from aclaf import Context, ConverterRegistry, RuntimeCommand, ValidatorRegistry
-from aclaf.exceptions import ValidationError
+from aclaf.execution import Context, RuntimeCommand
 from aclaf.parser import ParseResult
+from aclaf.validation import ValidationError, ValidatorRegistry
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from aclaf import RuntimeParameter
+    from aclaf.conversion import ConverterRegistry
 
 
 class TestErrorChecking:
     def test_validation_error_raised_when_errors_exist_and_no_subcommand(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
@@ -51,7 +52,7 @@ class TestErrorChecking:
     def test_validation_error_not_raised_when_subcommand_exists(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
@@ -83,7 +84,7 @@ class TestErrorChecking:
     def test_validation_error_not_raised_when_no_errors(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int)
@@ -110,7 +111,7 @@ class TestErrorChecking:
     def test_validation_error_includes_all_collected_errors(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         count_param = runtime_option_factory(
@@ -151,7 +152,7 @@ class TestErrorCollection:
     def test_single_command_errors_collected(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
@@ -179,7 +180,7 @@ class TestErrorCollection:
     def test_parent_errors_collected_recursively(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
@@ -221,7 +222,7 @@ class TestErrorCollection:
     def test_three_level_nested_error_collection(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int, is_required=True)
@@ -277,7 +278,7 @@ class TestErrorCollection:
     def test_error_structure_format_verification(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         count_param = runtime_option_factory(
@@ -318,7 +319,7 @@ class TestErrorCollection:
     def test_empty_dict_when_no_errors(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(name="count", value_type=int)

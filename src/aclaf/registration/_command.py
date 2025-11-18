@@ -1,29 +1,33 @@
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     TypedDict,
 )
 from typing_extensions import override
 
-from aclaf._conversion import ConverterFunctionType, ConverterRegistry
-from aclaf._errors import ErrorConfiguration
-from aclaf._hooks import Hook, HookRegistry
-from aclaf._parameters import (
+from aclaf.conversion import ConverterFunctionType, ConverterRegistry
+from aclaf.execution import (
+    EMPTY_COMMAND_FUNCTION,
+    Hook,
+    HookRegistry,
+    RuntimeCommand,
+    is_async_command_function,
+)
+from aclaf.logging import Logger, NullLogger
+from aclaf.parser import validate_command_name
+from aclaf.types import ParameterKind
+from aclaf.validation import default_command_validators, default_parameter_validators
+
+from ._exceptions import (
+    CommandFunctionAlreadyDefinedError,
+    DuplicateCommandError,
+)
+from ._parameters import (
     CommandParameter,
     Parameter,
     extract_function_parameters,
 )
-from aclaf.logging import Logger, NullLogger
-from aclaf.validation import default_command_validators, default_parameter_validators
-
-from ._runtime import (
-    EMPTY_COMMAND_FUNCTION,
-    ParameterKind,
-    RuntimeCommand,
-    is_async_command_function,
-)
-from .exceptions import CommandFunctionAlreadyDefinedError, DuplicateCommandError
-from .parser.utils import validate_command_name
 
 # Maximum depth allowed for command hierarchy to prevent infinite recursion
 MAX_COMMAND_HIERARCHY_DEPTH = 900
@@ -32,15 +36,14 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
     from aclaf.console import Console
+    from aclaf.execution import CommandFunctionType
+    from aclaf.parser import ParserConfiguration
     from aclaf.validation import (
         ValidatorFunction,
         ValidatorMetadataType,
         ValidatorRegistry,
         ValidatorRegistryKey,
     )
-
-    from ._runtime import CommandFunctionType
-    from .parser import ParserConfiguration
 
 
 class CommandInput(TypedDict, total=False):
@@ -51,7 +54,6 @@ class CommandInput(TypedDict, total=False):
     console_param: "str | None"
     context_param: "str | None"
     converters: ConverterRegistry
-    error_config: "ErrorConfiguration"
     is_async: bool
     is_mounted: bool
     logger: Logger
@@ -75,7 +77,6 @@ class Command:
     console_param: "str | None" = None
     context_param: "str | None" = None
     converters: ConverterRegistry = field(default_factory=ConverterRegistry, repr=False)
-    error_config: "ErrorConfiguration" = field(default_factory=ErrorConfiguration)
     hooks: "HookRegistry | None" = None
     is_async: bool = False
     is_mounted: bool = False
@@ -130,7 +131,6 @@ class Command:
             f" console={self.console!r},"
             f" console_param={self.console_param!r},"
             f" context_param={self.context_param!r},"
-            f" error_config={self.error_config!r},"
             f" is_async={self.is_async!r},"
             f" is_mounted={self.is_mounted!r},"
             f" logger={self.logger!r},"
@@ -171,7 +171,6 @@ class Command:
             aliases=tuple(self.aliases),
             command_validators=self.command_validators,
             console=self.console,
-            error_config=self.error_config,
             hooks=self.hooks,
             logger=self.logger,
             parameter_validators=self.parameter_validators,
@@ -280,18 +279,21 @@ class Command:
     def _cascade_config_to_command(self, command: "Command") -> None:
         """Apply this command's configuration to the target command.
 
-        This merges the parent command's configuration into the child command.
-        For converters and validators, parent values are merged INTO child
-        registries, with child values taking precedence (child wins).
+        This intelligently shares or merges the parent command's configuration
+        with the child command:
 
-        Configuration that is merged:
-        - Converters: Parent converters added to child, child converters
-          preserved
-        - Command validators: Parent validators added to child, child
-          validators preserved
-        - Parameter validators: Parent validators added to child, child
-          validators preserved
-        - Logger: Set to parent's logger if child has default logger
+        - If child has custom (non-builtin) converters: merge parent converters
+          into child's registry (child wins)
+        - If child has only builtin converters: share parent's registry directly
+        - Validators are always shared by reference
+        - Logger is always set to parent's logger
+        - Parser config is set if child has none
+
+        Configuration that is shared/cascaded:
+        - Converters: Shared if child has no custom converters, merged otherwise
+        - Command validators: Shared by reference
+        - Parameter validators: Shared by reference
+        - Logger: Set to parent's logger
         - Parser config: Set to parent's parser config if child has none
         - Root command: Set to parent's root (or parent itself)
 
@@ -300,20 +302,37 @@ class Command:
         """
         command.root_command = self.root_command or self
 
-        # Merge parent's converters into child's registry (child wins)
-        command.converters.merge_from(self.converters)
+        # Determine if child has custom converters beyond builtins
+        child_has_custom_converters = self._has_custom_converters(command.converters)
 
-        # Merge parent's command validators into child's registry (child wins)
+        if child_has_custom_converters:
+            # Child has custom converters - merge parent's into child's (child wins)
+            command.converters.merge_from(self.converters)
+            # Update child's converter logger to match parent logger
+            command.converters.logger = self.logger
+        else:
+            # Child has only builtins - share parent's registry directly
+            command.converters = self.converters
+
+        # Handle command validators - share or merge based on child state
         if self.command_validators is not None:
-            if command.command_validators is None:
-                command.command_validators = default_command_validators()
-            command.command_validators.merge_from(self.command_validators)
+            if command.command_validators is not None:
+                # Child has custom validators - merge parent's into child's
+                command.command_validators.merge_from(self.command_validators)
+                command.command_validators.logger = self.logger
+            else:
+                # Child has no validators - share parent's registry
+                command.command_validators = self.command_validators
 
-        # Merge parent's parameter validators into child's registry (child wins)
+        # Handle parameter validators - share or merge based on child state
         if self.parameter_validators is not None:
-            if command.parameter_validators is None:
-                command.parameter_validators = default_parameter_validators()
-            command.parameter_validators.merge_from(self.parameter_validators)
+            if command.parameter_validators is not None:
+                # Child has custom validators - merge parent's into child's
+                command.parameter_validators.merge_from(self.parameter_validators)
+                command.parameter_validators.logger = self.logger
+            else:
+                # Child has no validators - share parent's registry
+                command.parameter_validators = self.parameter_validators
 
         # Always set logger to parent's logger for consistent logging
         command.logger = self.logger
@@ -322,18 +341,30 @@ class Command:
         if command.parser_config is None:
             command.parser_config = self.parser_config
 
+    def _has_custom_converters(self, registry: ConverterRegistry) -> bool:
+        """Check if a converter registry has custom (non-builtin) converters.
+
+        Args:
+            registry: The converter registry to check
+
+        Returns:
+            True if the registry has converters beyond the standard builtins
+        """
+        builtin_types = {str, int, float, bool, Path}
+        return any(type_ not in builtin_types for type_ in registry.converters)
+
     def _cascade_config_recursive(self, command: "Command", depth: int = 0) -> None:
         """Cascade configuration from this command to a target and its subcommands.
 
-        This method recursively applies this command's configuration to the target
-        command and all of its nested subcommands. Configuration is merged using
-        a "child wins" strategy where child-specific converters and validators
-        are preserved.
+        This method recursively shares this command's configuration with the target
+        command and all of its nested subcommands. Registries are shared by reference,
+        ensuring that changes to parent registries are visible to all children.
 
-        Configuration that is merged:
-        - Converters: Parent converters added to child, child converters preserved
-        - Validators: Parent validators added to child, child validators preserved
-        - Logger: Set to parent's logger if child has default logger
+        Configuration that is shared/cascaded:
+        - Converters: Child uses parent's ConverterRegistry (shared reference)
+        - Command validators: Child uses parent's ValidatorRegistry (shared reference)
+        - Parameter validators: Child uses parent's ValidatorRegistry (shared reference)
+        - Logger: Set to parent's logger
         - Parser config: Set to parent's parser config if child has none
         - Root command: Set to parent's root (or parent itself)
 

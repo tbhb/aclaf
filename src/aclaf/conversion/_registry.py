@@ -22,7 +22,7 @@ from aclaf._internal._inspect import inspect_annotation
 from aclaf.exceptions import ConversionError
 from aclaf.logging import Logger, NullLogger
 from aclaf.parser import ParsedParameterValue
-from aclaf.types import ConvertibleProtocol
+from aclaf.types import FromArgument
 
 from ._standard import (
     convert_bool,
@@ -197,7 +197,7 @@ class ConverterRegistry:
         """
         try:
             # Check if type_ is a subclass of ConvertibleProtocol
-            if not issubclass(type_, ConvertibleProtocol):
+            if not issubclass(type_, FromArgument):
                 return None
 
             def convert_protocol(

@@ -1,7 +1,7 @@
 import threading
 from io import StringIO
 
-from aclaf.console._basic import BasicConsole
+from aclaf.console import BasicConsole
 
 
 class TestConsoleThreadSafety:

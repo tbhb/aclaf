@@ -2,8 +2,7 @@
 
 import pytest
 
-from aclaf._conversion import ConverterRegistry
-from aclaf.exceptions import ConversionError
+from aclaf.conversion import ConversionError, ConverterRegistry
 
 
 class TestUnionConversion:

@@ -3,10 +3,9 @@ from typing import TYPE_CHECKING, Unpack
 
 import pytest
 
-from aclaf import (
+from aclaf.conversion import ConverterRegistry
+from aclaf.execution import (
     Context,
-    ConverterRegistry,
-    ParameterKind,
     RuntimeCommand,
     RuntimeParameter,
 )
@@ -25,6 +24,7 @@ from aclaf.parser import (
     PositionalSpec,
     PositionalSpecInput,
 )
+from aclaf.types import ParameterKind
 from aclaf.validation import ValidatorRegistry
 from aclaf.validation.parameter import default_parameter_validators
 
@@ -34,9 +34,8 @@ if TYPE_CHECKING:
 
     from pytest_mock import MockerFixture
 
-    from aclaf._context import ContextInput
-    from aclaf._runtime import RuntimeCommandInput, RuntimeParameterInput
     from aclaf.console import Console
+    from aclaf.execution import ContextInput, RuntimeCommandInput, RuntimeParameterInput
     from aclaf.logging import Logger
     from aclaf.parser._base import ParsedOption, ParsedPositional
 

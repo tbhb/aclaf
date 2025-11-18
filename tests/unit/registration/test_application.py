@@ -1,7 +1,7 @@
 import sys
 from typing import TYPE_CHECKING
 
-from aclaf import App, Command, app
+from aclaf.registration import App, Command, app
 
 if TYPE_CHECKING:
     import pytest

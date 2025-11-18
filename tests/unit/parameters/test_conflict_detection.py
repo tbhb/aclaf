@@ -4,7 +4,6 @@ import pytest
 from annotated_types import Gt
 from typing_inspection.introspection import AnnotationSource
 
-from aclaf._parameters import CommandParameter
 from aclaf.metadata import (
     Arg,
     AtLeastOne,
@@ -18,6 +17,7 @@ from aclaf.metadata import (
     Opt,
     ZeroOrMore,
 )
+from aclaf.registration import CommandParameter
 
 
 class TestArityConflicts:

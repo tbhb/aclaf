@@ -6,7 +6,8 @@ from aclaf.console import MockConsole
 from aclaf.logging import MockLogger
 
 if TYPE_CHECKING:
-    from aclaf import Console, Logger
+    from aclaf.console import Console
+    from aclaf.logging import Logger
 
 
 @pytest.fixture

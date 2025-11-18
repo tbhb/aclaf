@@ -2,7 +2,7 @@
 
 from annotated_types import Ge, Gt, Le, Lt, MaxLen, MinLen
 
-from aclaf.validation.parameter._comparison import (
+from aclaf.validation.parameter import (
     validate_ge,
     validate_gt,
     validate_le,

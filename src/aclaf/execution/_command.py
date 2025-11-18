@@ -1,20 +1,25 @@
 import inspect
 import sys
-from collections.abc import AsyncGenerator, Callable, Coroutine
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 from types import MappingProxyType
 from typing import (
     TYPE_CHECKING,
-    TypeAlias,
     TypedDict,
     cast,
 )
 from typing_extensions import override
 
-from aclaf._errors import ErrorConfiguration
+from aclaf.console import Console, DefaultConsole, SupportsConsole
 from aclaf.exceptions import ConversionError, ValidationError
 from aclaf.logging import Logger, NullLogger
+from aclaf.parser import (
+    BaseParser,
+    CommandSpec,
+    Parser,
+    ParserConfiguration,
+)
+from aclaf.types import ParameterValueType
 from aclaf.validation import (
     ValidatorMetadataType,
     default_command_validators,
@@ -22,53 +27,31 @@ from aclaf.validation import (
 )
 
 from ._context import Context
-from ._response import (
-    AsyncResponseType,
-    ResponseType,
-    SupportsResponseType,
-    SyncResponseType,
-)
-from .console import Console, DefaultConsole, SupportsConsole
-from .parser import (
-    AccumulationMode,
-    Arity,
-    BaseParser,
-    CommandSpec,
-    OptionSpec,
-    Parser,
-    ParserConfiguration,
-    PositionalSpec,
-)
-from .types import ParameterValueMappingType, ParameterValueType
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import AsyncGenerator, Coroutine, Mapping, Sequence
 
-    from annotated_types import BaseMetadata
-
-    from aclaf._conversion import ConverterRegistry
     from aclaf._hooks import HookRegistry
-    from aclaf.metadata import MetadataByType
+    from aclaf.conversion import ConverterRegistry
+    from aclaf.parser import ParsedParameterValue, ParseResult
+    from aclaf.response import (
+        AsyncResponseType,
+        ResponseType,
+        SyncResponseType,
+    )
+    from aclaf.types import ParameterValueMappingType
     from aclaf.validation import (
-        ValidatorFunction,
         ValidatorRegistry,
     )
 
-    from ._conversion import ConverterFunctionType
-    from .parser import ParsedParameterValue, ParseResult
+    from ._parameter import RuntimeParameter
+    from ._types import CommandFunctionType
 
-DefaultFactoryFunction: TypeAlias = Callable[..., ParameterValueType]
-
-SyncCommandFunctionType: TypeAlias = Callable[..., SyncResponseType]
-AsyncCommandFunctionType: TypeAlias = Callable[..., AsyncResponseType]
-
-CommandFunctionType: TypeAlias = SyncCommandFunctionType | AsyncCommandFunctionType
-
-CommandFunctionRunParameters: TypeAlias = dict[
+CommandFunctionRunParameters = dict[
     str, ParameterValueType | None | Context | Console | Logger
 ]
 
-EMPTY_COMMAND_FUNCTION: CommandFunctionType = lambda: None  # noqa: E731
+EMPTY_COMMAND_FUNCTION: "CommandFunctionType" = lambda: None  # noqa: E731
 
 
 class ParameterKind(IntEnum):
@@ -76,131 +59,9 @@ class ParameterKind(IntEnum):
     POSITIONAL = auto()
 
 
-class RuntimeParameterInput(TypedDict, total=False):
-    name: str
-    kind: ParameterKind
-    value_type: "type[ParameterValueType]"
-    arity: Arity
-    accumulation_mode: AccumulationMode | None
-    const_value: str | None
-    converter: "ConverterFunctionType | None"
-    default: "ParameterValueType | None"
-    default_factory: "DefaultFactoryFunction | None"
-    falsey_flag_values: tuple[str, ...] | None
-    flatten_values: bool
-    help: str | None
-    is_flag: bool
-    is_required: bool
-    long: tuple[str, ...]
-    metadata: tuple["BaseMetadata", ...]
-    negation_words: tuple[str, ...] | None
-    short: tuple[str, ...]
-    truthy_flag_values: tuple[str, ...] | None
-    validators: tuple["ValidatorFunction", ...]
-
-
-@dataclass(slots=True, frozen=True)
-class RuntimeParameter:
-    name: str
-    kind: ParameterKind
-    value_type: "type[ParameterValueType]"
-    arity: Arity
-    accumulation_mode: AccumulationMode | None = None
-    const_value: str | None = None
-    converter: "ConverterFunctionType | None" = None
-    default: "ParameterValueType | None" = None
-    default_factory: "DefaultFactoryFunction | None" = None
-    falsey_flag_values: tuple[str, ...] | None = None
-    flatten_values: bool = False
-    help: str | None = None
-    is_flag: bool = False
-    is_required: bool = False
-    long: tuple[str, ...] = field(default_factory=tuple)
-    metadata: tuple["BaseMetadata", ...] = field(default_factory=tuple)
-    negation_words: tuple[str, ...] | None = None
-    short: tuple[str, ...] = field(default_factory=tuple)
-    truthy_flag_values: tuple[str, ...] | None = None
-    validators: tuple["ValidatorFunction", ...] = field(default_factory=tuple)
-
-    _metadata_by_type: "MetadataByType | None" = field(
-        default=None, init=False, repr=False
-    )
-
-    @property
-    def metadata_by_type(
-        self,
-    ) -> "MetadataByType":
-        if self._metadata_by_type is None:
-            mapping = MappingProxyType({type(meta): meta for meta in self.metadata})
-            object.__setattr__(self, "_metadata_by_type", mapping)
-            return mapping
-        return self._metadata_by_type
-
-    @override
-    def __repr__(self) -> str:
-        return (
-            f"RuntimeParameter("
-            f"accumulation_mode={self.accumulation_mode!r},"
-            f" arity={self.arity!r},"
-            f" const_value={self.const_value!r},"
-            f" converter={self.converter!r},"
-            f" default={self.default!r},"
-            f" default_factory={self.default_factory!r},"
-            f" falsey_flag_values={self.falsey_flag_values!r},"
-            f" flatten_values={self.flatten_values!r},"
-            f" help={self.help!r},"
-            f" is_flag={self.is_flag!r},"
-            f" is_required={self.is_required!r},"
-            f" kind={self.kind!r},"
-            f" long={self.long!r},"
-            f" metadata={self.metadata!r},"
-            f" name={self.name!r},"
-            f" negation_words={self.negation_words!r},"
-            f" short={self.short!r},"
-            f" truthy_flag_values={self.truthy_flag_values!r},"
-            f" validators={self.validators!r},"
-            f" value_type={self.value_type!r},"
-            f")"
-        )
-
-    def to_option_spec(self) -> OptionSpec:
-        if self.kind != ParameterKind.OPTION:
-            msg = "Can only convert option parameters to OptionSpec"
-            raise TypeError(msg)
-
-        accumulation_mode = self.accumulation_mode or AccumulationMode.LAST_WINS
-
-        return OptionSpec(
-            name=self.name,
-            long=frozenset(self.long or ()),
-            short=frozenset(self.short or ()),
-            arity=self.arity,
-            accumulation_mode=accumulation_mode,
-            is_flag=self.is_flag,
-            falsey_flag_values=frozenset(self.falsey_flag_values)
-            if self.falsey_flag_values
-            else None,
-            truthy_flag_values=frozenset(self.truthy_flag_values)
-            if self.truthy_flag_values
-            else None,
-            negation_words=frozenset(self.negation_words)
-            if self.negation_words
-            else None,
-            const_value=self.const_value,
-            flatten_values=self.flatten_values,
-        )
-
-    def to_positional_spec(self) -> PositionalSpec:
-        if self.kind != ParameterKind.POSITIONAL:
-            msg = "Can only convert positional parameters to PositionalSpec"
-            raise TypeError(msg)
-
-        return PositionalSpec(name=self.name, arity=self.arity)
-
-
 class RuntimeCommandInput(TypedDict, total=False):
     name: str
-    run_func: CommandFunctionType
+    run_func: "CommandFunctionType"
     converters: "ConverterRegistry"
     aliases: tuple[str, ...]
     validations: tuple[ValidatorMetadataType, ...]
@@ -208,7 +69,6 @@ class RuntimeCommandInput(TypedDict, total=False):
     console: "Console | None"
     console_param: str | None
     context_param: str | None
-    error_config: "ErrorConfiguration"
     hooks: "HookRegistry | None"
     parameter_validators: "ValidatorRegistry | None"
     parameters: "Mapping[str, RuntimeParameter]"
@@ -223,7 +83,7 @@ class RuntimeCommandInput(TypedDict, total=False):
 @dataclass(slots=True, frozen=True)
 class RuntimeCommand:
     name: str
-    run_func: CommandFunctionType
+    run_func: "CommandFunctionType"
     converters: "ConverterRegistry" = field(repr=False)
     validations: tuple[ValidatorMetadataType, ...] = field(default_factory=tuple)
     aliases: tuple[str, ...] = field(default_factory=tuple)
@@ -231,7 +91,6 @@ class RuntimeCommand:
     console: "Console | None" = None
     console_param: str | None = None
     context_param: str | None = None
-    error_config: "ErrorConfiguration" = field(default_factory=ErrorConfiguration)
     hooks: "HookRegistry | None" = None
     parameter_validators: "ValidatorRegistry | None" = field(repr=False, default=None)
     parameters: "Mapping[str, RuntimeParameter]" = field(
@@ -265,13 +124,13 @@ class RuntimeCommand:
         self.invoke(args)
 
     @property
-    def options(self) -> MappingProxyType[str, RuntimeParameter]:
+    def options(self) -> MappingProxyType[str, "RuntimeParameter"]:
         return MappingProxyType(
             {k: v for k, v in self.parameters.items() if v.kind == ParameterKind.OPTION}
         )
 
     @property
-    def positionals(self) -> MappingProxyType[str, RuntimeParameter]:
+    def positionals(self) -> MappingProxyType[str, "RuntimeParameter"]:
         return MappingProxyType(
             {
                 k: v
@@ -289,7 +148,6 @@ class RuntimeCommand:
             f" console={self.console!r},"
             f" console_param={self.console_param!r},"
             f" context_param={self.context_param!r},"
-            f" error_config={self.error_config!r},"
             f" is_async={self.is_async!r},"
             f" logger_param={self.logger_param!r},"
             f" parameters={self.parameters!r},"
@@ -370,14 +228,14 @@ class RuntimeCommand:
             all_errors = self._collect_errors(context)
             raise ValidationError(all_errors)
 
-    def _execute_run_func(self, context: Context) -> ResponseType | None:
+    def _execute_run_func(self, context: Context) -> "ResponseType | None":
         # TODO(tbhb): AroundExecutionHook
         # TODO(tbhb): BeforeExecutionHook
         return self.run_func(**self._make_run_parameters(context))
         # TODO(tbhb): AfterExecutionHook
         # TODO(tbhb): ExecutionErrorHook
 
-    def _make_run_parameters(self, context: Context) -> CommandFunctionRunParameters:
+    def _make_run_parameters(self, context: Context) -> "CommandFunctionRunParameters":
         run_params: CommandFunctionRunParameters = {}
         run_params.update(context.parameters)
         if self.context_param:
@@ -447,7 +305,7 @@ class RuntimeCommand:
 
     def _convert_parameters(
         self, parse_result: "ParseResult", parameters: "Mapping[str, RuntimeParameter]"
-    ) -> tuple[ParameterValueMappingType, dict[str, str]]:
+    ) -> tuple["ParameterValueMappingType", dict[str, str]]:
         # TODO(tbhb): AroundConversionHook
         # TODO(tbhb): BeforeConversionHook
         raw: dict[str, ParsedParameterValue] = {}
@@ -470,7 +328,6 @@ class RuntimeCommand:
             value = raw.get(name)
             should_use_default = name not in raw or (
                 parameter.kind == ParameterKind.POSITIONAL
-                and parameter.arity is not None
                 and parameter.arity.min == 0
                 and value in ((), "")
             )
@@ -478,8 +335,8 @@ class RuntimeCommand:
             # Apply default if we should use it
             # Check if a default exists by looking at arity (min=0 implies
             # optional with default) or explicit default/default_factory
-            has_default = parameter.default_factory is not None or (
-                parameter.arity is not None and parameter.arity.min == 0
+            has_default = (
+                parameter.default_factory is not None or parameter.arity.min == 0
             )
             if should_use_default and has_default:
                 if parameter.default_factory is not None:
@@ -508,7 +365,7 @@ class RuntimeCommand:
 
     def _validate_parameters(
         self,
-        raw: ParameterValueMappingType,
+        raw: "ParameterValueMappingType",
         parameters: "Mapping[str, RuntimeParameter]",
         conversion_errors: dict[str, str],
         validations: tuple[ValidatorMetadataType, ...] | None = None,
@@ -561,7 +418,7 @@ class RuntimeCommand:
         self,
         args: "Sequence[str]",
         parse_result: "ParseResult",
-        parameters: ParameterValueMappingType,
+        parameters: "ParameterValueMappingType",
         errors: dict[str, tuple[str, ...]],
     ) -> Context:
         # TODO(tbhb): AroundContextSetupHook
@@ -603,12 +460,12 @@ class RuntimeCommand:
         if inspect.isgenerator(result):
             try:
                 while True:
-                    value = cast("SupportsResponseType | None", next(result))
+                    value = cast("ResponseType | None", next(result))
                     if value is not None:
                         self._render_value(value, context)
                         # TODO(tbhb): AfterResponseYieldedHook
             except StopIteration as stop:
-                stop_value = cast("SupportsResponseType | None", stop.value)
+                stop_value = cast("ResponseType | None", stop.value)
                 if stop_value is not None:
                     self._render_value(stop_value, context)
                     # TODO(tbhb): AfterResponseHook
@@ -625,15 +482,13 @@ class RuntimeCommand:
             return
 
         if inspect.isasyncgen(result):
-            async_gen = cast("AsyncGenerator[SupportsResponseType, None]", result)
+            async_gen = cast("AsyncGenerator[ResponseType, None]", result)
             async for value in async_gen:
                 if value is not None:
                     self._render_value(value, context)
                     # TODO(tbhb): AfterResponseYieldedHookAsync
         elif inspect.iscoroutine(result):
-            coroutine = cast(
-                "Coroutine[object, object, SupportsResponseType | None]", result
-            )
+            coroutine = cast("Coroutine[object, object, ResponseType | None]", result)
             awaited_result = await coroutine
             if awaited_result is not None:
                 self._render_value(awaited_result, context)
@@ -644,7 +499,7 @@ class RuntimeCommand:
 
     def _render_value(
         self,
-        value: SupportsResponseType | None,
+        value: "ResponseType | None",
         context: "Context",
     ) -> None:
         if value is None:
@@ -685,6 +540,6 @@ class RuntimeCommand:
 
 
 def is_async_command_function(
-    func: CommandFunctionType,
+    func: "CommandFunctionType",
 ) -> bool:
     return bool(inspect.iscoroutinefunction(func) or inspect.isasyncgenfunction(func))

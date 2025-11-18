@@ -13,9 +13,9 @@ import pytest
 
 from aclaf import App
 from aclaf.console import MockConsole
-from aclaf.exceptions import ValidationError
 from aclaf.metadata import Arg, ZeroOrMore
 from aclaf.types import PositiveInt
+from aclaf.validation import ValidationError
 
 
 class LogLevel(Enum):

@@ -2,17 +2,17 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from aclaf import (
+from aclaf.console import MockConsole
+from aclaf.conversion import ConverterRegistry
+from aclaf.execution import (
     Context,
-    ParameterKind,
     RuntimeCommand,
     RuntimeParameter,
-    ValidatorRegistry,
 )
-from aclaf._conversion import ConverterRegistry
-from aclaf.console import MockConsole
 from aclaf.logging import MockLogger
 from aclaf.parser import EXACTLY_ONE_ARITY, ParsedOption, ParseResult
+from aclaf.types import ParameterKind
+from aclaf.validation import ValidatorRegistry
 
 if TYPE_CHECKING:
     from aclaf.console import Console

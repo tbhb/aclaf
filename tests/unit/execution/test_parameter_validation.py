@@ -4,17 +4,15 @@ from typing import TYPE_CHECKING
 
 from annotated_types import MinLen
 
-from aclaf import (
-    ConverterRegistry,
-    RuntimeCommand,
-    ValidatorRegistry,
-)
+from aclaf.execution import RuntimeCommand
 from aclaf.parser import EXACTLY_ONE_ARITY
+from aclaf.validation import ValidatorRegistry
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from aclaf import RuntimeParameter
+    from aclaf.conversion import ConverterRegistry
     from aclaf.types import ParameterValueType
 
 
@@ -22,7 +20,7 @@ class TestConversionErrorHandling:
     def test_conversion_errors_become_validation_errors(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
@@ -50,7 +48,7 @@ class TestConversionErrorHandling:
     def test_conversion_errors_prevent_further_validation(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         # Validator that should NOT be called when conversion fails
@@ -89,7 +87,7 @@ class TestConversionErrorHandling:
     def test_multiple_conversion_errors_collected(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         count_param = runtime_option_factory(
@@ -126,7 +124,7 @@ class TestRequiredParameterValidation:
     def test_required_parameter_missing_from_raw_raises_error(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
@@ -153,7 +151,7 @@ class TestRequiredParameterValidation:
     def test_required_parameter_with_none_value_raises_error(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
@@ -180,7 +178,7 @@ class TestRequiredParameterValidation:
     def test_optional_parameter_missing_does_not_raise_error(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
@@ -207,7 +205,7 @@ class TestRequiredParameterValidation:
     def test_optional_parameter_with_none_does_not_raise_error(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
@@ -236,7 +234,7 @@ class TestValidatorErrorCollection:
     def test_validator_errors_collected_in_runtime(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
     ):
         parameter_validators = ValidatorRegistry()
 
@@ -270,7 +268,7 @@ class TestValidatorInvocation:
     def test_validators_not_called_for_none_values(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         # The ValidatorRegistry is what actually validates
@@ -301,7 +299,7 @@ class TestValidatorInvocation:
     def test_validator_registry_called_for_present_values(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         # Validators are called via the registry based on metadata
@@ -333,7 +331,7 @@ class TestErrorAggregation:
     def test_empty_dict_returned_when_all_valid(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param = runtime_option_factory(
@@ -359,7 +357,7 @@ class TestErrorAggregation:
     def test_multiple_conversion_and_required_errors_collected(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         param1 = runtime_option_factory(
@@ -399,7 +397,7 @@ class TestErrorAggregation:
     def test_error_format_is_dict_of_tuples(
         self,
         runtime_option_factory: "Callable[..., RuntimeParameter]",
-        converters: ConverterRegistry,
+        converters: "ConverterRegistry",
         parameter_validators: ValidatorRegistry,
     ):
         count_param = runtime_option_factory(

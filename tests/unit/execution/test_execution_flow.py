@@ -2,9 +2,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from aclaf import Context, RuntimeCommand, ValidatorRegistry
-from aclaf._conversion import ConverterRegistry
+from aclaf.conversion import ConverterRegistry
+from aclaf.execution import Context, RuntimeCommand
 from aclaf.parser import ParseResult
+from aclaf.validation import ValidatorRegistry
 
 if TYPE_CHECKING:
     from aclaf.console._basic import BasicConsole

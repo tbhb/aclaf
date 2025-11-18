@@ -40,9 +40,9 @@ from annotated_types import Interval
 
 from aclaf import App, Context
 from aclaf.console import MockConsole
-from aclaf.exceptions import ValidationError
 from aclaf.metadata import AtLeastOne, Collect, Flag, ZeroOrMore
 from aclaf.parser import ParserConfiguration
+from aclaf.validation import ValidationError
 from aclaf.validation.command import ConflictsWith, MutuallyExclusive, Requires
 
 # Type aliases for build tools and complex scenarios

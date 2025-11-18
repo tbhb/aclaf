@@ -3,8 +3,9 @@ from enum import IntEnum, auto
 from typing import TYPE_CHECKING, Protocol, TypeAlias, runtime_checkable
 
 if TYPE_CHECKING:
-    from aclaf._response import ResponseType
     from aclaf.console import Console
+
+    from ._types import ResponseType
 
 
 RenderableType: TypeAlias = "ResponseType | Renderable"

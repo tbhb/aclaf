@@ -5,8 +5,7 @@ from typing import Annotated
 import pytest
 from annotated_types import Ge, Le
 
-from aclaf._conversion import ConverterRegistry
-from aclaf.exceptions import ConversionError
+from aclaf.conversion import ConversionError, ConverterRegistry, convert_bool
 
 
 class TestRegistryBasics:
@@ -47,7 +46,7 @@ class TestCustomConverterRegistration:
             def __init__(self, value: str):
                 self.value = value
 
-        def convert_custom(value, metadata):  # noqa: ARG001
+        def convert_custom(value, metadata):
             return CustomType(str(value))
 
         registry.register(CustomType, convert_custom)
@@ -60,7 +59,7 @@ class TestCustomConverterRegistration:
             def __init__(self, value: str):
                 self.value = value
 
-        def convert_custom(value, metadata):  # noqa: ARG001
+        def convert_custom(value, metadata):
             return CustomType(str(value))
 
         registry.register(CustomType, convert_custom)
@@ -71,10 +70,10 @@ class TestCustomConverterRegistration:
     def test_register_duplicate_converter_raises_value_error(self):
         registry = ConverterRegistry()
 
-        def convert_str_1(value, metadata):  # noqa: ARG001
+        def convert_str_1(value, metadata):
             return str(value)
 
-        def convert_str_2(value, metadata):  # noqa: ARG001
+        def convert_str_2(value, metadata):
             return str(value).upper()
 
         # First registration succeeds (but str is already registered)
@@ -89,7 +88,7 @@ class TestConverterUnregistration:
         class CustomType:
             pass
 
-        def convert_custom(value, metadata):  # noqa: ARG001
+        def convert_custom(value, metadata):
             return CustomType()
 
         registry.register(CustomType, convert_custom)
@@ -167,7 +166,7 @@ class TestConvertMethod:
         class CustomType:
             pass
 
-        def convert_custom(value, metadata):  # noqa: ARG001
+        def convert_custom(value, metadata):
             msg = "Custom error"
             raise ValueError(msg)
 
@@ -185,7 +184,7 @@ class TestConvertMethod:
         class CustomType:
             pass
 
-        def convert_custom(value, metadata):  # noqa: ARG001
+        def convert_custom(value, metadata):
             msg = "Custom type error"
             raise TypeError(msg)
 
@@ -203,7 +202,7 @@ class TestConvertMethod:
         class CustomType:
             pass
 
-        def convert_custom(value, metadata):  # noqa: ARG001
+        def convert_custom(value, metadata):
             raise ConversionError(value, CustomType, "Original error")
 
         registry.register(CustomType, convert_custom)
@@ -228,7 +227,7 @@ class TestAnnotatedTypeHandling:
         # Use empty registry to avoid conflict with builtin int converter
         registry = ConverterRegistry()
         # Clear to start fresh
-        registry._converters.clear()  # noqa: SLF001
+        registry.converters.clear()
 
         class RecordingConverter:
             metadata_received = None
@@ -259,17 +258,17 @@ class TestConverterCaching:
         # Get converter for list[str]
         converter1 = registry.get_converter(list[str])
         # Should not be in main registry
-        assert list[str] not in registry._converters  # noqa: SLF001
+        assert list[str] not in registry.converters
         # But should be retrievable
         assert converter1 is not None
 
     def test_protocol_converters_are_not_cached_in_main_registry(self):
         from dataclasses import dataclass  # noqa: PLC0415
 
-        from aclaf.types import ConvertibleProtocol  # noqa: PLC0415
+        from aclaf.types import FromArgument  # noqa: PLC0415
 
         @dataclass(frozen=True)
-        class TestProtocol(ConvertibleProtocol):
+        class TestProtocol(FromArgument):
             value: str
 
             @classmethod
@@ -280,7 +279,7 @@ class TestConverterCaching:
         converter = registry.get_converter(TestProtocol)
         assert converter is not None
         # Protocol converters are created dynamically
-        assert TestProtocol not in registry._converters  # noqa: SLF001
+        assert TestProtocol not in registry.converters
 
 
 class TestConverterWithMetadata:
@@ -464,14 +463,10 @@ class TestLoggerIntegration:
 
 class TestBoolConversionWithInt:
     def test_bool_conversion_with_negative_int_returns_true(self):
-        from aclaf._conversion import convert_bool  # noqa: PLC0415
-
         result = convert_bool(-5)
         assert result is True
 
     def test_bool_conversion_covers_all_branches(self):
-        from aclaf._conversion import convert_bool  # noqa: PLC0415
-
         # Cover line 612->618 branch
         # String that's not in truthy/falsey sets
         with pytest.raises(ValueError, match=r"Cannot convert"):

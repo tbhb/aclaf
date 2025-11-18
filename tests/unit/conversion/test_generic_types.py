@@ -4,8 +4,7 @@ from collections.abc import Iterable, Mapping, Sequence
 
 import pytest
 
-from aclaf._conversion import ConverterRegistry
-from aclaf.exceptions import ConversionError
+from aclaf.conversion import ConversionError, ConverterRegistry
 
 
 class TestListConversion:

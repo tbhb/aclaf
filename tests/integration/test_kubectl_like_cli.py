@@ -33,9 +33,9 @@ from annotated_types import Interval, MinLen
 
 from aclaf import App
 from aclaf.console import MockConsole
-from aclaf.exceptions import ValidationError
 from aclaf.metadata import AtLeastOne, Collect, Flag, Opt, ZeroOrMore
 from aclaf.types import PositiveInt
+from aclaf.validation import ValidationError
 from aclaf.validation.command import AtLeastOneOf, MutuallyExclusive
 from aclaf.validation.parameter import Pattern
 

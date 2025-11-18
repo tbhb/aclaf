@@ -7,13 +7,12 @@ from typing_extensions import override
 import pytest
 from annotated_types import BaseMetadata
 
-from aclaf._conversion import ConverterRegistry
-from aclaf.exceptions import ConversionError
-from aclaf.types import ConvertibleProtocol
+from aclaf.conversion import ConversionError, ConverterRegistry
+from aclaf.types import FromArgument
 
 
 @dataclass(frozen=True)
-class Point(ConvertibleProtocol):
+class Point(FromArgument):
     x: int
     y: int
 
@@ -35,7 +34,7 @@ class Point(ConvertibleProtocol):
 
 
 @dataclass(frozen=True)
-class Email(ConvertibleProtocol):
+class Email(FromArgument):
     address: str
 
     @classmethod
@@ -55,7 +54,7 @@ class Email(ConvertibleProtocol):
 
 
 @dataclass(frozen=True)
-class Range(ConvertibleProtocol):
+class Range(FromArgument):
     start: int
     end: int
 
@@ -161,7 +160,7 @@ class TestProtocolWithMetadata:
             factor: int
 
         @dataclass(frozen=True)
-        class ScaledPoint(ConvertibleProtocol):
+        class ScaledPoint(FromArgument):
             x: int
             y: int
 

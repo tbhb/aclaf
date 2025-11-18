@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING
 
-from aclaf import Context, ParameterSource, ParameterSourceMapping
+from aclaf.execution import Context, ParameterSource, ParameterSourceMapping
 from aclaf.parser import ParseResult
 
 if TYPE_CHECKING:
-    from aclaf import ParameterValueType
     from aclaf.console import Console
+    from aclaf.types import ParameterValueType
 
 
 class TestContextCreation:

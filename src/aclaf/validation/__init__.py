@@ -5,6 +5,7 @@ and command-scoped validators. Parameter validators validate individual paramete
 values, while command validators validate relationships between multiple parameters.
 """
 
+from ._exceptions import ValidationError
 from ._registry import (
     ValidatorFunction,
     ValidatorMetadataType,
@@ -65,12 +66,9 @@ from .parameter import (
 )
 
 __all__ = [
-    # Datetime domain metadata classes
     "AfterDate",
     "AfterDatetime",
-    # Sequence domain metadata classes
     "AllMatch",
-    # String domain metadata classes
     "Alpha",
     "Alphanumeric",
     "AnyMatch",
@@ -80,14 +78,11 @@ __all__ = [
     "DateRange",
     "DatetimeRange",
     "EndsWith",
-    # Mapping domain metadata classes
     "ForbiddenKeys",
-    # Path domain metadata classes
     "HasExtensions",
     "IsDirectory",
     "IsExecutable",
     "IsFile",
-    # Numeric domain metadata classes
     "IsInteger",
     "IsNegative",
     "IsNonNegative",
@@ -116,7 +111,7 @@ __all__ = [
     "TimedeltaRange",
     "UniqueItems",
     "Uppercase",
-    # Registry and core types
+    "ValidationError",
     "ValidatorFunction",
     "ValidatorMetadataType",
     "ValidatorRegistry",

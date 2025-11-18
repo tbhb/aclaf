@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from aclaf.validation.parameter._path import (
+from aclaf.validation.parameter import (
     HasExtensions,
     IsDirectory,
     IsExecutable,

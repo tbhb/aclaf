@@ -1,6 +1,6 @@
 """Unit tests for command dependency validators."""
 
-from aclaf.validation.command._dependency import (
+from aclaf.validation.command import (
     Forbids,
     Requires,
     validate_forbids,

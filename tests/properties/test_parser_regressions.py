@@ -1,5 +1,4 @@
-from aclaf.parser import CommandSpec, OptionSpec, Parser
-from aclaf.parser.types import Arity
+from aclaf.parser import Arity, CommandSpec, OptionSpec, Parser
 
 
 class TestHypothesisRegressions:

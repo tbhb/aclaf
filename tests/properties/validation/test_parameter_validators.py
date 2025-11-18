@@ -4,41 +4,35 @@ from datetime import date
 
 from hypothesis import given, strategies as st
 
-from aclaf.validation.parameter._datetime import (
+from aclaf.validation.parameter import (
     AfterDate,
     BeforeDate,
     DateRange,
-    validate_after_date,
-    validate_before_date,
-    validate_date_range,
-)
-from aclaf.validation.parameter._mapping import (
     ForbiddenKeys,
-    MaxKeys,
-    MinKeys,
-    RequiredKeys,
-    validate_forbidden_keys,
-    validate_max_keys,
-    validate_min_keys,
-    validate_required_keys,
-)
-from aclaf.validation.parameter._numeric import (
     IsNegative,
     IsNonNegative,
     IsNonPositive,
     IsPositive,
+    ItemType,
+    MaxKeys,
+    MinKeys,
     Precision,
+    RequiredKeys,
+    SequenceContains,
+    UniqueItems,
+    validate_after_date,
+    validate_before_date,
+    validate_date_range,
+    validate_forbidden_keys,
     validate_is_negative,
     validate_is_non_negative,
     validate_is_non_positive,
     validate_is_positive,
-    validate_precision,
-)
-from aclaf.validation.parameter._sequence import (
-    ItemType,
-    SequenceContains,
-    UniqueItems,
     validate_item_type,
+    validate_max_keys,
+    validate_min_keys,
+    validate_precision,
+    validate_required_keys,
     validate_sequence_contains,
     validate_unique_items,
 )

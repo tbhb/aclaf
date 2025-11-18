@@ -2,24 +2,20 @@
 
 from hypothesis import given, strategies as st
 
-from aclaf.validation.command._conflict import (
-    ConflictsWith,
-    validate_conflicts_with,
-)
-from aclaf.validation.command._constraint import (
+from aclaf.validation.command import (
     AtLeastOneOf,
     AtMostOneOf,
+    ConflictsWith,
     ExactlyOneOf,
+    Forbids,
     MutuallyExclusive,
+    Requires,
     validate_at_least_one_of,
     validate_at_most_one_of,
+    validate_conflicts_with,
     validate_exactly_one_of,
-    validate_mutually_exclusive,
-)
-from aclaf.validation.command._dependency import (
-    Forbids,
-    Requires,
     validate_forbids,
+    validate_mutually_exclusive,
     validate_requires,
 )
 

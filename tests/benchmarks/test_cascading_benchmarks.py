@@ -4,15 +4,16 @@ from dataclasses import dataclass
 
 from annotated_types import BaseMetadata
 
-from aclaf import EMPTY_COMMAND_FUNCTION, Command
-from aclaf._conversion import ConverterRegistry
+from aclaf.conversion import ConverterRegistry
+from aclaf.execution import EMPTY_COMMAND_FUNCTION
 from aclaf.logging import MockLogger
+from aclaf.registration import Command
 from aclaf.validation import ValidatorRegistry
 
 
 class TestCascadingPerformance:
-    def test_mount_single_command_no_subcommands(self, benchmark):
-        """Baseline: mounting a command with no subcommands."""
+    def test_cascade_baseline_single_command(self, benchmark):
+        """Baseline: cascading to a command with no subcommands."""
 
         def setup():
             parent = Command(name="parent", logger=MockLogger())
@@ -24,8 +25,8 @@ class TestCascadingPerformance:
 
         benchmark.pedantic(mount_command, setup=setup, rounds=1000)
 
-    def test_mount_command_with_one_subcommand(self, benchmark):
-        """Mount a command with 1 level of subcommands."""
+    def test_cascade_one_level_deep(self, benchmark):
+        """Cascade to a command with 1 level of subcommands."""
 
         def setup():
             parent = Command(name="parent", logger=MockLogger())
@@ -39,8 +40,8 @@ class TestCascadingPerformance:
 
         benchmark.pedantic(mount_command, setup=setup, rounds=1000)
 
-    def test_mount_command_with_5_level_hierarchy(self, benchmark):
-        """Mount a command with 5 levels of subcommands."""
+    def test_cascade_five_levels_deep(self, benchmark):
+        """Cascade to a command with 5 levels of subcommands."""
 
         def setup():
             parent = Command(name="parent", logger=MockLogger())
@@ -62,8 +63,8 @@ class TestCascadingPerformance:
 
         benchmark.pedantic(mount_command, setup=setup, rounds=1000)
 
-    def test_mount_command_with_10_level_hierarchy(self, benchmark):
-        """Mount a command with 10 levels of subcommands."""
+    def test_cascade_ten_levels_deep(self, benchmark):
+        """Cascade to a command with 10 levels of subcommands."""
 
         def setup():
             parent = Command(name="parent", logger=MockLogger())
@@ -82,8 +83,8 @@ class TestCascadingPerformance:
 
         benchmark.pedantic(mount_command, setup=setup, rounds=1000)
 
-    def test_mount_command_with_wide_tree(self, benchmark):
-        """Mount a command with 10 direct subcommands."""
+    def test_cascade_wide_tree_10_children(self, benchmark):
+        """Cascade to a command with 10 direct subcommands."""
 
         def setup():
             parent = Command(name="parent", logger=MockLogger())
@@ -100,8 +101,8 @@ class TestCascadingPerformance:
 
         benchmark.pedantic(mount_command, setup=setup, rounds=1000)
 
-    def test_mount_command_with_balanced_tree(self, benchmark):
-        """Mount a command with a balanced tree (3 levels, 3 children per level)."""
+    def test_cascade_balanced_tree_3x3x3(self, benchmark):
+        """Cascade to a balanced tree (3 levels, 3 children per level)."""
 
         def setup():
             parent = Command(name="parent", logger=MockLogger())
@@ -133,8 +134,8 @@ class TestCascadingPerformance:
 
         benchmark.pedantic(mount_command, setup=setup, rounds=100)
 
-    def test_mount_with_all_config_populated(self, benchmark):
-        """Mount with all configuration options populated."""
+    def test_cascade_with_all_config_populated(self, benchmark):
+        """Cascade with all configuration options populated."""
 
         @dataclass(slots=True, frozen=True)
         class BenchMetadata(BaseMetadata):
@@ -163,11 +164,11 @@ class TestCascadingPerformance:
                 return BenchType(int(value))
 
             @parent.parameter_validator(BenchMetadata)
-            def validate_bench(value, metadata):  # noqa: ARG001
+            def validate_bench(value, metadata):
                 return None
 
             @parent.command_validator(BenchMetadata)
-            def validate_command(value, metadata):  # noqa: ARG001
+            def validate_command(value, metadata):
                 return None
 
             child = Command(name="child", run_func=EMPTY_COMMAND_FUNCTION)

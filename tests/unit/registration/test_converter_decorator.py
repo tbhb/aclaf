@@ -1,5 +1,4 @@
 # pyright: reportUnknownParameterType=false, reportMissingParameterType=false, reportUnknownArgumentType=false, reportUnusedFunction=false, reportUnusedParameter=false, reportUnusedCallResult=false, reportUnannotatedClassAttribute=false
-# ruff: noqa: ARG001
 
 from typing import TYPE_CHECKING
 

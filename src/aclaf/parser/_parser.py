@@ -5,13 +5,12 @@ from typing import TYPE_CHECKING, cast, final
 from typing_extensions import override
 
 from ._base import BaseParser, ParsedOption, ParsedPositional, ParseResult
-from ._parameters import PositionalSpec
-from .constants import (
+from ._constants import (
     DEFAULT_FALSEY_VALUES,
     DEFAULT_NEGATIVE_NUMBER_PATTERN,
     DEFAULT_TRUTHY_VALUES,
 )
-from .exceptions import (
+from ._exceptions import (
     DuplicateOptionError,
     FlagWithValueError,
     InsufficientOptionValuesError,
@@ -22,7 +21,8 @@ from .exceptions import (
     UnknownOptionError,
     UnknownSubcommandError,
 )
-from .types import (
+from ._parameters import PositionalSpec
+from ._types import (
     EXACTLY_ONE_ARITY,
     ZERO_ARITY,
     ZERO_OR_MORE_ARITY,

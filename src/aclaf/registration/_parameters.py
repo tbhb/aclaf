@@ -13,6 +13,7 @@ from typing import (
     get_origin,
     get_type_hints,
 )
+from typing_extensions import override
 
 from annotated_types import BaseMetadata
 from typing_inspection import typing_objects
@@ -22,18 +23,16 @@ from typing_inspection.introspection import (
     InspectedAnnotation,
 )
 
-from aclaf.logging import Logger
-
-from ._context import Context
-from ._internal._inspect import get_annotations, inspect_annotation
-from ._internal._metadata import flatten_metadata
-from ._runtime import (
+from aclaf._internal._inspect import get_annotations, inspect_annotation
+from aclaf._internal._metadata import flatten_metadata
+from aclaf.console import Console
+from aclaf.execution import (
     CommandFunctionType,
-    ParameterKind,
+    Context,
     RuntimeParameter,
 )
-from .console import Console
-from .metadata import (
+from aclaf.logging import Logger
+from aclaf.metadata import (
     Arg,
     AtLeastOne,
     AtMostOne,
@@ -50,7 +49,7 @@ from .metadata import (
     Opt,
     ZeroOrMore,
 )
-from .parser import (
+from aclaf.parser import (
     EXACTLY_ONE_ARITY,
     ONE_OR_MORE_ARITY,
     ZERO_ARITY,
@@ -59,12 +58,13 @@ from .parser import (
     AccumulationMode,
     Arity,
 )
+from aclaf.types import ParameterKind
 
 if TYPE_CHECKING:
-    from ._conversion import ConverterFunctionType
-    from ._runtime import DefaultFactoryFunction
-    from .types import ParameterValueType
-    from .validation import ValidatorFunction
+    from aclaf.conversion import ConverterFunctionType
+    from aclaf.execution import DefaultFactoryFunction
+    from aclaf.types import ParameterValueType
+    from aclaf.validation import ValidatorFunction
 
 
 class SpecialParameters(TypedDict, total=False):
@@ -73,7 +73,7 @@ class SpecialParameters(TypedDict, total=False):
     logger: str
 
 
-def _extract_union_metadata(type_expr: Any) -> list[MetadataType]:  # pyright: ignore[reportExplicitAny]
+def _extract_union_metadata(type_expr: Any) -> list[MetadataType]:  # pyright: ignore[reportExplicitAny, reportAny]
     """Extract metadata from Annotated types within union type arguments.
 
     typing-inspection library extracts metadata from the outer Annotated layer,
@@ -86,14 +86,14 @@ def _extract_union_metadata(type_expr: Any) -> list[MetadataType]:  # pyright: i
         -> this function extracts: [Gt(0)] (from the union's type)
     """
     metadata: list[MetadataType] = []
-    origin = get_origin(type_expr)
+    origin = get_origin(type_expr)  # pyright: ignore[reportAny]
 
     # Check if the type expression is a union (Union or UnionType from PEP 604)
     # Union comes from typing.Union, while | syntax creates types.UnionType
     if origin is Union or (origin is not None and typing_objects.is_union(type_expr)):
         # Iterate through union type arguments
         for type_arg in get_args(type_expr):
-            arg_origin = get_origin(type_arg)
+            arg_origin = get_origin(type_arg)  # pyright: ignore[reportAny]
             # If the union member is an Annotated type, extract its metadata
             if arg_origin is Annotated:
                 args = get_args(type_arg)
@@ -108,11 +108,12 @@ def _extract_union_metadata(type_expr: Any) -> list[MetadataType]:  # pyright: i
 class _NoDefault:
     """Sentinel value indicating no default was provided."""
 
+    @override
     def __repr__(self) -> str:
         return "<no default>"
 
 
-NO_DEFAULT: Any = _NoDefault()
+NO_DEFAULT: Any = _NoDefault()  # pyright: ignore[reportExplicitAny]
 
 
 @dataclass(slots=True, kw_only=True)
@@ -150,7 +151,7 @@ class CommandParameter(Parameter):
     accumulation_mode: AccumulationMode | None = None
     arity: Arity | None = None
     const_value: str | None = None
-    default: "ParameterValueType | Any" = NO_DEFAULT
+    default: "ParameterValueType | Any" = NO_DEFAULT  # pyright: ignore[reportAny, reportExplicitAny]
     default_factory: "DefaultFactoryFunction | None" = None
     falsey_flag_values: tuple[str, ...] | None = None
     flatten_values: bool = False

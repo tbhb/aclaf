@@ -13,14 +13,14 @@ from aclaf import (
     Context,
     ParameterKind,
 )
-from aclaf._parameters import (
+from aclaf.console import Console  # noqa: TC001
+from aclaf.logging import Logger  # noqa: TC001
+from aclaf.metadata import Flag, Opt
+from aclaf.registration import (
     CommandParameter,
     extract_function_parameters,
     extract_typeddict_parameters,
 )
-from aclaf.console import Console  # noqa: TC001
-from aclaf.logging import Logger  # noqa: TC001
-from aclaf.metadata import Flag, Opt
 
 
 class TestUnknownTypeHandling:

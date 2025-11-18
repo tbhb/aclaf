@@ -1,6 +1,6 @@
 """Unit tests for sequence parameter validators."""
 
-from aclaf.validation.parameter._sequence import (
+from aclaf.validation.parameter import (
     AllMatch,
     AnyMatch,
     ItemType,

@@ -5,7 +5,6 @@ import pytest
 from annotated_types import Ge, Gt, Le, MinLen
 from typing_inspection.introspection import AnnotationSource
 
-from aclaf import CommandParameter, ParameterKind
 from aclaf._internal._metadata import (
     get_all_metadata,
     get_metadata,
@@ -22,6 +21,8 @@ from aclaf.metadata import (
     Opt,
 )
 from aclaf.parser import ONE_OR_MORE_ARITY, AccumulationMode
+from aclaf.registration import CommandParameter
+from aclaf.types import ParameterKind
 
 
 class TestMetadataQueryUtilities:

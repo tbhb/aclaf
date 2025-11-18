@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from aclaf._context import Context
+from aclaf.execution import Context
 from aclaf.parser import ParseResult
 
 if TYPE_CHECKING:

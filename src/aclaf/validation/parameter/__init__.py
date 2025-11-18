@@ -107,6 +107,7 @@ from ._sequence import (
 from ._string import (
     Alpha,
     Alphanumeric,
+    Choices,
     Contains,
     EndsWith,
     Lowercase,
@@ -119,6 +120,7 @@ from ._string import (
     Uppercase,
     validate_alpha,
     validate_alphanumeric,
+    validate_choices,
     validate_contains,
     validate_ends_with,
     validate_lowercase,
@@ -131,29 +133,24 @@ from ._string import (
 )
 
 __all__ = [
-    # Metadata classes - Datetime domain
     "AfterDate",
     "AfterDatetime",
-    # Metadata classes - Sequence domain
     "AllMatch",
-    # Metadata classes - String domain
     "Alpha",
     "Alphanumeric",
     "AnyMatch",
     "BeforeDate",
     "BeforeDatetime",
+    "Choices",
     "Contains",
     "DateRange",
     "DatetimeRange",
     "EndsWith",
-    # Metadata classes - Mapping domain
     "ForbiddenKeys",
-    # Metadata classes - Path domain
     "HasExtensions",
     "IsDirectory",
     "IsExecutable",
     "IsFile",
-    # Metadata classes - Numeric domain
     "IsInteger",
     "IsNegative",
     "IsNonNegative",
@@ -184,29 +181,23 @@ __all__ = [
     "Uppercase",
     "ValuePattern",
     "ValueType",
-    # Validator functions - Datetime domain
     "validate_after_date",
     "validate_after_datetime",
-    # Validator functions - Sequence domain
     "validate_all_match",
-    # Validator functions - String domain
     "validate_alpha",
     "validate_alphanumeric",
     "validate_any_match",
     "validate_before_date",
     "validate_before_datetime",
+    "validate_choices",
     "validate_contains",
     "validate_date_range",
     "validate_datetime_range",
     "validate_ends_with",
-    # Validator functions - Mapping domain
     "validate_forbidden_keys",
-    # Validator functions - Comparison domain
     "validate_ge",
     "validate_gt",
-    # Validator functions - Path domain
     "validate_has_extensions",
-    # Validator functions - Numeric domain
     "validate_interval",
     "validate_is_directory",
     "validate_is_executable",
@@ -224,8 +215,10 @@ __all__ = [
     "validate_lowercase",
     "validate_lt",
     "validate_max_keys",
+    "validate_max_len",
     "validate_max_timedelta",
     "validate_min_keys",
+    "validate_min_len",
     "validate_min_timedelta",
     "validate_multiple_of",
     "validate_none_match",

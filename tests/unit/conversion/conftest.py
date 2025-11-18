@@ -1,6 +1,6 @@
 import pytest
 
-from aclaf._conversion import ConverterRegistry
+from aclaf.conversion import ConverterRegistry
 
 
 @pytest.fixture
@@ -12,5 +12,5 @@ def registry() -> ConverterRegistry:
 def empty_registry() -> ConverterRegistry:
     reg = ConverterRegistry()
     # Clear builtin converters for isolated testing
-    reg._converters.clear()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    reg.converters.clear()
     return reg

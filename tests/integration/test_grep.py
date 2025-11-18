@@ -18,7 +18,7 @@ Note: This file intentionally uses patterns that trigger linting warnings:
 - TC001: MockConsole is used at runtime, not just for type checking
 """
 
-# ruff: noqa: TC001, FBT002, ARG001
+# ruff: noqa: TC001, FBT002
 
 from typing import Annotated
 

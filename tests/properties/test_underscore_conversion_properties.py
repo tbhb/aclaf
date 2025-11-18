@@ -5,9 +5,14 @@ from typing import TYPE_CHECKING
 import pytest
 from hypothesis import assume, example, given, strategies as st
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser
-from aclaf.parser.exceptions import UnknownOptionError
-from aclaf.parser.types import EXACTLY_ONE_ARITY, ZERO_ARITY
+from aclaf.parser import (
+    EXACTLY_ONE_ARITY,
+    ZERO_ARITY,
+    CommandSpec,
+    OptionSpec,
+    Parser,
+    UnknownOptionError,
+)
 
 if TYPE_CHECKING:
     from hypothesis.strategies import DrawFn

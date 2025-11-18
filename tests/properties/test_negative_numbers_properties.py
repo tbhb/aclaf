@@ -7,10 +7,18 @@ from typing import TYPE_CHECKING
 import pytest
 from hypothesis import given, strategies as st
 
-from aclaf.parser import CommandSpec, OptionSpec, Parser, PositionalSpec
-from aclaf.parser.constants import DEFAULT_NEGATIVE_NUMBER_PATTERN
-from aclaf.parser.exceptions import ParserConfigurationError, UnknownOptionError
-from aclaf.parser.types import EXACTLY_ONE_ARITY, ZERO_OR_MORE_ARITY, Arity
+from aclaf.parser import (
+    DEFAULT_NEGATIVE_NUMBER_PATTERN,
+    EXACTLY_ONE_ARITY,
+    ZERO_OR_MORE_ARITY,
+    Arity,
+    CommandSpec,
+    OptionSpec,
+    Parser,
+    ParserConfigurationError,
+    PositionalSpec,
+    UnknownOptionError,
+)
 
 if TYPE_CHECKING:
     from hypothesis.strategies import DrawFn

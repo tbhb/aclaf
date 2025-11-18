@@ -1,19 +1,20 @@
 from collections.abc import Mapping, Sequence, Set as AbstractSet
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from enum import IntEnum, auto
 from pathlib import Path
 from typing import Annotated, Protocol, TypeAlias, runtime_checkable
 from typing_extensions import override
 
 from annotated_types import BaseMetadata, Ge, Gt, Le, Lt
 
-from .parser.types import (
+from aclaf.parser.types import (
     ParsedParameterValue,
 )
 
 __all__ = [
-    "ConvertibleProtocol",
     "FiniteFloat",
+    "FromArgument",
     "NegativeFloat",
     "NegativeInt",
     "NonNegativeFloat",
@@ -32,7 +33,7 @@ __all__ = [
 
 
 @runtime_checkable
-class ConvertibleProtocol(Protocol):
+class FromArgument(Protocol):
     @classmethod
     def from_cli_value(
         cls,
@@ -80,6 +81,12 @@ NonNegativeFloat = Annotated[float, Ge(0)]
 StrictFloat = Annotated[float, Strict()]
 FiniteFloat = Annotated[float, AllowInfNan(False)]  # noqa: FBT003
 
+
+class ParameterKind(IntEnum):
+    OPTION = auto()
+    POSITIONAL = auto()
+
+
 ParameterValueType: TypeAlias = (
     PrimitiveType
     | StrictBool
@@ -96,7 +103,7 @@ ParameterValueType: TypeAlias = (
     | FiniteFloat
     | Path
     | ParsedParameterValue
-    | ConvertibleProtocol
+    | FromArgument
     | date
     | datetime
     | time

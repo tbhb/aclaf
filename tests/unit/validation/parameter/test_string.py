@@ -4,7 +4,7 @@ import re
 
 import pytest
 
-from aclaf.validation.parameter._string import (
+from aclaf.validation.parameter import (
     Alpha,
     Alphanumeric,
     Choices,
