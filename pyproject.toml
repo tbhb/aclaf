@@ -67,8 +67,8 @@ dev = [
 include = ["src", "tests"]
 
 [tool.codespell]
-skip = "pnpm-lock.yaml,uv.lock,htmlcov,site"
-ignore-words-list = "nd,ue,metacharacter,subcmd,cna"
+skip = "pnpm-lock.yaml,uv.lock,htmlcov,site,tmp"
+ignore-words-list = "nd,ue,metacharacter,subcmd,cna,metadataa,metadatab,metadatac"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
@@ -203,8 +203,15 @@ ignore-variadic-names = true
 
 [tool.ruff.lint.per-file-ignores]
 "**/__main__.py" = ["D100"]
-"**/tests/**" = ["D", "PLR2004", "S101", "TC003"]  # TC003: Path is used at runtime in fixtures
-"examples/**" = ["T201"]                 # Allow print in examples
+"**/tests/**" = [
+  "D",
+  "PLR2004",
+  "S101",
+  "TC003",
+] # TC003: Path is used at runtime in fixtures
+"examples/**" = ["T201"] # Allow print in examples
+"scripts/**" = ["T201"] # Allow print in scripts
+"src/aclaf/validation/**" = ["ARG001"] # Validators must match Protocol signature even if params unused
 
 [tool.uv.sources]
 aclaf = { workspace = true }
