@@ -80,9 +80,6 @@ asyncio_mode = "auto"
 filterwarnings = ["error"]
 testpaths = ["tests"]
 xfail_strict = true
-markers = [
-  "security: Security-focused tests for injection and validation (deselect with '-m \"not security\"')",
-]
 
 [tool.coverage.run]
 branch = true
