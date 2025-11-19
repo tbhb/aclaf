@@ -28,7 +28,7 @@ classifiers = [
   "Topic :: Utilities",
   "Typing :: Typed",
 ]
-dependencies = ["typing-extensions>=4.15.0"]
+dependencies = ["flagrant", "typing-extensions>=4.15.0"]
 
 [dependency-groups]
 dev = [
@@ -193,3 +193,6 @@ ignore-variadic-names = true
 [tool.ruff.lint.per-file-ignores]
 "**/__main__.py" = ["D100"]
 "**/tests/**" = ["D", "PLR2004", "S101"]
+
+[tool.uv.sources]
+flagrant = { path = "../flagrant", "editable" = true }

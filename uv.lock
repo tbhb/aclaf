@@ -7,6 +7,7 @@ name = "aclaf"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "flagrant" },
     { name = "typing-extensions" },
 ]
 
@@ -34,7 +35,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "typing-extensions", specifier = ">=4.15.0" }]
+requires-dist = [
+    { name = "flagrant", editable = "../flagrant" },
+    { name = "typing-extensions", specifier = ">=4.15.0" },
+]
 
 [package.metadata.requires-dev]
 dev = [
@@ -487,6 +491,47 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/58/46/0028a82567109b5ef6e4d2a1f04a583fb513e6cf9527fcdd09afd817deeb/filelock-3.20.0.tar.gz", hash = "sha256:711e943b4ec6be42e1d4e6690b48dc175c822967466bb31c0c293f34334c13f4", size = 18922, upload-time = "2025-10-08T18:03:50.056Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/76/91/7216b27286936c16f5b4d0c530087e4a54eead683e6b0b73dd0c64844af6/filelock-3.20.0-py3-none-any.whl", hash = "sha256:339b4732ffda5cd79b13f4e2711a31b0365ce445d95d243bb996273d072546a2", size = 16054, upload-time = "2025-10-08T18:03:48.35Z" },
+]
+
+[[package]]
+name = "flagrant"
+version = "0.1.0"
+source = { editable = "../flagrant" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "typing-extensions", specifier = ">=4.15.0" }]
+
+[package.metadata.requires-dev]
+benchmarking = [{ name = "pytest-benchmark", specifier = ">=5.2.2" }]
+dev = [
+    { name = "basedpyright", specifier = ">=1.32.1" },
+    { name = "codespell", specifier = ">=2.4.1" },
+    { name = "commitizen", specifier = ">=4.9.1" },
+    { name = "hypothesis", specifier = ">=6.147.0" },
+    { name = "prek", specifier = ">=0.2.12" },
+    { name = "pytest", specifier = ">=8.4.2" },
+    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-mock", specifier = ">=3.15.1" },
+    { name = "ruff", specifier = ">=0.14.3" },
+    { name = "yamllint", specifier = ">=1.37.1" },
+]
+docs = [
+    { name = "djlint", specifier = ">=1.36.4" },
+    { name = "mkdocs-git-authors-plugin", specifier = ">=0.10.0" },
+    { name = "mkdocs-git-revision-date-localized-plugin", specifier = ">=1.5.0" },
+    { name = "mkdocs-glightbox", specifier = ">=0.5.2" },
+    { name = "mkdocs-material", specifier = ">=9.7.0" },
+    { name = "mkdocs-rss-plugin", specifier = ">=1.17.7" },
+    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.30.1" },
+]
+fuzzing = [{ name = "atheris", marker = "python_full_version < '3.12'", specifier = ">=2.3.0" }]
+mutation = [{ name = "mutmut", marker = "python_full_version < '3.14'", specifier = ">=3.3.1" }]
+profiling = [
+    { name = "memray", specifier = ">=1.19.1" },
+    { name = "py-spy", specifier = ">=0.4.1" },
 ]
 
 [[package]]
